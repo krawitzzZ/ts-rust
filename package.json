@@ -1,0 +1,11 @@
+{
+  "name": "anythrow",
+  "version": "0.0.1",
+  "description": "Package that offers rust's like Result type",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nikita Demin",
+  "license": "ISC"
+}
