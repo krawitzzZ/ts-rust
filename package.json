@@ -2,10 +2,42 @@
   "name": "anythrow",
   "version": "0.0.1",
   "description": "Package that offers rust's like Result type",
-  "main": "index.js",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "ci": "npm run typecheck && npm run lint && npm run format && npm run build && npm run test",
+    "test": "jest",
+    "lint": "eslint -c eslint.config.mjs **/*.ts --no-warn-ignored",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --check ./src/**/*.ts",
+    "format:fix": "prettier --write ./src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf ./dist",
+    "build": "npm run clean && rollup --config",
+    "prepack": "npm run build"
   },
   "author": "Nikita Demin",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-typescript": "12.1.2",
+    "@types/jest": "^29.5.14",
+    "eslint": "9.20.1",
+    "eslint-config-prettier": "10.0.1",
+    "eslint-plugin-import": "2.31.0",
+    "globals": "15.15.0",
+    "jest": "^29.7.0",
+    "prettier": "3.5.1",
+    "rollup": "4.34.7",
+    "ts-jest": "^29.2.5",
+    "tslib": "2.8.1",
+    "typescript": "5.7.3",
+    "typescript-eslint": "8.24.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }
