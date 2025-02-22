@@ -1,6 +1,6 @@
 {
   "name": "optional-result",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Package that offers rust's like Result and Option types",
   "repository": {
     "type": "git",
