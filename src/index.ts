@@ -1,3 +1,2 @@
-export const main = (): number => {
-  return 0;
-};
+export { Result, Ok, Err, ok, err } from "./result";
+export { Option, Some, None, some, none } from "./option";
