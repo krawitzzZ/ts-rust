@@ -31,7 +31,7 @@ export class Ok<T, E> implements IResult<T, E> {
   }
 
   err(): Option<E> {
-    return none();
+    return none<E>();
   }
 
   isErr(): this is Err<T, E> {

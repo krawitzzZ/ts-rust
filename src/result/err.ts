@@ -19,7 +19,7 @@ export class Err<T, E> implements IResult<T, E> {
   }
 
   ok(): Option<T> {
-    return none();
+    return none<T>();
   }
 
   isOk(): this is Ok<T, E> {

@@ -1,3 +1,2 @@
-export { Option } from "./types";
-export { Some, some } from "./some";
-export { None, none } from "./none";
+export { Option } from "./interface";
+export { Some, some, None, none } from "./option";
