@@ -1,5 +1,6 @@
 import { AnyError } from "../error";
 import { none, Option, some } from "../option";
+import { stringify } from "../__internal";
 import { IResult } from "./interface";
 import { Ok, Result } from "./index";
 
@@ -15,7 +16,7 @@ export class Err<T, E> implements IResult<T, E> {
   }
 
   toString(): string {
-    return `Err(${JSON.stringify(this.#error)})`;
+    return `Err { ${stringify(this.#error)} }`;
   }
 
   ok(): Option<T> {

@@ -34,11 +34,11 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 
   andThen<U>(f: (x: T) => Option<U>): Option<U> {
-    return this.isNone() ? none() : f(this.innerValue);
+    return !this.isSome() ? none() : f(this.innerValue);
   }
 
   clone(): Option<T> {
-    return this.isNone() ? none() : some(this.innerValue);
+    return !this.isSome() ? none() : some(this.innerValue);
   }
 
   expect(msg?: string): T {
@@ -53,7 +53,7 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 
   filter(f: (x: T) => boolean): Option<T> {
-    if (this.isNone()) {
+    if (!this.isSome()) {
       return none();
     }
 
@@ -61,7 +61,7 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 
   flatten(): FlattenedOption<T> {
-    if (this.isNone()) {
+    if (!this.isSome()) {
       return none() as FlattenedOption<T>;
     }
 
@@ -111,7 +111,7 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 
   isNoneOr(f: (x: T) => boolean): boolean {
-    return this.isNone() || f(this.innerValue);
+    return !this.isSome() || f(this.innerValue);
   }
 
   isSome(): this is Some<T> {
@@ -135,7 +135,7 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 
   map<U>(f: (x: T) => U): Option<U> {
-    if (this.isNone()) {
+    if (!this.isSome()) {
       return none();
     }
 
@@ -143,7 +143,7 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 
   mapOr<U>(def: U, f: (x: T) => U): U {
-    if (this.isNone()) {
+    if (!this.isSome()) {
       return def;
     }
 
@@ -151,7 +151,7 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 
   mapOrElse<U>(mkDef: () => U, f: (x: T) => U): U {
-    if (this.isNone()) {
+    if (!this.isSome()) {
       return mkDef();
     }
 
@@ -185,7 +185,7 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 
   take(): Option<T> {
-    if (this.isNone()) {
+    if (!this.isSome()) {
       return none();
     }
 
@@ -194,7 +194,7 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 
   takeIf(f: (x: T) => boolean): Option<T> {
-    if (this.isNone()) {
+    if (!this.isSome()) {
       return none();
     }
 
@@ -207,12 +207,12 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 
   toString(): string {
-    return this.isNone() ? "None" : `Some { ${stringify(this.#value)} }`;
+    return !this.isSome() ? "None" : `Some { ${stringify(this.#value)} }`;
   }
 
   // TODO(nikita.demin): test if types are correct
   transpose<E>(this: Some<Result<T, E>>): Result<Option<T>, E> {
-    if (this.isNone()) {
+    if (!this.isSome()) {
       return ok(none<T>());
     }
 
@@ -290,7 +290,9 @@ export abstract class AwaitableOption<T> implements IOption<T> {
 }
 
 export class Some<T> extends AwaitableOption<T> {
-  protected override promise: Promise<Option<T>> = Promise.resolve(this);
+  protected override promise: Promise<Option<T>> = Promise.resolve(
+    {} as Option<T>,
+  );
 
   get value(): T {
     return this.innerValue;
@@ -298,7 +300,9 @@ export class Some<T> extends AwaitableOption<T> {
 }
 
 export class None<T> extends AwaitableOption<T> {
-  protected override promise: Promise<Option<T>> = Promise.resolve(this);
+  protected override promise: Promise<Option<T>> = Promise.resolve(
+    {} as Option<T>,
+  );
 }
 
 export function some<T>(value: T): Option<T> {
