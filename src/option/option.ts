@@ -10,7 +10,7 @@ type Nothing = typeof nothing;
 export abstract class AwaitableOption<T> implements IOption<T> {
   #value: T | Nothing = nothing;
 
-  protected abstract promise: Promise<Option<T>>;
+  protected abstract readonly promise: Promise<void>;
 
   protected get innerValue(): T {
     if (isNothing(this.#value)) {
@@ -243,7 +243,7 @@ export abstract class AwaitableOption<T> implements IOption<T> {
 
   xor(y: Option<T>): Option<T> {
     if (this.isNone() && y.isSome()) {
-      return some(y.value);
+      return some(y.get());
     }
 
     if (y.isNone() && this.isSome()) {
@@ -290,19 +290,15 @@ export abstract class AwaitableOption<T> implements IOption<T> {
 }
 
 export class Some<T> extends AwaitableOption<T> {
-  protected override promise: Promise<Option<T>> = Promise.resolve(
-    {} as Option<T>,
-  );
+  protected override readonly promise: Promise<void> = Promise.resolve();
 
-  get value(): T {
+  get(): T {
     return this.innerValue;
   }
 }
 
 export class None<T> extends AwaitableOption<T> {
-  protected override promise: Promise<Option<T>> = Promise.resolve(
-    {} as Option<T>,
-  );
+  protected override readonly promise: Promise<void> = Promise.resolve();
 }
 
 export function some<T>(value: T): Option<T> {
