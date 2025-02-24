@@ -1,1 +1,3 @@
-export { isResult, isOption, hasType, haveSameType, stringify } from "./utils";
+export { isResult, isOption } from "./utils";
+export { isEqual } from "./isEqual";
+export { stringify } from "./stringify";
