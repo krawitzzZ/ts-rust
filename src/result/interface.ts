@@ -1,7 +1,5 @@
 import { Option } from "../option";
-import { Err, Ok } from "./index";
-
-export type Result<T, E = unknown> = Ok<T, E> | Err<T, E>;
+import { Err, Ok, Result } from "./index";
 
 export interface IResult<T, E> {
   ok(): Option<T>;

@@ -5,6 +5,10 @@ export function stringify(value: unknown): string {
     return value.toString();
   }
 
+  if (value instanceof Promise) {
+    return "promise";
+  }
+
   if (value === null) {
     return "null";
   }
