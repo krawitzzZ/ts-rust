@@ -3,14 +3,17 @@ import { AnyError } from "../error";
 import { err, ok, Result } from "../result";
 import { FlattenedOption, IOption, Option } from "./interface";
 
-const nothing: unique symbol = Symbol("None");
+const someKey = "Some";
+const noneKey = "None";
+const nothing: unique symbol = Symbol("Nothing");
 const isNothing = (x: unknown): x is Nothing => x === nothing;
+
 type Nothing = typeof nothing;
 
-export abstract class AwaitableOption<T> implements IOption<T> {
+abstract class OptionBase<T> implements IOption<T> {
   #value: T | Nothing = nothing;
 
-  protected abstract readonly promise: Promise<void>;
+  protected abstract readonly _promise: symbol;
 
   protected get innerValue(): T {
     if (isNothing(this.#value)) {
@@ -289,16 +292,16 @@ export abstract class AwaitableOption<T> implements IOption<T> {
   }
 }
 
-export class Some<T> extends AwaitableOption<T> {
-  protected override readonly promise: Promise<void> = Promise.resolve();
+export class Some<T> extends OptionBase<T> {
+  protected override readonly _promise: symbol = Symbol.for(someKey);
 
   get(): T {
     return this.innerValue;
   }
 }
 
-export class None<T> extends AwaitableOption<T> {
-  protected override readonly promise: Promise<void> = Promise.resolve();
+export class None<T> extends OptionBase<T> {
+  protected override readonly _promise: symbol = Symbol.for(noneKey);
 }
 
 export function some<T>(value: T): Option<T> {

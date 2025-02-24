@@ -8,3 +8,7 @@ export function isOption(x: unknown): x is Option<unknown> {
 export function isResult(x: unknown): x is Result<unknown> {
   return x instanceof Ok || x instanceof Err;
 }
+
+export function isPromise(x: unknown): x is Promise<unknown> {
+  return x instanceof Promise;
+}
