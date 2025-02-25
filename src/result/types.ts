@@ -6,8 +6,5 @@ export type Result<T, E = unknown> = Ok<T, E> | Err<T, E>;
 // TODO(nikita.demin): implement
 export type PendingResult<T, E> = Result<T, E>;
 
-export type OkValue<T, E = unknown> = T extends Result<infer R, E> ? R : never;
-export type ErrValue<T, V = unknown> = T extends Result<V, infer R> ? R : never;
-
-export type IsResult<T, E> =
-  T extends Result<infer R, E> ? Result<R, E> : never;
+export type OkValue<R, E = unknown> = R extends Result<infer U, E> ? U : never;
+export type ErrValue<R, V = unknown> = R extends Result<V, infer E> ? E : never;

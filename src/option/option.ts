@@ -8,8 +8,6 @@ import {
   type Ok,
   type Err,
   /* eslint-enable @typescript-eslint/no-unused-vars */
-  IsResult,
-  OkValue,
 } from "../result";
 import { Awaitable, MaybePromise } from "../types";
 import {
@@ -62,9 +60,7 @@ type IOption<T> = {
   takeIf(f: (x: T) => boolean): Option<T>;
   toPendingOption(): PendingOption<T>;
   toString(): string;
-  transposeResult<E>(
-    this: Option<IsResult<T, E>>,
-  ): Result<Option<OkValue<T, E>>, E>;
+  transposeResult<V, E>(this: IOption<Result<V, E>>): Result<Option<V>, E>;
   transposeAwaitable(this: Option<Awaitable<T>>): PendingOption<Awaited<T>>;
   unwrap(): T;
   unwrapOr(def: T): T;
@@ -803,15 +799,13 @@ abstract class AbstractOption<T> implements IOption<T> {
    * expect(z.transposeResult()).toStrictEqual(ok(none()));
    * ```
    */
-  transposeResult<E>(
-    this: Option<IsResult<T, E>>,
-  ): Result<Option<OkValue<T, E>>, E> {
+  transposeResult<V, E>(this: Option<Result<V, E>>): Result<Option<V>, E> {
     if (this.isNone() || !isResult(this.value)) {
-      return ok(none<OkValue<T, E>>());
+      return ok(none<V>());
     }
 
     return this.value.isOk()
-      ? ok(some(this.value.value as OkValue<T, E>))
+      ? ok(some(this.value.value))
       : err(this.value.error);
   }
 

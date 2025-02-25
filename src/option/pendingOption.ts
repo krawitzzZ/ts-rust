@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { IsResult, OkValue, Result, Ok, Err, err, ok } from "../result";
+import { Result, Ok, Err, err, ok } from "../result";
 import { isOption, isPromise, promisify } from "../__internal";
 import { Awaitable, MaybePromise } from "../types";
 import { FlattenedPendingOption } from "./types";
@@ -26,9 +26,9 @@ type IPendingOption<T> = {
   take(): PendingOption<T>;
   takeIf(f: (x: T) => MaybePromise<boolean>): PendingOption<T>;
   toString(): string;
-  transposeResult<E>(
-    this: PendingOption<IsResult<T, E>>,
-  ): Promise<Result<Option<OkValue<T, E>>, E>>;
+  transposeResult<V, E>(
+    this: IPendingOption<Result<V, E>>,
+  ): Promise<Result<Option<V>, E>>;
   transposeAwaitable(
     this: PendingOption<Awaitable<T>>,
   ): PendingOption<Awaited<T>>;
@@ -520,11 +520,10 @@ export class PendingOption<T>
    * expect(await z.transposeResult()).toStrictEqual(ok(none()));
    * ```
    */
-  transposeResult<E>(
-    this: PendingOption<IsResult<T, E>>,
-  ): Promise<Result<Option<OkValue<T, E>>, E>> {
-    // TODO(nikita.demin): implement
-    throw new Error("Method not implemented.");
+  transposeResult<V, E>(
+    this: PendingOption<Result<V, E>>,
+  ): Promise<Result<Option<V>, E>> {
+    return this.#promise.then((option) => option.transposeResult());
   }
 
   /**
