@@ -2,7 +2,8 @@ import { IsResult, OkValue, Result } from "../result";
 import { isPromise } from "../__internal";
 import { Awaitable, MaybePromise } from "../types";
 import { FlattenedPendingOption } from "./types";
-import { none, Option, some } from "./index";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Option, type Some, type None, some, none } from "./index";
 
 const _pendingOption_: unique symbol = Symbol("PendingOption");
 type PendingOptionT = typeof _pendingOption_;
@@ -16,9 +17,7 @@ type IPendingOption<T> = {
   inspect(f: (x: T) => unknown): PendingOption<T>;
   map<U>(f: (x: T) => MaybePromise<U>): PendingOption<U>;
   match<U, F = U>(f: (x: T) => U, g: () => F): Promise<U | F>;
-  // TODO(nikita.demin): will be PendingResult
   okOr<E>(y: E): Promise<Result<T, E>>;
-  // TODO(nikita.demin): will be PendingResult
   okOrElse<E>(mkErr: () => MaybePromise<E>): Promise<Result<T, E>>;
   or(x: MaybePromise<Option<T>>): PendingOption<T>;
   orElse(f: () => MaybePromise<Option<T>>): PendingOption<T>;
@@ -26,7 +25,6 @@ type IPendingOption<T> = {
   take(): PendingOption<T>;
   takeIf(f: (x: T) => MaybePromise<boolean>): PendingOption<T>;
   toString(): string;
-  // TODO(nikita.demin): will be PendingResult
   transposeResult<E>(
     this: PendingOption<IsResult<T, E>>,
   ): Promise<Result<PendingOption<OkValue<T, E>>, E>>;
@@ -54,6 +52,21 @@ export class PendingOption<T>
     return this.#promise.then(onfulfilled, onrejected);
   }
 
+  /**
+   * Returns {@link PendingOption} with {@link None} if `x` is (or resolves to)
+   * {@link None}, otherwise returns {@link PendingOption} with `x`.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none());
+   *
+   * expect(await x.and(Promise.resolve(some(3))).toStrictEqual(some(3));
+   * expect(await x.and(Promise.resolve(none())).toStrictEqual(none());
+   * expect(await y.and(Promise.resolve(some(3))).toStrictEqual(none());
+   * expect(await y.and(Promise.resolve(none())).toStrictEqual(none());
+   * ```
+   */
   and<U>(x: MaybePromise<Option<U>>): PendingOption<U> {
     throw new Error("Method not implemented.");
   }
@@ -151,11 +164,11 @@ export class PendingOption<T>
 }
 
 export function pendingOption<T>(
-  valueOrPromise: MaybePromise<Option<T>>,
+  optionOrPromise: MaybePromise<Option<T>>,
 ): PendingOption<T> {
-  const promise = isPromise(valueOrPromise)
-    ? valueOrPromise
-    : Promise.resolve(valueOrPromise);
+  const promise = isPromise(optionOrPromise)
+    ? optionOrPromise
+    : Promise.resolve(optionOrPromise);
 
   return new PendingOption(promise);
 }

@@ -64,7 +64,7 @@ type IOption<T> = {
   toString(): string;
   transposeResult<E>(
     this: Option<IsResult<T, E>>,
-  ): Result<Option<OkValue<T, E>>, E>;
+  ): Result<Option<OkValue<T>>, E>;
   transposeAwaitable(this: Option<Awaitable<T>>): PendingOption<Awaited<T>>;
   unwrap(): T;
   unwrapOr(def: T): T;
@@ -766,13 +766,13 @@ abstract class AbstractOption<T> implements IOption<T> {
    */
   transposeResult<E>(
     this: Option<IsResult<T, E>>,
-  ): Result<Option<OkValue<T, E>>, E> {
+  ): Result<Option<OkValue<T>>, E> {
     if (this.isNone() || !isResult(this.value)) {
-      return ok(none<OkValue<T, E>>());
+      return ok(none<OkValue<T>>());
     }
 
     return this.value.isOk()
-      ? ok(some(this.value.value as OkValue<T, E>))
+      ? ok(some(this.value.value as OkValue<T>))
       : err(this.value.error);
   }
 
