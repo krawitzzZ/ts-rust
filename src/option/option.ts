@@ -1,4 +1,4 @@
-import { isOption, isResult, isPromise, stringify } from "../__internal";
+import { isOption, isResult, isPromise, stringify, noop } from "../__internal";
 import { AnyError } from "../error";
 import {
   err,
@@ -57,7 +57,7 @@ type IOption<T> = {
   or(x: Promise<Option<T>>): PendingOption<T>;
   orElse(f: () => Option<T>): Option<T>;
   replace(x: T): Option<T>;
-  replace(x: Promise<T>): PendingOption<T>;
+  replace(x: Promise<T>): readonly [Option<T>, Promise<void>];
   take(): Option<T>;
   takeIf(f: (x: T) => boolean): Option<T>;
   toPendingOption(): PendingOption<T>;
@@ -176,7 +176,7 @@ abstract class AbstractOption<T> implements IOption<T> {
   }
 
   /**
-   * Returns a shallow copy of the option.
+   * Returns a shallow copy of the {@link Option}.
    *
    * ### Example
    * ```ts
@@ -347,6 +347,11 @@ abstract class AbstractOption<T> implements IOption<T> {
 
   /**
    * Calls `f` with the contained value if {@link Some}, then returns the original option.
+   *
+   * ### Note
+   * Returns a new {@link Option} instance with the same value as the original, rather
+   * than the exact same reference. The returned option is a distinct object, preserving
+   * the original value.
    *
    * ### Example
    * ```ts
@@ -629,27 +634,61 @@ abstract class AbstractOption<T> implements IOption<T> {
    */
   replace(x: T): Option<T>;
   /**
-   * Replaces the current value with `x` and returns a {@link PendingOption} with the old option.
+   * Special case of {@link replace} for async `x`.
    *
-   * This method converts an {@link Option} to a {@link PendingOption}, so technically
-   * mutation is not happening.
+   * Asynchronously replaces the current {@link Option} with the resolved value of `x`,
+   * returning the original value and a {@link Promise} that triggers the replacement.
+   *
+   * Since `x` is a {@link Promise} that resolves asynchronously, this method defers the
+   * update until `x` resolves. It:
+   * 1. Captures the current {@link Option} (either {@link Some} or {@link None}).
+   * 2. Returns a tuple where:
+   *    - The first element is the original {@link Option} before any changes.
+   *    - The second element is a {@link Promise} that, when awaited, mutates this
+   *      {@link Option} to {@link Some} containing the resolved value of `x`.
+   * 3. If `x` rejects, no mutation occurs, and the option remains unchanged.
+   *
+   * This is an asynchronous variant of {@link Option.replace}, designed for deferred
+   * updates with pending values.
+   *
+   * ### Note
+   * This method mutates the original {@link Option}, but the mutation is deferred until
+   * the returned {@link Promise} resolves successfully. The option remains in its
+   * original state until then.
    *
    * ### Example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
    *
-   * expect(x.replace(Promise.resolve(5))).toBeInstanceOf(PendingOption);
-   * expect(await x.replace(Promise.resolve(5))).toStrictEqual(some(2));
-   * expect(await x).toStrictEqual(some(5));
-   * expect(await y.replace(Promise.resolve(5))).toStrictEqual(none());
-   * expect(await y).toStrictEqual(some(5));
+   * const xResult = x.replace(Promise.resolve(5));
+   * const yResult = y.replace(Promise.resolve(3));
+   *
+   * // Check tuple structure
+   * expect(xResult).toHaveLength(2);
+   * expect(xResult[0]).toStrictEqual(some(2)); // Original value
+   * expect(xResult[1]).toBeInstanceOf(Promise);
+   * expect(x.isSome()).toBe(true); // x unchanged until promise resolves
+   * await xResult[1]; // Trigger mutation
+   * expect(x).toStrictEqual(some(5)); // x is now Some(5)
+   *
+   * expect(yResult).toHaveLength(2);
+   * expect(yResult[0]).toStrictEqual(none()); // Original value
+   * expect(yResult[1]).toBeInstanceOf(Promise);
+   * expect(y.isNone()).toBe(true); // y unchanged until promise resolves
+   * await yResult[1]; // Trigger mutation
+   * expect(y).toStrictEqual(some(3)); // y is now Some(3)
    * ```
    */
-  replace(x: Promise<T>): PendingOption<T>;
-  replace(x: MaybePromise<T>): MaybePendingOption<T> {
+  replace(x: Promise<T>): readonly [Option<T>, Promise<void>];
+  replace(x: MaybePromise<T>): Option<T> | readonly [Option<T>, Promise<void>] {
     if (isPromise(x)) {
-      return this.toPendingOption().replace(x);
+      const currentValue = this.isNone() ? none<T>() : some(this.value);
+      const promise = x.then((val) => {
+        this.#setValue(val);
+      }, noop);
+
+      return [currentValue, promise];
     }
 
     const value = this.#replaceValue(x);
@@ -782,14 +821,11 @@ abstract class AbstractOption<T> implements IOption<T> {
    *
    * ### Example
    * ```ts
-   * const x = some(Promise.resolve(2));
-   * const y = none<Promise<number>>();
-   * const z: Option<Promise<number>> = some(Promise.resolve(2));
-   * const u: PendingOption<number> = z.transposeAwaitable();
+   * const x: Option<Promise<Promise<string | number>>> = getOption();
+   * const y: PendingOption<string | number> = x.transposeAwaitable();
    *
-   * expect(x.transposeAwaitable()).toBeInstanceOf(PendingOption);
-   * expect(await x.transposeAwaitable()).toStrictEqual(some(2));
-   * expect(await y.transposeAwaitable()).toStrictEqual(none());
+   * const a: Option<Promise<PendingOption<number>>> = getOption();
+   * const b: PendingOption<Option<number>> = a.transposeAwaitable();
    * ```
    */
   transposeAwaitable(this: Option<Awaitable<T>>): PendingOption<Awaited<T>> {

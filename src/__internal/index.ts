@@ -1,3 +1,3 @@
-export { isResult, isOption, isPromise } from "./utils";
+export { isResult, isOption, isPromise, noop } from "./utils";
 export { isEqual } from "./isEqual";
 export { stringify } from "./stringify";
