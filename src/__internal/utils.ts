@@ -1,5 +1,6 @@
 import { Option, Some, None, PendingOption } from "../option";
 import { Err, Ok, Result } from "../result";
+import { MaybePromise } from "../types";
 
 /**
  * Checks if a value is an {@link Option}, narrowing its type to {@link Option<unknown>}.
@@ -102,6 +103,32 @@ export function isResult(x: unknown): x is Result<unknown> {
 export function isPromise(x: unknown): x is Promise<unknown> {
   return x instanceof Promise;
 }
+
+/**
+ * Converts a {@link MaybePromise} value into a {@link Promise}.
+ *
+ * This utility function normalizes its input by returning the input directly if it is
+ * already a {@link Promise}, or wrapping it in a resolved {@link Promise} if it is not.
+ * It ensures that the result is always a {@link Promise<T>}, regardless of whether the
+ * input is synchronous or asynchronous.
+ *
+ * ### Example
+ * ```ts
+ * const syncValue = 42;
+ * const asyncValue = Promise.resolve("hello");
+ *
+ * const syncPromise = promisify(syncValue);
+ * const asyncPromise = promisify(asyncValue);
+ *
+ * expect(syncPromise).toBeInstanceOf(Promise);
+ * expect(await syncPromise).toBe(42);
+ *
+ * expect(asyncPromise).toBe(asyncValue); // Same Promise instance
+ * expect(await asyncPromise).toBe("hello");
+ * ```
+ */
+export const promisify = <T>(x: MaybePromise<T>): Promise<T> =>
+  isPromise(x) ? x : Promise.resolve(x);
 
 /**
  * A no-operation function that performs no action and returns nothing.

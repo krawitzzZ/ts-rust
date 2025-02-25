@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { IsResult, OkValue, Result, Ok, Err } from "../result";
-import { isPromise } from "../__internal";
+import { IsResult, OkValue, Result, Ok, Err, err, ok } from "../result";
+import { isOption, isPromise, promisify } from "../__internal";
 import { Awaitable, MaybePromise } from "../types";
 import { FlattenedPendingOption } from "./types";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -28,7 +28,7 @@ type IPendingOption<T> = {
   toString(): string;
   transposeResult<E>(
     this: PendingOption<IsResult<T, E>>,
-  ): Promise<Result<PendingOption<OkValue<T, E>>, E>>;
+  ): Promise<Result<Option<OkValue<T, E>>, E>>;
   transposeAwaitable(
     this: PendingOption<Awaitable<T>>,
   ): PendingOption<Awaited<T>>;
@@ -49,10 +49,14 @@ export class PendingOption<T>
 
   protected readonly type: PendingOptionT = _pendingOption_;
 
-  constructor(promise: Promise<Option<T>>) {
-    this.#promise = promise;
+  constructor(promise: Option<T> | Promise<Option<T>>) {
+    this.#promise = promisify(promise)
+      .then((v) => (isOption(v) ? v : none<T>()))
+      .catch(() => none<T>());
   }
 
+  // Implements the PromiseLike interface, allowing PendingOption to be used
+  // with `await` and `then`.
   then<R1 = Option<T>, R2 = never>(
     onfulfilled?: (value: Option<T>) => R1 | PromiseLike<R1>,
     onrejected?: (reason: unknown) => R2 | PromiseLike<R2>,
@@ -62,10 +66,11 @@ export class PendingOption<T>
 
   /**
    * Returns a {@link PendingOption} with {@link None} if this option resolves to
-   * {@link None}, otherwise returns a {@link PendingOption} with `x`. Accepts both
-   * synchronous and asynchronous `x`.
+   * {@link None}, otherwise returns a {@link PendingOption} with `x`.
    *
-   * Similar to the {@link Option.and} method on {@link Option}.
+   * Accepts both synchronous and asynchronous `x`.
+   *
+   * Similar to the {@link Option.and}.
    *
    * ### Example
    * ```ts
@@ -81,15 +86,24 @@ export class PendingOption<T>
    * ```
    */
   and<U>(x: MaybePromise<Option<U>>): PendingOption<U> {
-    throw new Error("Method not implemented.");
+    return pendingOption(
+      this.#promise.then(async (option) => {
+        if (option.isNone()) {
+          return none<U>();
+        }
+
+        return x;
+      }),
+    );
   }
 
   /**
-   * Applies `f` to the resolved value if this option is {@link Some}, returning a
-   * {@link PendingOption} with the result; otherwise, returns a {@link PendingOption}
-   * with {@link None}. The function `f` may return synchronously or asynchronously.
+   * Returns a {@link PendingOption} with {@link None} if this {@link Option} resolves
+   * to {@link None}, otherwise applies `f` to the resolved value and returns the result.
    *
-   * Similar to {@link Option.andThen} on {@link Option}.
+   * The function `f` may return synchronously or asynchronously.
+   *
+   * Similar to {@link Option.andThen}.
    *
    * ### Example
    * ```ts
@@ -103,11 +117,19 @@ export class PendingOption<T>
    * ```
    */
   andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingOption<U> {
-    throw new Error("Method not implemented.");
+    return pendingOption(
+      this.#promise.then(async (option) => {
+        if (option.isNone()) {
+          return none<U>();
+        }
+
+        return f(option.get());
+      }),
+    );
   }
 
   /**
-   * Creates a shallow copy of this {@link PendingOption}, preserving its pending state.
+   * Creates a shallow copy of this {@link PendingOption}.
    *
    * Similar to {@link Option.clone}.
    *
@@ -126,9 +148,11 @@ export class PendingOption<T>
   }
 
   /**
-   * Filters the resolved value with `f`, returning a {@link PendingOption} with the
-   * original value if `f` resolves to `true`, or {@link None} otherwise. The predicate
-   * `f` may return synchronously or asynchronously.
+   * Returns {@link PendingOption} with {@link None} if this option resolves to {@link None},
+   * otherwise calls `f` with the resolved value and returns a {@link PendingOption} with
+   * the original value if `f` resolves to `true`, or {@link None} otherwise.
+   *
+   * The predicate `f` may return synchronously or asynchronously.
    *
    * Similar to {@link Option.filter}.
    *
@@ -143,7 +167,15 @@ export class PendingOption<T>
    * ```
    */
   filter(f: (x: T) => MaybePromise<boolean>): PendingOption<T> {
-    throw new Error("Method not implemented.");
+    return pendingOption(
+      this.#promise.then(async (option) => {
+        if (option.isNone()) {
+          return none<T>();
+        }
+
+        return (await f(option.get())) ? option.clone() : none<T>();
+      }),
+    );
   }
 
   /**
@@ -165,6 +197,7 @@ export class PendingOption<T>
    * ```
    */
   flatten(): FlattenedPendingOption<T> {
+    // TODO(nikita.demin): Implement
     throw new Error("Method not implemented.");
   }
 
@@ -202,8 +235,9 @@ export class PendingOption<T>
 
   /**
    * Maps the resolved value with `f`, returning a {@link PendingOption} with the result
-   * if this option is {@link Some}, or {@link None} otherwise. The function `f` may
-   * return synchronously or asynchronously.
+   * if this option is {@link Some}, or {@link None} otherwise.
+   *
+   * The function `f` may return synchronously or asynchronously.
    *
    * Similar to {@link Option.map}.
    *
@@ -218,7 +252,15 @@ export class PendingOption<T>
    * ```
    */
   map<U>(f: (x: T) => MaybePromise<U>): PendingOption<U> {
-    throw new Error("Method not implemented.");
+    return pendingOption(
+      this.#promise.then(async (option) => {
+        if (option.isNone()) {
+          return none<U>();
+        }
+
+        return some(await f(option.get()));
+      }),
+    );
   }
 
   /**
@@ -256,12 +298,13 @@ export class PendingOption<T>
    * ```
    */
   okOr<E>(y: E): Promise<Result<T, E>> {
-    throw new Error("Method not implemented.");
+    return this.#promise.then((option) => option.okOr(y));
   }
 
   /**
    * Converts to a {@link Promise} of a {@link Result}, using the result of `mkErr` as
    * the error value if this {@link PendingOption} resolves to {@link None}.
+   *
    * `mkErr` may return synchronously or asynchronously.
    *
    * Similar to {@link Option.okOrElse}, check it for more details.
@@ -276,13 +319,20 @@ export class PendingOption<T>
    * ```
    */
   okOrElse<E>(mkErr: () => MaybePromise<E>): Promise<Result<T, E>> {
-    throw new Error("Method not implemented.");
+    return this.#promise.then(async (option) => {
+      if (option.isNone()) {
+        return err(await mkErr());
+      }
+
+      return ok(option.get());
+    });
   }
 
   /**
    * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
-   * returns a {@link PendingOption} with `x`. Accepts both synchronous and
-   * asynchronous `x`.
+   * returns a {@link PendingOption} with `x`.
+   *
+   * Accepts both synchronous and asynchronous `x`.
    *
    * Similar to {@link Option.or}.
    *
@@ -298,13 +348,16 @@ export class PendingOption<T>
    * ```
    */
   or(x: MaybePromise<Option<T>>): PendingOption<T> {
-    throw new Error("Method not implemented.");
+    return pendingOption(
+      this.#promise.then((option) => (option.isSome() ? option : x)),
+    );
   }
 
   /**
    * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
-   * returns a {@link PendingOption} with the result of `f`. The function `f` may
-   * return synchronously or asynchronously.
+   * returns a {@link PendingOption} with the result of `f`.
+   *
+   * The function `f` may return synchronously or asynchronously.
    *
    * Similar to {@link Option.orElse}.
    *
@@ -319,12 +372,16 @@ export class PendingOption<T>
    * ```
    */
   orElse(f: () => MaybePromise<Option<T>>): PendingOption<T> {
-    throw new Error("Method not implemented.");
+    return pendingOption(
+      this.#promise.then((option) => (option.isSome() ? option : f())),
+    );
   }
 
   /**
    * Replaces the underlying {@link Option} with `x`, returning a {@link PendingOption}
-   * with the original {@link Option}. Accepts both synchronous and asynchronous `x`.
+   * with the original {@link Option}.
+   *
+   * Accepts both synchronous and asynchronous `x`.
    *
    * Similar to {@link Option.replace}.
    *
@@ -377,14 +434,18 @@ export class PendingOption<T>
    * ```
    */
   take(): PendingOption<T> {
-    throw new Error("Method not implemented.");
+    const oldOption = this.clone();
+    this.#promise = Promise.resolve(none<T>());
+    return oldOption;
   }
 
   /**
-   * Takes the resolved value __only__ if this option is {@link Some} and `f`
+   * Takes the resolved value _only_ if this option is {@link Some} and `f`
    * resolves to `true`, leaving it as {@link PendingOption} with {@link None}.
    * If this option is {@link None} or `f` resolves to `false`, this {@link PendingOption}
-   * remains unchanged. The predicate `f` may return synchronously or asynchronously.
+   * remains unchanged.
+   *
+   * The predicate `f` may return synchronously or asynchronously.
    *
    * Similar to {@link Option.takeIf}.
    *
@@ -411,7 +472,15 @@ export class PendingOption<T>
    * ```
    */
   takeIf(f: (x: T) => MaybePromise<boolean>): PendingOption<T> {
-    throw new Error("Method not implemented.");
+    return pendingOption(
+      this.#promise.then(async (option) => {
+        if (option.isNone()) {
+          return none<T>();
+        }
+
+        return (await f(option.get())) ? this.take() : none<T>();
+      }),
+    );
   }
 
   /**
@@ -453,7 +522,8 @@ export class PendingOption<T>
    */
   transposeResult<E>(
     this: PendingOption<IsResult<T, E>>,
-  ): Promise<Result<PendingOption<OkValue<T, E>>, E>> {
+  ): Promise<Result<Option<OkValue<T, E>>, E>> {
+    // TODO(nikita.demin): implement
     throw new Error("Method not implemented.");
   }
 
@@ -477,7 +547,6 @@ export class PendingOption<T>
   ): PendingOption<Awaited<T>> {
     return pendingOption(
       this.#promise.then(async (option) => {
-        await Promise.resolve();
         if (option.isNone()) {
           return none<Awaited<T>>();
         }
@@ -491,7 +560,9 @@ export class PendingOption<T>
   /**
    * Returns a {@link PendingOption} with {@link Some} if exactly one of this option or
    * `y` resolves to {@link Some}, otherwise returns a {@link PendingOption} with
-   * {@link None}. Accepts both synchronous and asynchronous `y`.
+   * {@link None}.
+   *
+   * Accepts both synchronous and asynchronous `y`.
    *
    * Similar to {@link Option.xor}.
    *
@@ -507,17 +578,23 @@ export class PendingOption<T>
    * ```
    */
   xor(y: MaybePromise<Option<T>>): PendingOption<T> {
-    throw new Error("Method not implemented.");
+    return pendingOption(
+      this.#promise.then(async (option) => option.xor(await y)),
+    );
   }
 }
 
+/* eslint-disable @typescript-eslint/unified-signatures */
+export function pendingOption<T>(option: Option<T>): PendingOption<T>;
+export function pendingOption<T>(option: PendingOption<T>): PendingOption<T>;
+export function pendingOption<T>(option: Promise<Option<T>>): PendingOption<T>;
+/* eslint-enable @typescript-eslint/unified-signatures */
 export function pendingOption<T>(
-  option: Option<T> | Promise<Option<T>> | PendingOption<T>,
+  option: Option<T> | PendingOption<T> | Promise<Option<T>>,
 ): PendingOption<T> {
   if (option instanceof PendingOption) {
     return option.clone();
   }
 
-  const promise = isPromise(option) ? option : Promise.resolve(option);
-  return new PendingOption(promise.catch(() => none()));
+  return new PendingOption(option);
 }
