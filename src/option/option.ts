@@ -11,7 +11,6 @@ import {
 } from "../result";
 import { Awaitable, MaybePromise } from "../types";
 import {
-  FlattenedOption,
   MaybePendingOption,
   Option,
   OptionError,
@@ -36,7 +35,7 @@ type IOption<T> = {
   clone(): Option<T>;
   expect(msg?: string): T;
   filter(f: (x: T) => boolean): Option<T>;
-  flatten(): FlattenedOption<T>;
+  flatten<U>(this: IOption<IOption<U>>): Option<U>;
   getOrInsert(x: T): T;
   getOrInsertWith(f: () => T): T;
   insert(x: T): T;
@@ -250,16 +249,16 @@ abstract class AbstractOption<T> implements IOption<T> {
    * expect(z.flatten()).toStrictEqual(none());
    * ```
    */
-  flatten(): FlattenedOption<T> {
+  flatten<U>(this: Option<Option<U>>): Option<U> {
     if (this.isNone()) {
-      return none() as FlattenedOption<T>;
+      return none();
     }
 
     if (isOption(this.value)) {
-      return this.value.clone() as FlattenedOption<T>;
+      return this.value.clone();
     }
 
-    return some(this.value) as FlattenedOption<T>;
+    return some(this.value);
   }
 
   /**

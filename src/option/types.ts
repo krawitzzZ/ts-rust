@@ -2,9 +2,6 @@ import { Some, None, PendingOption } from "./index";
 
 export type Option<T> = Some<T> | None<T>;
 
-export type FlattenedOption<T> =
-  T extends Option<infer R> ? Option<R> : Option<T>;
-
 export type FlattenedPendingOption<T> =
   T extends Option<infer R>
     ? PendingOption<Awaited<R>>
