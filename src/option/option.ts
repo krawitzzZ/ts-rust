@@ -387,7 +387,7 @@ abstract class AbstractOption<T> implements IOption<T> {
    * ```
    */
   isNone(): this is None<T> {
-    return !this.isSome();
+    return this.#getValue() === _nothing_;
   }
 
   /**
@@ -420,11 +420,7 @@ abstract class AbstractOption<T> implements IOption<T> {
    * ```
    */
   isSome(): this is Some<T> {
-    try {
-      return !isNothing(this.value);
-    } catch {
-      return false;
-    }
+    return !this.isNone();
   }
 
   /**
@@ -478,7 +474,7 @@ abstract class AbstractOption<T> implements IOption<T> {
    * ```
    */
   mapOr<U>(def: U, f: (x: T) => U): U {
-    if (!this.isSome()) {
+    if (this.isNone()) {
       return def;
     }
 
@@ -498,7 +494,7 @@ abstract class AbstractOption<T> implements IOption<T> {
    * ```
    */
   mapOrElse<U>(mkDef: () => U, f: (x: T) => U): U {
-    if (!this.isSome()) {
+    if (this.isNone()) {
       return mkDef();
     }
 
@@ -558,7 +554,7 @@ abstract class AbstractOption<T> implements IOption<T> {
   }
 
   /**
-   * Returns the current option if {@link Some}, otherwise returns `x`.
+   * Returns the current option if it is {@link Some}, otherwise returns `x`.
    *
    * ### Example
    * ```ts
@@ -573,7 +569,8 @@ abstract class AbstractOption<T> implements IOption<T> {
    */
   or(x: Option<T>): Option<T>;
   /**
-   * Returns a {@link PendingOption} with the current value if {@link Some}, otherwise with `x`.
+   * Returns a {@link PendingOption} with the current value if this option is
+   * {@link Some}, otherwise with `x`.
    *
    * ### Example
    * ```ts
@@ -680,12 +677,11 @@ abstract class AbstractOption<T> implements IOption<T> {
   replace(x: Promise<T>): readonly [Option<T>, Promise<void>];
   replace(x: MaybePromise<T>): Option<T> | readonly [Option<T>, Promise<void>] {
     if (isPromise(x)) {
-      const currentValue = this.isNone() ? none<T>() : some(this.value);
       const promise = x.then((val) => {
         this.#setValue(val);
       }, noop);
 
-      return [currentValue, promise];
+      return [this.clone(), promise];
     }
 
     const value = this.#replaceValue(x);
@@ -779,7 +775,7 @@ abstract class AbstractOption<T> implements IOption<T> {
    * ```
    */
   toString(): string {
-    return this.isNone() ? "None" : `Some { ${stringify(this.#value)} }`;
+    return this.isNone() ? "None" : `Some { ${stringify(this.#getValue())} }`;
   }
 
   /**
@@ -830,9 +826,7 @@ abstract class AbstractOption<T> implements IOption<T> {
       return pendingOption(none());
     }
 
-    return pendingOption(
-      Promise.resolve().then(async () => some(await this.value)),
-    );
+    return pendingOption(Promise.resolve(this.value).then(some));
   }
 
   /**
