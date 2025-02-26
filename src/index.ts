@@ -1,7 +1,9 @@
 export { Result, Ok, Err, ok, err } from "./result";
 export {
+  IPendingOption,
   PendingOption,
   pendingOption,
+  IOption,
   Option,
   Some,
   None,

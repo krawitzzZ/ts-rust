@@ -61,14 +61,14 @@ export function isPendingOption(x: unknown): x is PendingOption<unknown> {
 }
 
 /**
- * Internal interface defining the asynchronous implementation of an {@link Option}.
+ * Interface defining the asynchronous implementation of an {@link Option}.
  *
  * Extends the synchronous {@link Option} functionality to handle pending states,
  * wrapping a {@link Promise} that resolves to an {@link Option}. Methods mirror
  * those of {@link Option}, adapted to return either a {@link PendingOption} or a
  * {@link Promise} for asynchronous operations.
  */
-type IPendingOption<T> = {
+export type IPendingOption<T> = {
   and<U>(x: MaybePromise<Option<U>>): PendingOption<U>;
   andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingOption<U>;
   clone(): PendingOption<T>;

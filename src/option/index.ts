@@ -1,4 +1,5 @@
 export { MaybePendingOption, FlattenedPendingOption } from "./types";
+export { IOption } from "./interface";
 export {
   Option,
   Some,
@@ -8,4 +9,9 @@ export {
   none,
   isOption,
 } from "./option";
-export { PendingOption, pendingOption, isPendingOption } from "./pendingOption";
+export {
+  IPendingOption,
+  PendingOption,
+  pendingOption,
+  isPendingOption,
+} from "./pendingOption";
