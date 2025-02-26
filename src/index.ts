@@ -1,4 +1,14 @@
-export { Result, Ok, Err, ok, err } from "./result";
+export {
+  PendingResult,
+  IResult,
+  Result,
+  Ok,
+  Err,
+  ok,
+  err,
+  isResult,
+  ResultError,
+} from "./result";
 export {
   IPendingOption,
   PendingOption,
@@ -13,4 +23,4 @@ export {
   isPendingOption,
   OptionError,
 } from "./option";
-export { AnyError } from "./error";
+export { AnyError, mkAnyError } from "./error";

@@ -1,30 +1,4 @@
-import { Err, Ok, Result } from "../result";
 import { MaybePromise } from "../types";
-
-/**
- * Checks if a value is a {@link Result}, narrowing its type to {@link Result<unknown>}.
- *
- * This type guard determines whether the input is an instance of either {@link Ok}
- * or {@link Err}, indicating it conforms to the {@link Result} interface.
- *
- * ### Example
- * ```ts
- * const x = ok(42);
- * const y = err("error");
- * const z = { value: 42 };
- *
- * expect(isResult(x)).toBe(true);
- * expect(isResult(y)).toBe(true);
- * expect(isResult(z)).toBe(false);
- *
- * if (isResult(x)) {
- *   expect(x.isOk()).toBe(true); // Type narrowed to Result<unknown>
- * }
- * ```
- */
-export function isResult(x: unknown): x is Result<unknown> {
-  return x instanceof Ok || x instanceof Err;
-}
 
 /**
  * Checks if a value is a {@link Promise}, narrowing its type to {@link Promise<unknown>}.

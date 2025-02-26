@@ -1,6 +1,7 @@
-import { isResult, isPromise, stringify, noop } from "../__internal";
-import { AnyError } from "../error";
-import { err, ok, Result } from "../result";
+import { isPromise, stringify, noop } from "../__internal";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { AnyError, mkAnyError } from "../error";
+import { err, isResult, ok, Result } from "../result";
 import { MaybePromise } from "../types";
 import {
   IOption,
@@ -104,12 +105,10 @@ export enum OptionError {
  */
 type Nothing = typeof nothing;
 
-const phantom: unique symbol = Symbol("Phantom");
+const phantom: unique symbol = Symbol("OptionPhantom");
 const nothing: unique symbol = Symbol("Nothing");
 const isNothing = (x: unknown): x is Nothing => x === nothing;
 const isSomething = <T>(x: T | Nothing): x is T => !isNothing(x);
-const mkAnyError = (msg: string, reason: OptionError, e: unknown) =>
-  new AnyError(msg, reason, e instanceof Error ? e : new Error(stringify(e)));
 
 /**
  * Internal implementation class for {@link Option}.
@@ -187,7 +186,7 @@ class _Option<T> implements IOption<T> {
    */
   get value(): T {
     if (isNothing(this.#value)) {
-      throw new AnyError(
+      throw mkAnyError(
         "`value` is accessed on `None`",
         OptionError.NoneValueAccessed,
       );
@@ -238,7 +237,7 @@ class _Option<T> implements IOption<T> {
       return this.#value;
     }
 
-    throw new AnyError(
+    throw mkAnyError(
       msg ?? "`expect` is called on `None`",
       OptionError.NoneExpected,
     );
@@ -474,7 +473,7 @@ class _Option<T> implements IOption<T> {
   }
 
   toString(): string {
-    return this.isNone() ? "None" : `Some { ${stringify(this.#value)} }`;
+    return this.isNone() ? "None" : `Some { ${stringify(this.#value, true)} }`;
   }
 
   transposeResult<V, E>(this: _Option<Result<V, E>>): Result<Option<V>, E> {
@@ -502,10 +501,7 @@ class _Option<T> implements IOption<T> {
       return this.#value;
     }
 
-    throw new AnyError(
-      "`unwrap` is called on `None`",
-      OptionError.NoneUnwrapped,
-    );
+    throw mkAnyError("`unwrap` is called on `None`", OptionError.NoneUnwrapped);
   }
 
   unwrapOr(def: T): T {

@@ -1,3 +1,3 @@
-export { Ok, ok } from "./ok";
-export { Err, err } from "./err";
-export { Result, PendingResult, OkValue, ErrValue } from "./types";
+export { PendingResult, OkValue, ErrValue } from "./types";
+export { IResult } from "./interface";
+export { Result, Ok, Err, ResultError, ok, err, isResult } from "./result";

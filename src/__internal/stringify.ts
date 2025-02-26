@@ -1,8 +1,12 @@
 import { isOption, isPendingOption } from "../option";
-import { isResult } from "./utils";
+import { isResult } from "../result";
 
-export function stringify(value: unknown): string {
+export function stringify(value: unknown, quoteString = false): string {
   if (isOption(value)) {
+    return value.toString();
+  }
+
+  if (isResult(value)) {
     return value.toString();
   }
 
@@ -27,7 +31,7 @@ export function stringify(value: unknown): string {
   }
 
   if (typeof value === "string") {
-    return value;
+    return quoteString ? `'${value}'` : value;
   }
 
   if (typeof value === "number" || typeof value === "boolean") {

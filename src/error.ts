@@ -1,5 +1,17 @@
 import { stringify } from "./__internal";
 
+export const mkAnyError = <R>(
+  msg: string,
+  reason: R,
+  e?: unknown,
+): AnyError<R> => {
+  const args: [string, R, Error | undefined] = e
+    ? [msg, reason, undefined]
+    : [msg, reason, e instanceof Error ? e : new Error(stringify(e))];
+
+  return new AnyError(...args);
+};
+
 export class AnyError<T, E extends Error = Error> extends Error {
   readonly reason: T;
 

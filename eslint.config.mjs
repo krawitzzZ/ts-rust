@@ -58,6 +58,7 @@ export default [
     name: "Typed rules",
     ignores: ["**/*.js", "**/*spec.ts"],
     rules: {
+      "@typescript-eslint/no-invalid-void-type": "off",
       "@typescript-eslint/restrict-template-expressions": [
         "error",
         { allowBoolean: true, allowNumber: true },

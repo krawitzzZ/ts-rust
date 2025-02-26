@@ -1,7 +1,4 @@
-import { Err } from "./err";
-import { Ok } from "./ok";
-
-export type Result<T, E = unknown> = Ok<T, E> | Err<T, E>;
+import { Result } from "./index";
 
 // TODO(nikita.demin): implement
 export type PendingResult<T, E> = Result<T, E>;

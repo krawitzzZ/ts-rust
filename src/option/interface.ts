@@ -595,7 +595,7 @@ export interface IOption<T> {
    */
   toPendingOption(): PendingOption<T>;
   /**
-   * Returns a string representation of the option.
+   * Returns a string representation of the {@link Option}.
    *
    * ### Example
    * ```ts
