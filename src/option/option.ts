@@ -96,6 +96,7 @@ export enum OptionError {
   NoneValueAccessed = "NoneValueAccessed",
   NoneExpected = "NoneExpected",
   NoneUnwrapped = "NoneUnwrapped",
+  PredicateException = "PredicateException",
 }
 
 /**
@@ -161,6 +162,7 @@ type IOption<T> = {
    * Applies `f` to the contained value if {@link Some}, returning its result; otherwise,
    * returns {@link None}. Also known as flatMap.
    *
+   * ### Note
    * If `f` throws, {@link None} is returned.
    *
    * ### Example
@@ -226,6 +228,7 @@ type IOption<T> = {
   /**
    * Returns the option if {@link Some} and `f` returns `true`, otherwise returns {@link None}.
    *
+   * ### Note
    * If `f` throws, {@link None} is returned.
    *
    * ### Example
@@ -287,7 +290,7 @@ type IOption<T> = {
    * {@link AnyError.originalError}.
    *
    * ### Note
-   * This method mutates the option.
+   * This method mutates the option. If `f` throws, the option **remains unchanged**.
    *
    * ### Example
    * ```ts
@@ -363,6 +366,7 @@ type IOption<T> = {
   /**
    * Returns `true` if the option is {@link None} or if `f` returns `true` for the contained value.
    *
+   * ### Note
    * If `f` throws, `false` is returned.
    *
    * ### Example
@@ -393,6 +397,7 @@ type IOption<T> = {
   /**
    * Returns `true` if the option is {@link Some} and `f` returns `true` for the contained value.
    *
+   * ### Note
    * If `f` throws, `false` is returned.
    *
    * ### Example
@@ -411,6 +416,7 @@ type IOption<T> = {
    * Maps the contained value with `f` if {@link Some}, returning a new {@link Option}; otherwise,
    * returns {@link None}.
    *
+   * ### Note
    * If `f` throws, {@link None} is returned.
    *
    * ### Example
@@ -427,6 +433,7 @@ type IOption<T> = {
   /**
    * Returns `f` applied to the contained value if {@link Some}, otherwise returns `def`.
    *
+   * ### Note
    * If `f` throws, the error is silently ignored and `def` is returned.
    *
    * ### Example
@@ -441,13 +448,15 @@ type IOption<T> = {
    */
   mapOr<U>(def: U, f: (x: T) => U): U;
   /**
-   * Returns `f` applied to the contained value if {@link Some}, otherwise returns the result of `mkDef`.
-   *
-   * If `f` throws, the error is silently ignored and result of `mkDef` is returned.
+   * Returns `f` applied to the contained value if {@link Some}, otherwise
+   * returns the result of `mkDef`.
    *
    * ## Throws
-   * If `mkDef` throws, rethrows {@link AnyError} with original error being set
-   * as {@link AnyError.originalError}.
+   * If `mkDef` is called and throws, rethrows {@link AnyError} with original error
+   * being set as {@link AnyError.originalError}.
+   *
+   * ### Note
+   * If `f` throws, the error is silently ignored and result of `mkDef` is returned.
    *
    * ### Example
    * ```ts
@@ -545,6 +554,7 @@ type IOption<T> = {
   /**
    * Returns the current option if {@link Some}, otherwise returns the result of `f`.
    *
+   * ### Note
    * If `f` throws, {@link None} is returned.
    *
    * ### Example
@@ -825,13 +835,14 @@ type Nothing = typeof nothing;
 const phantom: unique symbol = Symbol("Phantom");
 const nothing: unique symbol = Symbol("Nothing");
 const isNothing = (x: unknown): x is Nothing => x === nothing;
+const mkAnyError = (msg: string, reason: OptionError, e: unknown) =>
+  new AnyError(msg, reason, e instanceof Error ? e : new Error(stringify(e)));
 
 /**
  * Internal implementation class for {@link Option}.
  *
  * Represents a value that may or may not be present.
  */
-// TODO(nikita.demin): implement try/catch logic to rethrow AnyError if needed
 class _Option<T> implements IOption<T> {
   /**
    * A private symbol-keyed property used as a type discriminant.
@@ -895,8 +906,12 @@ class _Option<T> implements IOption<T> {
       return none();
     }
 
-    const option = f(this.value);
-    return isPromise(option) ? pendingOption(option) : option;
+    try {
+      const option = f(this.value);
+      return isPromise(option) ? pendingOption(option) : option;
+    } catch {
+      return none();
+    }
   }
 
   clone(): Option<T> {
@@ -919,7 +934,11 @@ class _Option<T> implements IOption<T> {
       return none();
     }
 
-    return f(this.value) ? some(this.value) : none();
+    try {
+      return f(this.value) ? some(this.value) : none();
+    } catch {
+      return none();
+    }
   }
 
   flatten<U>(this: _Option<Option<U>>): Option<U> {
@@ -944,7 +963,15 @@ class _Option<T> implements IOption<T> {
 
   getOrInsertWith(f: () => T): T {
     if (this.isNone()) {
-      this.#setValue(f());
+      try {
+        this.#setValue(f());
+      } catch (e) {
+        throw mkAnyError(
+          "getOrInsertWith callback threw an exception",
+          OptionError.PredicateException,
+          e,
+        );
+      }
     }
 
     return this.value;
@@ -973,7 +1000,15 @@ class _Option<T> implements IOption<T> {
   }
 
   isNoneOr(f: (x: T) => boolean): boolean {
-    return this.isNone() || f(this.value);
+    if (this.isNone()) {
+      return true;
+    }
+
+    try {
+      return f(this.value);
+    } catch {
+      return false;
+    }
   }
 
   isSome(): this is Some<T> {
@@ -981,7 +1016,15 @@ class _Option<T> implements IOption<T> {
   }
 
   isSomeAnd(f: (x: T) => boolean): this is Some<T> & boolean {
-    return this.isSome() && f(this.value);
+    if (this.isSome()) {
+      return true;
+    }
+
+    try {
+      return f(this.value);
+    } catch {
+      return false;
+    }
   }
 
   map<U>(f: (x: T) => U): Option<U> {
@@ -989,7 +1032,11 @@ class _Option<T> implements IOption<T> {
       return none();
     }
 
-    return some(f(this.value));
+    try {
+      return some(f(this.value));
+    } catch {
+      return none();
+    }
   }
 
   mapOr<U>(def: U, f: (x: T) => U): U {
@@ -997,19 +1044,55 @@ class _Option<T> implements IOption<T> {
       return def;
     }
 
-    return f(this.value);
+    try {
+      return f(this.value);
+    } catch {
+      return def;
+    }
   }
 
   mapOrElse<U>(mkDef: () => U, f: (x: T) => U): U {
+    const makeDefault = () => {
+      try {
+        return mkDef();
+      } catch (e) {
+        throw mkAnyError(
+          "mapOrElse `mkDef` callback threw an exception",
+          OptionError.PredicateException,
+          e,
+        );
+      }
+    };
+
     if (this.isNone()) {
-      return mkDef();
+      return makeDefault();
     }
 
-    return f(this.value);
+    try {
+      return f(this.value);
+    } catch (e) {
+      if (e instanceof AnyError) {
+        throw e; // if value getter threw => rethrow
+      }
+
+      return makeDefault();
+    }
   }
 
   match<U, F = U>(f: (x: T) => U, g: () => F): U | F {
-    return this.isSome() ? f(this.value) : g();
+    try {
+      return this.isSome() ? f(this.value) : g();
+    } catch (e) {
+      if (e instanceof AnyError) {
+        throw e; // if value getter threw => rethrow
+      }
+
+      throw mkAnyError(
+        "one of match predicates threw an exception",
+        OptionError.PredicateException,
+        e,
+      );
+    }
   }
 
   okOr<E>(y: E): Result<T, E> {
@@ -1031,7 +1114,11 @@ class _Option<T> implements IOption<T> {
   }
 
   orElse(f: () => Option<T>): Option<T> {
-    return this.isSome() ? some(this.value) : f();
+    try {
+      return this.isSome() ? some(this.value) : f();
+    } catch {
+      return none();
+    }
   }
 
   replace(x: T): Option<T>;
@@ -1064,12 +1151,16 @@ class _Option<T> implements IOption<T> {
       return none();
     }
 
-    if (f(this.value)) {
-      const value = this.#takeValue();
-      return isNothing(value) ? none() : some(value);
-    }
+    try {
+      if (f(this.value)) {
+        const value = this.#takeValue();
+        return isNothing(value) ? none() : some(value);
+      }
 
-    return none();
+      return none();
+    } catch {
+      return none();
+    }
   }
 
   toPendingOption(): PendingOption<T> {
@@ -1116,7 +1207,19 @@ class _Option<T> implements IOption<T> {
   }
 
   unwrapOrElse(mkDef: () => T): T {
-    return this.isSome() ? this.value : mkDef();
+    try {
+      return this.isSome() ? this.value : mkDef();
+    } catch (e) {
+      if (e instanceof AnyError) {
+        throw e; // if value getter threw => rethrow
+      }
+
+      throw mkAnyError(
+        "unwrapOrElse callback threw an exception",
+        OptionError.PredicateException,
+        e,
+      );
+    }
   }
 
   xor(y: Option<T>): Option<T>;
