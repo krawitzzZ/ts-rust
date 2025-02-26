@@ -1,6 +1,4 @@
-import { Some, None, PendingOption } from "./index";
-
-export type Option<T> = Some<T> | None<T>;
+import { Option, PendingOption } from "./index";
 
 export type FlattenedPendingOption<T> =
   T extends Option<infer R>
@@ -10,9 +8,3 @@ export type FlattenedPendingOption<T> =
       : PendingOption<T>;
 
 export type MaybePendingOption<T> = Option<T> | PendingOption<T>;
-
-export enum OptionError {
-  NoneValueAccess = "NoneValueAccess",
-  ExpectNone = "ExpectNone",
-  UnwrapNone = "UnwrapNone",
-}

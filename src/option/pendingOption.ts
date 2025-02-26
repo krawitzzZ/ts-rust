@@ -1,12 +1,64 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Result, Ok, Err, err, ok } from "../result";
-import { isOption, isPromise, promisify } from "../__internal";
+import { isPromise, promisify } from "../__internal";
 import { MaybePromise } from "../types";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Option, type Some, type None, some, none } from "./index";
+import { Option, type Some, type None, some, none, isOption } from "./index";
 
-const _pendingOption_: unique symbol = Symbol("PendingOption");
-type PendingOptionT = typeof _pendingOption_;
+export type { PendingOption };
+
+/* eslint-disable @typescript-eslint/unified-signatures */
+/**
+ * Creates a {@link PendingOption} from an {@link Option}.
+ */
+export function pendingOption<T>(option: Option<T>): PendingOption<T>;
+/**
+ * Creates a {@link PendingOption} by cloning an existing {@link PendingOption}.
+ */
+export function pendingOption<T>(option: PendingOption<T>): PendingOption<T>;
+/**
+ * Creates a {@link PendingOption} from a {@link PromiseLike} resolving to an {@link Option}.
+ */
+export function pendingOption<T>(
+  option: PromiseLike<Option<T>>,
+): PendingOption<T>;
+export function pendingOption<T>(
+  option: Option<T> | PendingOption<T> | PromiseLike<Option<T>>,
+): PendingOption<T> {
+  if (option instanceof PendingOption) {
+    return option.clone();
+  }
+
+  return PendingOption.create(option);
+}
+/* eslint-enable @typescript-eslint/unified-signatures */
+
+/**
+ * Checks if a value is a {@link PendingOption}, narrowing its type to
+ * `PendingOption<unknown>`.
+ *
+ * This type guard determines whether the input is an instance of the
+ * {@link PendingOption} class, indicating it is a pending option that wraps a
+ * {@link Promise} resolving to an {@link Option}.
+ *
+ * ### Example
+ * ```ts
+ * const x = pendingOption(some(42));
+ * const y = pendingOption(none<number>());
+ * const z = some(42); // Not a PendingOption
+ *
+ * expect(isPendingOption(x)).toBe(true);
+ * expect(isPendingOption(y)).toBe(true);
+ * expect(isPendingOption(z)).toBe(false);
+ *
+ * if (isPendingOption(x)) {
+ *   expect(await x).toStrictEqual(some(42)); // Type narrowed to PendingOption<unknown>
+ * }
+ * ```
+ */
+export function isPendingOption(x: unknown): x is PendingOption<unknown> {
+  return x instanceof PendingOption;
+}
 
 type IPendingOption<T> = {
   and<U>(x: MaybePromise<Option<U>>): PendingOption<U>;
@@ -46,14 +98,18 @@ type IPendingOption<T> = {
  * or to its {@link None} invariant on failure. Methods mirror those of {@link Option},
  * adapted for asynchronous resolution.
  */
-export class PendingOption<T>
-  implements IPendingOption<T>, PromiseLike<Option<T>>
-{
+// TODO(nikita.demin): test that .catch in constructor is enough for every method
+// to return none<T>() in case of errors thrown by predicate/callbacks
+class PendingOption<T> implements IPendingOption<T>, PromiseLike<Option<T>> {
+  static create<T>(
+    option: Option<T> | PendingOption<T> | PromiseLike<Option<T>>,
+  ): PendingOption<T> {
+    return new PendingOption(option);
+  }
+
   #promise: Promise<Option<T>>;
 
-  protected readonly type: PendingOptionT = _pendingOption_;
-
-  constructor(promise: Option<T> | PromiseLike<Option<T>>) {
+  private constructor(promise: Option<T> | PromiseLike<Option<T>>) {
     this.#promise = promisify(promise)
       .then((v) => (isOption(v) ? v : none<T>()))
       .catch(() => none<T>());
@@ -127,7 +183,7 @@ export class PendingOption<T>
           return none<U>();
         }
 
-        return f(option.get());
+        return f(option.value);
       }),
     );
   }
@@ -177,7 +233,7 @@ export class PendingOption<T>
           return none<T>();
         }
 
-        return (await f(option.get())) ? option.clone() : none<T>();
+        return (await f(option.value)) ? option.clone() : none<T>();
       }),
     );
   }
@@ -212,7 +268,7 @@ export class PendingOption<T>
           return none<Awaited<U>>();
         }
 
-        const inner = await option.get();
+        const inner = await option.value;
         return isOption(inner) ? inner : none<Awaited<U>>();
       }),
     );
@@ -275,7 +331,7 @@ export class PendingOption<T>
           return none<U>();
         }
 
-        return some(await f(option.get()));
+        return some(await f(option.value));
       }),
     );
   }
@@ -341,7 +397,7 @@ export class PendingOption<T>
         return err(await mkErr());
       }
 
-      return ok(option.get());
+      return ok(option.value);
     });
   }
 
@@ -402,7 +458,7 @@ export class PendingOption<T>
    *
    * Similar to {@link Option.replace}.
    *
-   * #### Note
+   * ### Note
    * This method mutates the {@link PendingOption}.
    *
    * ### Example
@@ -433,7 +489,7 @@ export class PendingOption<T>
    *
    * Similar to {@link Option.take}.
    *
-   * #### Note
+   * ### Note
    * This method mutates the {@link PendingOption}.
    *
    * ### Example
@@ -466,7 +522,7 @@ export class PendingOption<T>
    *
    * Similar to {@link Option.takeIf}.
    *
-   * #### Note
+   * ### Note
    * This method mutates the {@link PendingOption}.
    *
    * ### Example
@@ -495,7 +551,7 @@ export class PendingOption<T>
           return none<T>();
         }
 
-        return (await f(option.get())) ? this.take() : none<T>();
+        return (await f(option.value)) ? this.take() : none<T>();
       }),
     );
   }
@@ -567,8 +623,7 @@ export class PendingOption<T>
           return none<Awaited<V>>();
         }
 
-        const value = await option.get();
-        return some(value);
+        return some(await option.value);
       }),
     );
   }
@@ -598,21 +653,4 @@ export class PendingOption<T>
       this.#promise.then(async (option) => option.xor(await y)),
     );
   }
-}
-
-/* eslint-disable @typescript-eslint/unified-signatures */
-export function pendingOption<T>(option: Option<T>): PendingOption<T>;
-export function pendingOption<T>(option: PendingOption<T>): PendingOption<T>;
-export function pendingOption<T>(
-  option: PromiseLike<Option<T>>,
-): PendingOption<T>;
-/* eslint-enable @typescript-eslint/unified-signatures */
-export function pendingOption<T>(
-  option: Option<T> | PendingOption<T> | PromiseLike<Option<T>>,
-): PendingOption<T> {
-  if (option instanceof PendingOption) {
-    return option.clone();
-  }
-
-  return new PendingOption(option);
 }

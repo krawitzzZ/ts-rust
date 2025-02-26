@@ -1,20 +1,22 @@
-export class AnyError<T> extends Error {
-  #reason: T;
+import { stringify } from "./__internal";
 
-  get reason(): T {
-    return this.#reason;
-  }
+export class AnyError<T, E extends Error = Error> extends Error {
+  readonly reason: T;
 
-  constructor(message: string | undefined, reason: T) {
+  readonly originalError: E | undefined;
+
+  constructor(message: string | undefined, reason: T, originalError?: E) {
     super(message);
 
     Object.setPrototypeOf(this, AnyError.prototype);
 
-    this.#reason = reason;
     this.name = this.constructor.name;
-  }
+    this.reason = reason;
+    this.originalError = originalError;
+    this.message = `${message}. Reason: ${stringify(reason)}.`;
 
-  override toString(): string {
-    return `${super.toString()}. Reason: ${JSON.stringify(this.#reason)}`;
+    if (originalError) {
+      this.message += ` Original error: ${stringify(originalError.message)}`;
+    }
   }
 }

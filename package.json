@@ -21,7 +21,7 @@
     "format:fix": "prettier --write ./src/**/*.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf ./dist",
-    "build": "npm run clean && rollup --config",
+    "build": "npm run typecheck && npm run clean && rollup --config",
     "prepack": "npm run build",
     "changeset": "changeset",
     "release": "changeset publish",

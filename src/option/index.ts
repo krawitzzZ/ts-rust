@@ -1,8 +1,11 @@
+export { MaybePendingOption, FlattenedPendingOption } from "./types";
 export {
   Option,
+  Some,
+  None,
   OptionError,
-  MaybePendingOption,
-  FlattenedPendingOption,
-} from "./types";
-export { Some, some, None, none } from "./option";
-export { PendingOption, pendingOption } from "./pendingOption";
+  some,
+  none,
+  isOption,
+} from "./option";
+export { PendingOption, pendingOption, isPendingOption } from "./pendingOption";
