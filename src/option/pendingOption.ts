@@ -1,8 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Result, Ok, Err, err, ok } from "../result";
 import { isOption, isPromise, promisify } from "../__internal";
-import { Awaitable, MaybePromise } from "../types";
-import { FlattenedPendingOption } from "./types";
+import { MaybePromise } from "../types";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Option, type Some, type None, some, none } from "./index";
 
@@ -14,7 +13,12 @@ type IPendingOption<T> = {
   andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingOption<U>;
   clone(): PendingOption<T>;
   filter(f: (x: T) => MaybePromise<boolean>): PendingOption<T>;
-  flatten(): FlattenedPendingOption<T>;
+  flatten<U>(
+    this:
+      | PendingOption<Option<U>>
+      | PendingOption<PendingOption<U>>
+      | PendingOption<PromiseLike<Option<U>>>,
+  ): PendingOption<U>;
   inspect(f: (x: T) => unknown): PendingOption<T>;
   map<U>(f: (x: T) => MaybePromise<U>): PendingOption<U>;
   match<U, F = U>(f: (x: T) => U, g: () => F): Promise<U | F>;
@@ -26,12 +30,12 @@ type IPendingOption<T> = {
   take(): PendingOption<T>;
   takeIf(f: (x: T) => MaybePromise<boolean>): PendingOption<T>;
   toString(): string;
-  transposeResult<V, E>(
-    this: IPendingOption<Result<V, E>>,
-  ): Promise<Result<Option<V>, E>>;
-  transposeAwaitable(
-    this: PendingOption<Awaitable<T>>,
-  ): PendingOption<Awaited<T>>;
+  transposeResult<U, E>(
+    this: IPendingOption<Result<U, E>>,
+  ): Promise<Result<Option<U>, E>>;
+  transposeAwaitable<U>(
+    this: PendingOption<PromiseLike<U>>,
+  ): PendingOption<Awaited<U>>;
   xor(y: MaybePromise<Option<T>>): PendingOption<T>;
 };
 
@@ -49,7 +53,7 @@ export class PendingOption<T>
 
   protected readonly type: PendingOptionT = _pendingOption_;
 
-  constructor(promise: Option<T> | Promise<Option<T>>) {
+  constructor(promise: Option<T> | PromiseLike<Option<T>>) {
     this.#promise = promisify(promise)
       .then((v) => (isOption(v) ? v : none<T>()))
       .catch(() => none<T>());
@@ -196,9 +200,22 @@ export class PendingOption<T>
    * option3.flatten(); // PendingOption<Option<number>>
    * ```
    */
-  flatten(): FlattenedPendingOption<T> {
-    // TODO(nikita.demin): Implement
-    throw new Error("Method not implemented.");
+  flatten<U>(
+    this:
+      | PendingOption<Option<U>>
+      | PendingOption<PendingOption<U>>
+      | PendingOption<PromiseLike<Option<U>>>,
+  ): PendingOption<U> {
+    return pendingOption(
+      this.#promise.then(async (option) => {
+        if (option.isNone()) {
+          return none<Awaited<U>>();
+        }
+
+        const inner = await option.get();
+        return isOption(inner) ? inner : none<Awaited<U>>();
+      }),
+    );
   }
 
   /**
@@ -527,7 +544,7 @@ export class PendingOption<T>
   }
 
   /**
-   * Transposes a {@link PendingOption} of an {@link Awaitable} into a {@link PendingOption}
+   * Transposes a {@link PendingOption} of an {@link PromiseLike} into a {@link PendingOption}
    * with the fully awaited value.
    *
    * Similar to {@link Option.transposeAwaitable}.
@@ -541,17 +558,17 @@ export class PendingOption<T>
    * const b: PendingOption<Option<number>> = a.transposeAwaitable();
    * ```
    */
-  transposeAwaitable(
-    this: PendingOption<Awaitable<T>>,
-  ): PendingOption<Awaited<T>> {
+  transposeAwaitable<V>(
+    this: PendingOption<PromiseLike<V>>,
+  ): PendingOption<Awaited<V>> {
     return pendingOption(
       this.#promise.then(async (option) => {
         if (option.isNone()) {
-          return none<Awaited<T>>();
+          return none<Awaited<V>>();
         }
 
         const value = await option.get();
-        return some(value as Awaited<T>);
+        return some(value);
       }),
     );
   }
@@ -586,10 +603,12 @@ export class PendingOption<T>
 /* eslint-disable @typescript-eslint/unified-signatures */
 export function pendingOption<T>(option: Option<T>): PendingOption<T>;
 export function pendingOption<T>(option: PendingOption<T>): PendingOption<T>;
-export function pendingOption<T>(option: Promise<Option<T>>): PendingOption<T>;
+export function pendingOption<T>(
+  option: PromiseLike<Option<T>>,
+): PendingOption<T>;
 /* eslint-enable @typescript-eslint/unified-signatures */
 export function pendingOption<T>(
-  option: Option<T> | PendingOption<T> | Promise<Option<T>>,
+  option: Option<T> | PendingOption<T> | PromiseLike<Option<T>>,
 ): PendingOption<T> {
   if (option instanceof PendingOption) {
     return option.clone();

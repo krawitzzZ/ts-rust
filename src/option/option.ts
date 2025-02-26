@@ -9,7 +9,7 @@ import {
   type Err,
   /* eslint-enable @typescript-eslint/no-unused-vars */
 } from "../result";
-import { Awaitable, MaybePromise } from "../types";
+import { MaybePromise } from "../types";
 import {
   MaybePendingOption,
   Option,
@@ -35,7 +35,7 @@ type IOption<T> = {
   clone(): Option<T>;
   expect(msg?: string): T;
   filter(f: (x: T) => boolean): Option<T>;
-  flatten<U>(this: IOption<IOption<U>>): Option<U>;
+  flatten<U>(this: Option<Option<U>>): Option<U>;
   getOrInsert(x: T): T;
   getOrInsertWith(f: () => T): T;
   insert(x: T): T;
@@ -59,8 +59,10 @@ type IOption<T> = {
   takeIf(f: (x: T) => boolean): Option<T>;
   toPendingOption(): PendingOption<T>;
   toString(): string;
-  transposeResult<V, E>(this: IOption<Result<V, E>>): Result<Option<V>, E>;
-  transposeAwaitable(this: Option<Awaitable<T>>): PendingOption<Awaited<T>>;
+  transposeResult<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E>;
+  transposeAwaitable<U>(
+    this: Option<PromiseLike<U>>,
+  ): PendingOption<Awaited<U>>;
   unwrap(): T;
   unwrapOr(def: T): T;
   unwrapOrElse(mkDef: () => T): T;
@@ -809,7 +811,7 @@ abstract class AbstractOption<T> implements IOption<T> {
   }
 
   /**
-   * Transposes an {@link Option} of an {@link Awaitable} into a
+   * Transposes an {@link Option} of a {@link PromiseLike} into a
    * {@link PendingOption} of {@link Awaited}.
    *
    * ### Example
@@ -821,18 +823,16 @@ abstract class AbstractOption<T> implements IOption<T> {
    * const b: PendingOption<Option<number>> = a.transposeAwaitable();
    * ```
    */
-  transposeAwaitable(this: Option<Awaitable<T>>): PendingOption<Awaited<T>> {
+  transposeAwaitable<V>(
+    this: Option<PromiseLike<V>>,
+  ): PendingOption<Awaited<V>> {
     if (this.isNone()) {
       return pendingOption(none());
     }
 
-    if (isPromise(this.value)) {
-      return pendingOption(
-        this.value.then((value) => some(value as Awaited<T>)),
-      );
-    }
-
-    return pendingOption(some(this.value));
+    return pendingOption(
+      Promise.resolve().then(async () => some(await this.value)),
+    );
   }
 
   /**

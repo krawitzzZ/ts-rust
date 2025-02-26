@@ -105,11 +105,11 @@ export function isPromise(x: unknown): x is Promise<unknown> {
 }
 
 /**
- * Converts a {@link MaybePromise} value into a {@link Promise}.
+ * Converts a {@link MaybePromise} or {@link PromiseLike} value into a {@link Promise}.
  *
  * This utility function normalizes its input by returning the input directly if it is
  * already a {@link Promise}, or wrapping it in a resolved {@link Promise} if it is not.
- * It ensures that the result is always a {@link Promise<T>}, regardless of whether the
+ * It ensures that the result is always a {@link Promise}, regardless of whether the
  * input is synchronous or asynchronous.
  *
  * ### Example
@@ -127,8 +127,9 @@ export function isPromise(x: unknown): x is Promise<unknown> {
  * expect(await asyncPromise).toBe("hello");
  * ```
  */
-export const promisify = <T>(x: MaybePromise<T>): Promise<T> =>
-  isPromise(x) ? x : Promise.resolve(x);
+export const promisify = <T>(
+  x: MaybePromise<T> | PromiseLike<T>,
+): Promise<T> => (isPromise(x) ? x : Promise.resolve(x));
 
 /**
  * A no-operation function that performs no action and returns nothing.
