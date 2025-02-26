@@ -1,7 +1,15 @@
-import { isOption } from "./utils";
+import { isOption, isPendingOption, isResult } from "./utils";
 
 export function stringify(value: unknown): string {
   if (isOption(value)) {
+    return value.toString();
+  }
+
+  if (isPendingOption(value)) {
+    return value.toString();
+  }
+
+  if (isResult(value)) {
     return value.toString();
   }
 
