@@ -1,12 +1,12 @@
 import { isOption, isPendingOption } from "../option";
-import { isResult } from "../result";
+import { isSafeResult } from "../result";
 
 export function stringify(value: unknown, quoteString = false): string {
   if (isOption(value)) {
     return value.toString();
   }
 
-  if (isResult(value)) {
+  if (isSafeResult(value)) {
     return value.toString();
   }
 
@@ -14,7 +14,7 @@ export function stringify(value: unknown, quoteString = false): string {
     return value.toString();
   }
 
-  if (isResult(value)) {
+  if (isSafeResult(value)) {
     return value.toString();
   }
 

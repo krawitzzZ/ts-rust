@@ -90,7 +90,7 @@ export type IPendingOption<T> = {
   take(): PendingOption<T>;
   takeIf(f: (x: T) => MaybePromise<boolean>): PendingOption<T>;
   toString(): string;
-  transposeResult<U, E>(
+  transposeSafeResult<U, E>(
     this: IPendingOption<Result<U, E>>,
   ): Promise<Result<Option<U>, E>>;
   transposeAwaitable<U>(
@@ -588,7 +588,7 @@ class PendingOption<T> implements IPendingOption<T>, PromiseLike<Option<T>> {
    * {@link Result} containing a {@link PendingOption}. Resolves to {@link Ok}({@link None})
    * if this option is {@link None}, or propagates the error if the result is {@link Err}.
    *
-   * Similar to {@link Option.transposeResult}.
+   * Similar to {@link Option.transposeSafeResult}.
    *
    * ### Example
    * ```ts
@@ -596,15 +596,15 @@ class PendingOption<T> implements IPendingOption<T>, PromiseLike<Option<T>> {
    * const y = pendingOption(some(err("error")));
    * const z = pendingOption(none<Result<number, string>>());
    *
-   * expect(await x.transposeResult()).toStrictEqual(ok(some(2)));
-   * expect(await y.transposeResult()).toStrictEqual(err("error"));
-   * expect(await z.transposeResult()).toStrictEqual(ok(none()));
+   * expect(await x.transposeSafeResult()).toStrictEqual(ok(some(2)));
+   * expect(await y.transposeSafeResult()).toStrictEqual(err("error"));
+   * expect(await z.transposeSafeResult()).toStrictEqual(ok(none()));
    * ```
    */
-  transposeResult<V, E>(
+  transposeSafeResult<V, E>(
     this: PendingOption<Result<V, E>>,
   ): Promise<Result<Option<V>, E>> {
-    return this.#promise.then((option) => option.transposeResult());
+    return this.#promise.then((option) => option.transposeSafeResult());
   }
 
   /**

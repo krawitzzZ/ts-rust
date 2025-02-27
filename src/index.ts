@@ -6,7 +6,7 @@ export {
   Err,
   ok,
   err,
-  isResult,
+  isSafeResult,
   ResultError,
 } from "./result";
 export {

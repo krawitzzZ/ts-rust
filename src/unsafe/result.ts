@@ -1,29 +1,50 @@
 import { stringify } from "../__internal";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { AnyError, mkAnyError } from "../error";
-import { AnyResultError } from "./types";
-import { ISafeResult } from "./index";
+import { IUnsafeResult } from "./index";
 
 export type Result<T, E> = Ok<T, E> | Err<T, E>;
 
-export type Ok<T, E> = ISafeResult<T, E> & { readonly value: T };
+export type Ok<T, E> = IUnsafeResult<T, E> & { readonly value: T };
 
-export type Err<T, E> = ISafeResult<T, E> & { readonly error: E };
+export type Err<T, E> = IUnsafeResult<T, E> & { readonly error: E };
 
 export function ok<E>(value: void): Result<void, E>;
 export function ok<T, E>(value: T): Result<T, E>;
 export function ok<T, E>(value: T): Result<T, E> {
-  return SafeResult.ok(value);
+  return UnsafeResult.ok(value);
 }
 
 export function err<T>(error: void): Result<T, void>;
 export function err<T, E>(error: E): Result<T, E>;
 export function err<T, E>(error: E): Result<T, E> {
-  return SafeResult.error(error);
+  return UnsafeResult.error(error);
 }
 
-export function isSafeResult(x: unknown): x is Result<unknown, unknown> {
-  return x instanceof SafeResult;
+/**
+ * Checks if a value is a {@link Result | UnsafeResult}, narrowing its type
+ * to `Result<unknown, unknown>`.
+ *
+ * This type guard determines whether the input is either {@link Ok} or {@link Err},
+ * indicating it conforms to the {@link IUnsafeResult} interface.
+ *
+ * ### Example
+ * ```ts
+ * const x = ok<number, string>(42);
+ * const y = err<number, string>("error");
+ * const z = { value: 42 };
+ *
+ * expect(isResult(x)).toBe(true);
+ * expect(isResult(y)).toBe(true);
+ * expect(isResult(z)).toBe(false);
+ *
+ * if (isResult(x)) {
+ *   expect(x.isOk()).toBe(true); // Type narrowed to Result<unknown, unknown>
+ * }
+ * ```
+ */
+export function isUnsafeResult(x: unknown): x is Result<unknown, unknown> {
+  return x instanceof UnsafeResult;
 }
 
 /**
@@ -49,19 +70,19 @@ const isErr = <T, E>(x: ResultState<T, E>): x is { type: "error"; error: E } =>
   x.type === "error";
 
 // TODO(nikita.demin): Extract common (IResult part) into a base abstract class.
-class SafeResult<T, E> implements ISafeResult<T, E> {
+class UnsafeResult<T, E> implements IUnsafeResult<T, E> {
   /**
-   * Creates {@link Ok} invariant of {@link Result} with provided value.
+   * Creates {@link Ok} invariant of {@link Result | UnsafeResult} with provided value.
    */
   static ok<T, E>(value: T): Result<T, E> {
-    return new SafeResult({ type: "ok", value });
+    return new UnsafeResult<T, E>({ type: "ok", value });
   }
 
   /**
-   * Creates {@link Err} invariant of {@link Result} with provided error.
+   * Creates {@link Err} invariant of {@link Result | UnsafeResult} with provided error.
    */
   static error<T, E>(error: E): Result<T, E> {
-    return new SafeResult({ type: "error", error });
+    return new UnsafeResult<T, E>({ type: "error", error });
   }
 
   #state: ResultState<T, E>;
@@ -96,22 +117,12 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
     return isOk(this.#state) ? x : err(this.#state.error);
   }
 
-  andThen<U>(f: (x: T) => Result<U, E>): Result<U, E | AnyResultError> {
+  andThen<U>(f: (x: T) => Result<U, E>): Result<U, E> {
     if (isErr(this.#state)) {
       return err(this.#state.error);
     }
 
-    try {
-      return f(this.#state.value);
-    } catch (e) {
-      return err(
-        mkAnyError(
-          "getOrInsertWith callback threw an exception",
-          ResultError.PredicateException,
-          e,
-        ),
-      );
-    }
+    return f(this.#state.value);
   }
 
   isOk(): this is Ok<T, E> {

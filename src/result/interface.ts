@@ -1,13 +1,13 @@
+import { AnyResultError } from "./types";
 import { Err, Ok, Result } from "./index";
 
 export interface IResult<T, E> {
   and<U>(x: Result<U, E>): Result<U, E>;
-  andThen<U>(f: (x: T) => Result<U, E>): Result<U, E>;
   isOk(): this is Ok<T, E>;
   isErr(): this is Err<T, E>;
   expect(msg?: string): T;
   /**
-   * Returns a string representation of the {@link Result}.
+   * Returns a string representation of the `Result`.
    *
    * ### Example
    * ```ts
@@ -19,4 +19,8 @@ export interface IResult<T, E> {
    * ```
    */
   toString(): string;
+}
+
+export interface ISafeResult<T, E> extends IResult<T, E> {
+  andThen<U>(f: (x: T) => Result<U, E>): Result<U, E | AnyResultError>;
 }

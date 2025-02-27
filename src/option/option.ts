@@ -1,7 +1,7 @@
 import { isPromise, stringify, noop } from "../__internal";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { AnyError, mkAnyError } from "../error";
-import { err, isResult, ok, Result } from "../result";
+import { err, isSafeResult, ok, Result } from "../result";
 import { MaybePromise } from "../types";
 import {
   IOption,
@@ -476,8 +476,8 @@ class _Option<T> implements IOption<T> {
     return this.isNone() ? "None" : `Some { ${stringify(this.#value, true)} }`;
   }
 
-  transposeResult<V, E>(this: _Option<Result<V, E>>): Result<Option<V>, E> {
-    if (isNothing(this.#value) || !isResult(this.#value)) {
+  transposeSafeResult<V, E>(this: _Option<Result<V, E>>): Result<Option<V>, E> {
+    if (isNothing(this.#value) || !isSafeResult(this.#value)) {
       return ok(none<V>());
     }
 

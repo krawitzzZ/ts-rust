@@ -620,12 +620,12 @@ export interface IOption<T> {
    * const y = some(err("error"));
    * const z = none<Result<number, string>>();
    *
-   * expect(x.transposeResult()).toStrictEqual(ok(some(2)));
-   * expect(y.transposeResult()).toStrictEqual(err("error"));
-   * expect(z.transposeResult()).toStrictEqual(ok(none()));
+   * expect(x.transposeSafeResult()).toStrictEqual(ok(some(2)));
+   * expect(y.transposeSafeResult()).toStrictEqual(err("error"));
+   * expect(z.transposeSafeResult()).toStrictEqual(ok(none()));
    * ```
    */
-  transposeResult<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E>;
+  transposeSafeResult<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E>;
   /**
    * Transposes an {@link Option} of a {@link PromiseLike} into a
    * {@link PendingOption} of {@link Awaited}.
