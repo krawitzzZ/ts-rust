@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es2015",
-    "lib": ["DOM", "ES2023"],
-    "module": "NodeNext",
-    "moduleResolution": "nodenext",
+    "target": "ES6",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "baseUrl": "./src",
     "declaration": true,
     "outDir": "./dist",

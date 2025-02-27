@@ -30,7 +30,6 @@ export default [
     plugins: { import: imports },
     rules: {
       "no-console": ["error", { allow: ["warn", "error"] }],
-      "import/no-cycle": "error",
       "import/order": "error",
       "import/prefer-default-export": "off",
       "import/no-relative-packages": "off",
@@ -38,7 +37,7 @@ export default [
         "error",
         { devDependencies: ["**/*.spec.ts"] },
       ],
-      "import/no-cycle": ["error", { maxDepth: 1 }],
+      "import/no-cycle": ["error", { maxDepth: 1, ignoreExternal: true }],
       "@typescript-eslint/no-empty-function": "off",
       "@typescript-eslint/no-shadow": ["error"],
       "@typescript-eslint/no-useless-constructor": "off",
