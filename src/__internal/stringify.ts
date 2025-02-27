@@ -1,23 +1,4 @@
-import { isOption, isPendingOption } from "../option";
-import { isSafeResult } from "../result";
-
 export function stringify(value: unknown, quoteString = false): string {
-  if (isOption(value)) {
-    return value.toString();
-  }
-
-  if (isSafeResult(value)) {
-    return value.toString();
-  }
-
-  if (isPendingOption(value)) {
-    return value.toString();
-  }
-
-  if (isSafeResult(value)) {
-    return value.toString();
-  }
-
   if (value instanceof Promise) {
     return "promise";
   }
