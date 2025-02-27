@@ -1,6 +1,5 @@
-import { isPromise, stringify, noop } from "../__internal";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { AnyError, mkAnyError } from "../error";
+import { isPromise, stringify, noop } from "../internal";
+import { AnyError } from "../error";
 import { err, isSafeResult, ok, Result } from "../result";
 import { MaybePromise } from "../types";
 import {
@@ -90,7 +89,7 @@ export function isOption(x: unknown): x is Option<unknown> {
  * {@link Option.unwrap} or {@link Option.expect} when operations fail due to
  * the state of the option.
  */
-export enum OptionError {
+export enum OptionErrorKind {
   NoneValueAccessed = "NoneValueAccessed",
   NoneExpected = "NoneExpected",
   NoneUnwrapped = "NoneUnwrapped",
@@ -186,9 +185,9 @@ class _Option<T> implements IOption<T> {
    */
   get value(): T {
     if (isNothing(this.#value)) {
-      throw mkAnyError(
+      throw new AnyError(
         "`value` is accessed on `None`",
-        OptionError.NoneValueAccessed,
+        OptionErrorKind.NoneValueAccessed,
       );
     }
 
@@ -237,9 +236,9 @@ class _Option<T> implements IOption<T> {
       return this.#value;
     }
 
-    throw mkAnyError(
+    throw new AnyError(
       msg ?? "`expect` is called on `None`",
-      OptionError.NoneExpected,
+      OptionErrorKind.NoneExpected,
     );
   }
 
@@ -280,9 +279,9 @@ class _Option<T> implements IOption<T> {
       try {
         this.#value = f();
       } catch (e) {
-        throw mkAnyError(
+        throw new AnyError(
           "getOrInsertWith callback threw an exception",
-          OptionError.PredicateException,
+          OptionErrorKind.PredicateException,
           e,
         );
       }
@@ -369,9 +368,9 @@ class _Option<T> implements IOption<T> {
       try {
         return mkDef();
       } catch (e) {
-        throw mkAnyError(
+        throw new AnyError(
           "mapOrElse callback `mkDef` threw an exception",
-          OptionError.PredicateException,
+          OptionErrorKind.PredicateException,
           e,
         );
       }
@@ -392,9 +391,9 @@ class _Option<T> implements IOption<T> {
     try {
       return isSomething(this.#value) ? f(this.#value) : g();
     } catch (e) {
-      throw mkAnyError(
+      throw new AnyError(
         "one of match predicates threw an exception",
-        OptionError.PredicateException,
+        OptionErrorKind.PredicateException,
         e,
       );
     }
@@ -501,7 +500,10 @@ class _Option<T> implements IOption<T> {
       return this.#value;
     }
 
-    throw mkAnyError("`unwrap` is called on `None`", OptionError.NoneUnwrapped);
+    throw new AnyError(
+      "`unwrap` is called on `None`",
+      OptionErrorKind.NoneUnwrapped,
+    );
   }
 
   unwrapOr(def: T): T {
@@ -512,9 +514,9 @@ class _Option<T> implements IOption<T> {
     try {
       return isSomething(this.#value) ? this.#value : mkDef();
     } catch (e) {
-      throw mkAnyError(
+      throw new AnyError(
         "unwrapOrElse callback threw an exception",
-        OptionError.PredicateException,
+        OptionErrorKind.PredicateException,
         e,
       );
     }

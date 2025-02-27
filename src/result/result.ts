@@ -1,6 +1,5 @@
-import { stringify } from "../__internal";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { AnyError, mkAnyError } from "../error";
+import { stringify } from "../internal";
+import { AnyError } from "../error";
 import { AnyResultError } from "./types";
 import { ISafeResult } from "./index";
 
@@ -33,7 +32,7 @@ export function isSafeResult(x: unknown): x is Result<unknown, unknown> {
  * {@link Result.unwrap} or {@link Result.expect} when operations fail due to
  * the state of the result.
  */
-export enum ResultError {
+export enum ResultErrorKind {
   OkErrorAccessed = "OkErrorAccessed", // error accessed on Ok
   ErrValueAccessed = "ErrValueAccessed", // ok accessed on Err
   ErrExpected = "ErrExpected",
@@ -68,9 +67,9 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
 
   get value(): T {
     if (isErr(this.#state)) {
-      throw mkAnyError(
+      throw new AnyError(
         "`value` is accessed on `Err`",
-        ResultError.ErrValueAccessed,
+        ResultErrorKind.ErrValueAccessed,
       );
     }
 
@@ -79,9 +78,9 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
 
   get error(): E {
     if (isOk(this.#state)) {
-      throw mkAnyError(
+      throw new AnyError(
         "`error` is accessed on `Ok`",
-        ResultError.OkErrorAccessed,
+        ResultErrorKind.OkErrorAccessed,
       );
     }
 
@@ -105,9 +104,9 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
       return f(this.#state.value);
     } catch (e) {
       return err(
-        mkAnyError(
+        new AnyError(
           "getOrInsertWith callback threw an exception",
-          ResultError.PredicateException,
+          ResultErrorKind.PredicateException,
           e,
         ),
       );
@@ -127,9 +126,9 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
       return this.#state.value;
     }
 
-    throw mkAnyError(
+    throw new AnyError(
       msg ?? "`expect` is called on `Err`",
-      ResultError.ErrExpected,
+      ResultErrorKind.ErrExpected,
     );
   }
 

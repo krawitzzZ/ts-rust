@@ -1,34 +1,26 @@
-import { stringify } from "./__internal";
+import { stringify } from "./internal";
 
-export const mkAnyError = <R>(
-  msg: string,
-  reason: R,
-  e?: unknown,
-): AnyError<R> => {
-  const args: [string, R, Error | undefined] = e
-    ? [msg, reason, undefined]
-    : [msg, reason, e instanceof Error ? e : new Error(stringify(e))];
+export class AnyError<T> extends Error {
+  readonly kind: T;
 
-  return new AnyError(...args);
-};
+  readonly cause: Error | undefined;
 
-export class AnyError<T, E extends Error = Error> extends Error {
-  readonly reason: T;
-
-  readonly originalError: E | undefined;
-
-  constructor(message: string | undefined, reason: T, originalError?: E) {
+  constructor(message: string, kind: T, cause?: unknown) {
     super(message);
 
     Object.setPrototypeOf(this, AnyError.prototype);
 
     this.name = this.constructor.name;
-    this.reason = reason;
-    this.originalError = originalError;
-    this.message = `${message}. Reason: ${stringify(reason)}.`;
-
-    if (originalError) {
-      this.message += ` Original error: ${stringify(originalError.message)}`;
-    }
+    this.kind = kind;
+    this.cause = makeCause(cause);
+    this.message = `${message}. Reason: ${stringify(kind)}.`;
   }
+}
+
+function makeCause(cause?: unknown): Error | undefined {
+  if (arguments.length === 0) {
+    return undefined;
+  }
+
+  return cause instanceof Error ? cause : new Error(stringify(cause));
 }

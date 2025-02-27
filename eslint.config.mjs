@@ -67,7 +67,7 @@ export default [
 
   {
     name: "Interface Rules",
-    files: ["**/*interface.ts", "**/*types.ts"],
+    files: ["**/interface/*.ts", "**/*interface.ts", "**/*types.ts"],
     rules: {
       "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
     },

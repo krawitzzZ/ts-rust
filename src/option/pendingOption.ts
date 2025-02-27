@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Result, Ok, Err, err, ok } from "../result";
-import { isPromise, promisify } from "../__internal";
+import { isPromise, promisify } from "../internal";
 import { MaybePromise } from "../types";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Option, type Some, type None, some, none, isOption } from "./index";

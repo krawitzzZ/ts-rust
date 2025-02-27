@@ -192,7 +192,7 @@ export interface IOption<T> {
    *
    * ## Throws
    * If `f` throws, rethrows {@link AnyError} with original error being set as
-   * {@link AnyError.originalError}.
+   * {@link AnyError.cause}.
    *
    * ### Note
    * This method mutates the option. If `f` throws, the option **remains unchanged**.
@@ -358,7 +358,7 @@ export interface IOption<T> {
    *
    * ## Throws
    * If `mkDef` is called and throws, rethrows {@link AnyError} with original error
-   * being set as {@link AnyError.originalError}.
+   * being set as {@link AnyError.cause}.
    *
    * ### Note
    * If `f` throws, the error is silently ignored and result of `mkDef` is returned.
@@ -380,7 +380,7 @@ export interface IOption<T> {
    *
    * ## Throws
    * If either `f` or `g` throws, rethrows {@link AnyError} with original error
-   * being set as {@link AnyError.originalError}.
+   * being set as {@link AnyError.cause}.
    *
    * ### Example
    * ```ts
@@ -676,7 +676,7 @@ export interface IOption<T> {
    *
    * ## Throws
    * If `mkDef` throws, rethrows {@link AnyError} with original error being
-   * set as {@link AnyError.originalError}.
+   * set as {@link AnyError.cause}.
    *
    * ### Example
    * ```ts

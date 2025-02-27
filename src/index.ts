@@ -23,4 +23,4 @@ export {
   isPendingOption,
   OptionError,
 } from "./option";
-export { AnyError, mkAnyError } from "./error";
+export { AnyError } from "./error";

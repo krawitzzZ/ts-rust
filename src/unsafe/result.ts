@@ -1,6 +1,5 @@
-import { stringify } from "../__internal";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { AnyError, mkAnyError } from "../error";
+import { stringify } from "../internal";
+import { AnyError } from "../error";
 import { IUnsafeResult } from "./index";
 
 export type Result<T, E> = Ok<T, E> | Err<T, E>;
@@ -89,7 +88,7 @@ class UnsafeResult<T, E> implements IUnsafeResult<T, E> {
 
   get value(): T {
     if (isErr(this.#state)) {
-      throw mkAnyError(
+      throw new AnyError(
         "`value` is accessed on `Err`",
         ResultError.ErrValueAccessed,
       );
@@ -100,7 +99,7 @@ class UnsafeResult<T, E> implements IUnsafeResult<T, E> {
 
   get error(): E {
     if (isOk(this.#state)) {
-      throw mkAnyError(
+      throw new AnyError(
         "`error` is accessed on `Ok`",
         ResultError.OkErrorAccessed,
       );
@@ -138,7 +137,7 @@ class UnsafeResult<T, E> implements IUnsafeResult<T, E> {
       return this.#state.value;
     }
 
-    throw mkAnyError(
+    throw new AnyError(
       msg ?? "`expect` is called on `Err`",
       ResultError.ErrExpected,
     );
