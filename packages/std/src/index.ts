@@ -7,7 +7,7 @@ export {
   ok,
   err,
   isSafeResult,
-  ResultError,
+  ResultErrorKind,
 } from "./result";
 export {
   IPendingOption,
@@ -21,6 +21,6 @@ export {
   none,
   isOption,
   isPendingOption,
-  OptionError,
+  OptionErrorKind,
 } from "./option";
 export { AnyError } from "./error";

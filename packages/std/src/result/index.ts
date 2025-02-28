@@ -4,7 +4,7 @@ export {
   Result,
   Ok,
   Err,
-  ResultErrorKind as ResultError,
+  ResultErrorKind,
   ok,
   err,
   isSafeResult,

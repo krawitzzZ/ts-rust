@@ -4,7 +4,7 @@ export {
   Option,
   Some,
   None,
-  OptionErrorKind as OptionError,
+  OptionErrorKind,
   some,
   none,
   isOption,
