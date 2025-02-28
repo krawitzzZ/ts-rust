@@ -1,16 +1,9 @@
-export { IOption } from "./interface";
+export { Option, PendingOption, Some, None } from "./interface";
 export {
-  Option,
-  Some,
-  None,
   OptionErrorKind,
   some,
   none,
-  isOption,
-} from "./option";
-export {
-  IPendingOption,
-  PendingOption,
   pendingOption,
+  isOption,
   isPendingOption,
-} from "./pendingOption";
+} from "./option";

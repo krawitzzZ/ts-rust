@@ -1,19 +1,17 @@
 export {
+  ResultErrorKind,
   PendingResult,
-  IResult,
   Result,
   Ok,
   Err,
   ok,
   err,
-  isSafeResult,
-  ResultErrorKind,
+  isResult,
 } from "./result";
 export {
-  IPendingOption,
+  OptionErrorKind,
   PendingOption,
   pendingOption,
-  IOption,
   Option,
   Some,
   None,
@@ -21,6 +19,5 @@ export {
   none,
   isOption,
   isPendingOption,
-  OptionErrorKind,
 } from "./option";
 export { AnyError } from "./error";

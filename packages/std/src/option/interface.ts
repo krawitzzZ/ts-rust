@@ -1,8 +1,27 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { AnyError } from "../error";
-import { Result, type Ok, type Err } from "../result";
-import { None, Option, PendingOption, Some } from "./index";
+import type { AnyError } from "../error";
+import type { Result, Ok, Err } from "../result";
 /* eslint-enable @typescript-eslint/no-unused-vars */
+
+/**
+ * A type that represents either a value ({@link Some | Some\<T>}) or
+ * no value ({@link None | None\<T>}).
+ *
+ * Inspired by Rust's {@link https://doc.rust-lang.org/std/option/enum.Option.html | Option}
+ * type, this is used to handle values that may or may not be present, avoiding
+ * null or undefined checks.
+ */
+export type Option<T> = Some<T> | None<T>;
+
+/**
+ * Represents a successful {@link Option} containing a value of type `T`.
+ */
+export type Some<T> = IOption<T> & { [phantom]: "some"; readonly value: T };
+
+/**
+ * Represents an empty {@link Option} with no value.
+ */
+export type None<T> = IOption<T> & { [phantom]: "none" };
 
 /**
  * Interface defining the core functionality of an {@link Option}, inspired by Rust's
@@ -620,12 +639,12 @@ export interface IOption<T> {
    * const y = some(err("error"));
    * const z = none<Result<number, string>>();
    *
-   * expect(x.transposeSafeResult()).toStrictEqual(ok(some(2)));
-   * expect(y.transposeSafeResult()).toStrictEqual(err("error"));
-   * expect(z.transposeSafeResult()).toStrictEqual(ok(none()));
+   * expect(x.transposeResult()).toStrictEqual(ok(some(2)));
+   * expect(y.transposeResult()).toStrictEqual(err("error"));
+   * expect(z.transposeResult()).toStrictEqual(ok(none()));
    * ```
    */
-  transposeSafeResult<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E>;
+  transposeResult<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E>;
   /**
    * Transposes an {@link Option} of a {@link PromiseLike} into a
    * {@link PendingOption} of {@link Awaited}.
@@ -721,3 +740,422 @@ export interface IOption<T> {
    */
   xor(y: Promise<Option<T>>): PendingOption<T>;
 }
+
+/**
+ * Interface defining the asynchronous implementation of an {@link Option}.
+ *
+ * Extends the synchronous {@link Option} functionality to handle pending states,
+ * wrapping a {@link Promise} that resolves to an {@link Option}. Methods mirror
+ * those of {@link Option}, adapted to return either a {@link PendingOption} or a
+ * {@link Promise} for asynchronous operations.
+ */
+export interface PendingOption<T> extends PromiseLike<Option<T>> {
+  /**
+   * Returns a {@link PendingOption} with {@link None} if this option resolves to
+   * {@link None}, otherwise returns a {@link PendingOption} with `x`.
+   *
+   * Accepts both synchronous and asynchronous `x`.
+   *
+   * Similar to the {@link Option.and}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.and(some(3))).toStrictEqual(some(3));
+   * expect(await x.and(Promise.resolve(some(3)))).toStrictEqual(some(3));
+   * expect(await x.and(none())).toStrictEqual(none());
+   * expect(await x.and(Promise.resolve(none()))).toStrictEqual(none());
+   * expect(await y.and(some(3))).toStrictEqual(none());
+   * expect(await y.and(Promise.resolve(none()))).toStrictEqual(none());
+   * ```
+   */
+  and<U>(x: Option<U> | Promise<Option<U>>): PendingOption<U>;
+  /**
+   * Returns a {@link PendingOption} with {@link None} if this {@link Option} resolves
+   * to {@link None}, otherwise applies `f` to the resolved value and returns the result.
+   *
+   * The function `f` may return synchronously or asynchronously.
+   *
+   * Similar to {@link Option.andThen}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.andThen(n => some(n * 2))).toStrictEqual(some(4));
+   * expect(await x.andThen(n => Promise.resolve(some(n * 2)))).toStrictEqual(some(4));
+   * expect(await x.andThen(_ => none())).toStrictEqual(none());
+   * expect(await y.andThen(n => some(n * 2))).toStrictEqual(none());
+   * ```
+   */
+  andThen<U>(f: (x: T) => Option<U> | Promise<Option<U>>): PendingOption<U>;
+  /**
+   * Creates a shallow copy of this {@link PendingOption}.
+   *
+   * Similar to {@link Option.clone}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.clone()).toStrictEqual(some(2));
+   * expect(x.clone()).not.toBe(x); // Different instance
+   * expect(await y.clone()).toStrictEqual(none());
+   * ```
+   */
+  clone(): PendingOption<T>;
+  /**
+   * Returns {@link PendingOption} with {@link None} if this option resolves to {@link None},
+   * otherwise calls `f` with the resolved value and returns a {@link PendingOption} with
+   * the original value if `f` resolves to `true`, or {@link None} otherwise.
+   *
+   * The predicate `f` may return synchronously or asynchronously.
+   *
+   * Similar to {@link Option.filter}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.filter(n => n > 0)).toStrictEqual(some(2));
+   * expect(await x.filter(n => Promise.resolve(n < 0))).toStrictEqual(none());
+   * expect(await y.filter(n => true)).toStrictEqual(none());
+   * ```
+   */
+  filter(f: (x: T) => boolean | Promise<boolean>): PendingOption<T>;
+  /**
+   * Flattens a {@link PendingOption} of a {@link PendingOption} or {@link Option},
+   * resolving nested pending states.
+   *
+   * Similar to {@link Option.flatten}.
+   *
+   * ### Example
+   * ```ts
+   * const option1: PendingOption<Option<number>> = getPendingOption();
+   * option1.flatten(); // PendingOption<number>
+   *
+   * const option2: PendingOption<PendingOption<number>> = getPendingOption();
+   * option2.flatten(); // PendingOption<number>
+   *
+   * const option3: PendingOption<PendingOption<PendingOption<number>>> = getPendingOption();
+   * option3.flatten(); // PendingOption<Option<number>>
+   * ```
+   */
+  flatten<U>(
+    this:
+      | PendingOption<Option<U>>
+      | PendingOption<PendingOption<U>>
+      | PendingOption<PromiseLike<Option<U>>>,
+  ): PendingOption<U>;
+  /**
+   * Calls `f` with the resolved value if this option is {@link Some}, then returns this
+   * {@link PendingOption} unchanged. Useful for side effects.
+   *
+   * Similar to {@link Option.inspect}.
+   *
+   * ### Note
+   * Returns a new {@link PendingOption} instance with the same value as the original,
+   * rather than the exact same reference. The returned option is a distinct object,
+   * preserving the original value.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   * let sideEffect = 0;
+   *
+   * expect(await x.inspect(n => (sideEffect = n))).toStrictEqual(some(2));
+   * expect(sideEffect).toBe(2);
+   * expect(await y.inspect(n => (sideEffect = n))).toStrictEqual(none());
+   * expect(sideEffect).toBe(2); // Unchanged
+   * ```
+   */
+  inspect(f: (x: T) => unknown): PendingOption<T>;
+  /**
+   * Maps the resolved value with `f`, returning a {@link PendingOption} with the result
+   * if this option is {@link Some}, or {@link None} otherwise.
+   *
+   * The function `f` may return synchronously or asynchronously.
+   *
+   * Similar to {@link Option.map}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.map(n => n * 2)).toStrictEqual(some(4));
+   * expect(await x.map(n => Promise.resolve(n * 2))).toStrictEqual(some(4));
+   * expect(await y.map(n => n * 2)).toStrictEqual(none());
+   * ```
+   */
+  map<U>(f: (x: T) => U | Promise<U>): PendingOption<U>;
+  /**
+   * Matches the resolved option, returning `f` applied to the value if {@link Some},
+   * or `g` if {@link None}. Returns a {@link Promise} with the result.
+   *
+   * Similar to {@link Option.match}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.match(n => n * 2, () => 0)).toBe(4);
+   * expect(await y.match(n => n * 2, () => 0)).toBe(0);
+   * ```
+   */
+  match<U, F = U>(f: (x: T) => U, g: () => F): Promise<U | F>;
+  /**
+   * Converts to a {@link Promise} of a {@link Result}, using `y` as the error value if
+   * this {@link PendingOption} resolves to {@link None}.
+   *
+   * Similar to {@link Option.okOr}, check it for more details.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.okOr("error")).toStrictEqual(ok(2));
+   * expect(await y.okOr("error")).toStrictEqual(err("error"));
+   * ```
+   */
+  okOr<E>(y: E): Promise<Result<T, E>>;
+  /**
+   * Converts to a {@link Promise} of a {@link Result}, using the result of `mkErr` as
+   * the error value if this {@link PendingOption} resolves to {@link None}.
+   *
+   * `mkErr` may return synchronously or asynchronously.
+   *
+   * Similar to {@link Option.okOrElse}, check it for more details.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.okOrElse(() => "error")).toStrictEqual(ok(2));
+   * expect(await y.okOrElse(() => Promise.resolve("error"))).toStrictEqual(err("error"));
+   * ```
+   */
+  okOrElse<E>(mkErr: () => E | Promise<E>): Promise<Result<T, E>>;
+  /**
+   * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
+   * returns a {@link PendingOption} with `x`.
+   *
+   * Accepts both synchronous and asynchronous `x`.
+   *
+   * Similar to {@link Option.or}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.or(some(3))).toStrictEqual(some(2));
+   * expect(await x.or(Promise.resolve(none()))).toStrictEqual(some(2));
+   * expect(await y.or(some(3))).toStrictEqual(some(3));
+   * expect(await y.or(Promise.resolve(none()))).toStrictEqual(none());
+   * ```
+   */
+  or(x: Option<T> | Promise<Option<T>>): PendingOption<T>;
+  /**
+   * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
+   * returns a {@link PendingOption} with the result of `f`.
+   *
+   * The function `f` may return synchronously or asynchronously.
+   *
+   * Similar to {@link Option.orElse}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.orElse(() => some(3))).toStrictEqual(some(2));
+   * expect(await y.orElse(() => Promise.resolve(some(3)))).toStrictEqual(some(3));
+   * expect(await y.orElse(() => none())).toStrictEqual(none());
+   * ```
+   */
+  orElse(f: () => Option<T> | Promise<Option<T>>): PendingOption<T>;
+  /**
+   * Replaces the underlying {@link Option} with `x`, returning a {@link PendingOption}
+   * with the original {@link Option}.
+   *
+   * Accepts both synchronous and asynchronous `x`.
+   *
+   * Similar to {@link Option.replace}.
+   *
+   * ### Note
+   * This method mutates the {@link PendingOption}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * const xReplaced = x.replace(5);
+   * const yReplaced = x.replace(2);
+   *
+   * expect(await xReplaced).toStrictEqual(some(2));
+   * expect(await x).toStrictEqual(some(5));
+   * expect(await yReplaced).toStrictEqual(none());
+   * expect(await y).toStrictEqual(some(2));
+   * ```
+   */
+  replace(x: T | Promise<T>): PendingOption<T>;
+  /**
+   * Takes the resolved value out of this {@link PendingOption}, leaving it as
+   * {@link PendingOption} with {@link None}.
+   *
+   * Similar to {@link Option.take}.
+   *
+   * ### Note
+   * This method mutates the {@link PendingOption}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * const xTaken = x.take();
+   * const yTaken = y.take();
+   *
+   * expect(await xTaken).toStrictEqual(some(2));
+   * expect(await x).toStrictEqual(none());
+   * expect(await yTaken).toStrictEqual(none());
+   * expect(await y).toStrictEqual(none());
+   * ```
+   */
+  take(): PendingOption<T>;
+  /**
+   * Takes the resolved value _only_ if this option is {@link Some} and `f`
+   * resolves to `true`, leaving it as {@link PendingOption} with {@link None}.
+   * If this option is {@link None} or `f` resolves to `false`, this {@link PendingOption}
+   * remains unchanged.
+   *
+   * The predicate `f` may return synchronously or asynchronously.
+   *
+   * Similar to {@link Option.takeIf}.
+   *
+   * ### Note
+   * This method mutates the {@link PendingOption}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   * const z = pendingOption(some(0));
+   *
+   * const xTaken = x.takeIf(n => n > 0);
+   * const yTaken = x.takeIf(n => Promise.resolve(n < 0));
+   * const zTaken = z.takeIf(n => n > 0);
+   *
+   * expect(await xTaken).toStrictEqual(some(2));
+   * expect(await x).toStrictEqual(none());
+   * expect(await yTaken).toStrictEqual(none());
+   * expect(await y.takeIf(n => true)).toStrictEqual(none());
+   * expect(await x).toStrictEqual(none());
+   * expect(await zTaken).toStrictEqual(none());
+   * expect(await z).toStrictEqual(some(0));
+   * ```
+   */
+  takeIf(f: (x: T) => boolean | Promise<boolean>): PendingOption<T>;
+  /**
+   * Returns a string representation of this {@link PendingOption}'s current state.
+   *
+   * Similar to {@link Option.toString}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(x.toString()).toBe("PendingOption { promise }"); // Before resolution
+   * expect(await x.then(opt => opt.toString())).toBe("Some { 2 }");
+   * expect(await y.then(opt => opt.toString())).toBe("None");
+   * ```
+   */
+  toString(): string;
+  /**
+   * Transposes a {@link PendingOption} of a {@link Result} into a {@link Promise} of a
+   * {@link Result} containing a {@link PendingOption}. Resolves to {@link Ok}({@link None})
+   * if this option is {@link None}, or propagates the error if the result is {@link Err}.
+   *
+   * Similar to {@link Option.transposeResult}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(ok(2)));
+   * const y = pendingOption(some(err("error")));
+   * const z = pendingOption(none<Result<number, string>>());
+   *
+   * expect(await x.transposeResult()).toStrictEqual(ok(some(2)));
+   * expect(await y.transposeResult()).toStrictEqual(err("error"));
+   * expect(await z.transposeResult()).toStrictEqual(ok(none()));
+   * ```
+   */
+  transposeResult<U, E>(
+    this: PendingOption<Result<U, E>>,
+  ): Promise<Result<Option<U>, E>>;
+  /**
+   * Transposes a {@link PendingOption} of an {@link PromiseLike} into a {@link PendingOption}
+   * with the fully awaited value.
+   *
+   * Similar to {@link Option.transposeAwaitable}.
+   *
+   * ### Example
+   * ```ts
+   * const x: PendingOption<Promise<Promise<number>>> = getPendingOption();
+   * const y: PendingOption<number> = x.transposeAwaitable();
+   *
+   * const a: PendingOption<Promise<Promise<PendingOption<number>>>> = getPendingOption();
+   * const b: PendingOption<Option<number>> = a.transposeAwaitable();
+   * ```
+   */
+  transposeAwaitable<U>(
+    this: PendingOption<PromiseLike<U>>,
+  ): PendingOption<Awaited<U>>;
+  /**
+   * Returns a {@link PendingOption} with {@link Some} if exactly one of this option or
+   * `y` resolves to {@link Some}, otherwise returns a {@link PendingOption} with
+   * {@link None}.
+   *
+   * Accepts both synchronous and asynchronous `y`.
+   *
+   * Similar to {@link Option.xor}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(2));
+   * const y = pendingOption(none<number>());
+   *
+   * expect(await x.xor(some(3))).toStrictEqual(none());
+   * expect(await x.xor(Promise.resolve(none()))).toStrictEqual(some(2));
+   * expect(await y.xor(some(3))).toStrictEqual(some(3));
+   * expect(await y.xor(Promise.resolve(none()))).toStrictEqual(none());
+   * ```
+   */
+  xor(y: Option<T> | Promise<Option<T>>): PendingOption<T>;
+}
+
+/**
+ * A private symbol-keyed property used as a type discriminant.
+ *
+ * This field holds either `"some"` or `"none"` to indicate whether the
+ * {@link Option} is a {@link Some} or {@link None} variant. It is not
+ * intended for direct access or modification by users; instead, it serves as
+ * an internal mechanism to enable TypeScript's type narrowing for methods
+ * like {@link isSome} and {@link isNone}. The symbol key (`phantom`) ensures
+ * this property remains private to the module, preventing external
+ * interference while allowing the class to mutate its state (e.g., from
+ * `None` to `Some`) as needed.
+ */
+// TODO(nikita.demin): check that this symbol cannot be accessed by the package users
+export const phantom: unique symbol = Symbol("OptionPhantom");

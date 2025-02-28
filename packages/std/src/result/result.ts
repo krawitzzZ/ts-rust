@@ -21,7 +21,7 @@ export function err<T, E>(error: E): Result<T, E> {
   return SafeResult.error(error);
 }
 
-export function isSafeResult(x: unknown): x is Result<unknown, unknown> {
+export function isResult(x: unknown): x is Result<unknown, unknown> {
   return x instanceof SafeResult;
 }
 

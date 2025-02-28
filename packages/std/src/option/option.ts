@@ -1,27 +1,21 @@
-import { MaybePromise, isPromise, stringify, noop } from "@ts-rust/internal";
+import {
+  MaybePromise,
+  isPromise,
+  stringify,
+  noop,
+  promisify,
+} from "@ts-rust/internal";
 import { AnyError } from "../error";
-import { err, isSafeResult, ok, Result } from "../result";
-import { IOption, PendingOption, pendingOption } from "./index";
-
-/**
- * A type that represents either a value ({@link Some | Some\<T>}) or
- * no value ({@link None | None\<T>}).
- *
- * Inspired by Rust's {@link https://doc.rust-lang.org/std/option/enum.Option.html | Option}
- * type, this is used to handle values that may or may not be present, avoiding
- * null or undefined checks.
- */
-export type Option<T> = Some<T> | None<T>;
-
-/**
- * Represents a successful {@link Option} containing a value of type `T`.
- */
-export type Some<T> = IOption<T> & { [phantom]: "some"; readonly value: T };
-
-/**
- * Represents an empty {@link Option} with no value.
- */
-export type None<T> = IOption<T> & { [phantom]: "none" };
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Result, Ok, Err, err, ok, isResult } from "../result";
+import {
+  IOption,
+  Option,
+  PendingOption,
+  Some,
+  None,
+  phantom,
+} from "./interface";
 
 /**
  * Creates a {@link Some} variant of an {@link Option} containing the given value.
@@ -49,6 +43,59 @@ export function some<T>(value: T): Option<T> {
  */
 export function none<T>(): Option<T> {
   return _Option.none();
+}
+
+/* eslint-disable @typescript-eslint/unified-signatures */
+/**
+ * Creates a {@link PendingOption} from an {@link Option}.
+ */
+export function pendingOption<T>(option: Option<T>): PendingOption<T>;
+/**
+ * Creates a {@link PendingOption} by cloning an existing {@link PendingOption}.
+ */
+export function pendingOption<T>(option: PendingOption<T>): PendingOption<T>;
+/**
+ * Creates a {@link PendingOption} from a {@link PromiseLike} resolving to an {@link Option}.
+ */
+export function pendingOption<T>(
+  option: PromiseLike<Option<T>>,
+): PendingOption<T>;
+export function pendingOption<T>(
+  option: Option<T> | PendingOption<T> | PromiseLike<Option<T>>,
+): PendingOption<T> {
+  if (isPendingOption(option)) {
+    return option.clone();
+  }
+
+  return _PendingOption.create(option);
+}
+/* eslint-enable @typescript-eslint/unified-signatures */
+
+/**
+ * Checks if a value is a {@link PendingOption}, narrowing its type to
+ * `PendingOption<unknown>`.
+ *
+ * This type guard determines whether the input is an instance of the
+ * {@link PendingOption} class, indicating it is a pending option that wraps a
+ * {@link Promise} resolving to an {@link Option}.
+ *
+ * ### Example
+ * ```ts
+ * const x = pendingOption(some(42));
+ * const y = pendingOption(none<number>());
+ * const z = some(42); // Not a PendingOption
+ *
+ * expect(isPendingOption(x)).toBe(true);
+ * expect(isPendingOption(y)).toBe(true);
+ * expect(isPendingOption(z)).toBe(false);
+ *
+ * if (isPendingOption(x)) {
+ *   expect(await x).toStrictEqual(some(42)); // Type narrowed to PendingOption<unknown>
+ * }
+ * ```
+ */
+export function isPendingOption(x: unknown): x is PendingOption<unknown> {
+  return x instanceof _PendingOption;
 }
 
 /**
@@ -98,7 +145,9 @@ export enum OptionErrorKind {
  */
 type Nothing = typeof nothing;
 
-const phantom: unique symbol = Symbol("OptionPhantom");
+type MaybePendingOption<T> = Option<T> | PendingOption<T>;
+
+// const phantom: unique symbol = Symbol("OptionPhantom");
 const nothing: unique symbol = Symbol("Nothing");
 const isNothing = (x: unknown): x is Nothing => x === nothing;
 const isSomething = <T>(x: T | Nothing): x is T => !isNothing(x);
@@ -248,16 +297,12 @@ class _Option<T> implements IOption<T> {
     }
   }
 
-  flatten<U>(this: _Option<Option<U>>): Option<U> {
-    if (isNothing(this.#value)) {
+  flatten<U>(this: Option<Option<U>>): Option<U> {
+    if (this.isNone()) {
       return none();
     }
 
-    if (isOption(this.#value)) {
-      return this.#value.clone();
-    }
-
-    return some(this.#value);
+    return this.value.clone();
   }
 
   getOrInsert(x: T): T {
@@ -469,24 +514,24 @@ class _Option<T> implements IOption<T> {
     return this.isNone() ? "None" : `Some { ${stringify(this.#value, true)} }`;
   }
 
-  transposeSafeResult<V, E>(this: _Option<Result<V, E>>): Result<Option<V>, E> {
-    if (isNothing(this.#value) || !isSafeResult(this.#value)) {
+  transposeResult<V, E>(this: Option<Result<V, E>>): Result<Option<V>, E> {
+    if (this.isNone() || !isResult(this.value)) {
       return ok(none<V>());
     }
 
-    return this.#value.isOk()
-      ? ok(some(this.#value.value))
-      : err(this.#value.error);
+    return this.value.isOk()
+      ? ok(some(this.value.value))
+      : err(this.value.error);
   }
 
   transposeAwaitable<V>(
-    this: _Option<PromiseLike<V>>,
+    this: Option<PromiseLike<V>>,
   ): PendingOption<Awaited<V>> {
-    if (isNothing(this.#value)) {
+    if (this.isNone()) {
       return pendingOption(none());
     }
 
-    return pendingOption(Promise.resolve(this.#value).then(some));
+    return pendingOption(Promise.resolve(this.value).then(some));
   }
 
   unwrap(): T {
@@ -555,4 +600,199 @@ class _Option<T> implements IOption<T> {
   }
 }
 
-type MaybePendingOption<T> = Option<T> | PendingOption<T>;
+/**
+ * Represents an {@link Option} in a pending state that will be resolved in the future.
+ *
+ * Internally, it wraps a {@link Promise} that resolves to an {@link Option} on success
+ * or to its {@link None} invariant on failure. Methods mirror those of {@link Option},
+ * adapted for asynchronous resolution.
+ */
+// TODO(nikita.demin): test that .catch in constructor is enough for every method
+// to return none<T>() in case of errors thrown by predicate/callbacks
+class _PendingOption<T> implements PendingOption<T> {
+  static create<T>(
+    option: Option<T> | PendingOption<T> | PromiseLike<Option<T>>,
+  ): PendingOption<T> {
+    return new _PendingOption(option);
+  }
+
+  #promise: Promise<Option<T>>;
+
+  private constructor(promise: Option<T> | PromiseLike<Option<T>>) {
+    this.#promise = promisify(promise).catch(() => none<T>());
+  }
+
+  // Implements the PromiseLike interface, allowing PendingOption to be used
+  // with `await` and `then`.
+  then<R1 = Option<T>, R2 = never>(
+    onfulfilled?: (value: Option<T>) => R1 | PromiseLike<R1>,
+    onrejected?: (reason: unknown) => R2 | PromiseLike<R2>,
+  ): PromiseLike<R1 | R2> {
+    return this.#promise.then(onfulfilled, onrejected);
+  }
+
+  and<U>(x: MaybePromise<Option<U>>): PendingOption<U> {
+    return pendingOption(
+      this.#promise.then((option) => {
+        if (option.isNone()) {
+          return none<U>();
+        }
+
+        return x;
+      }),
+    );
+  }
+
+  andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingOption<U> {
+    return pendingOption(
+      this.#promise.then((option) => {
+        if (option.isNone()) {
+          return none<U>();
+        }
+
+        return f(option.value);
+      }),
+    );
+  }
+
+  clone(): PendingOption<T> {
+    return pendingOption(this.#promise.then((x) => x.clone()));
+  }
+
+  filter(f: (x: T) => MaybePromise<boolean>): PendingOption<T> {
+    return pendingOption(
+      this.#promise.then(async (option) => {
+        if (option.isNone()) {
+          return none<T>();
+        }
+
+        return (await f(option.value)) ? option.clone() : none<T>();
+      }),
+    );
+  }
+
+  flatten<U>(
+    this:
+      | PendingOption<Option<U>>
+      | PendingOption<PendingOption<U>>
+      | PendingOption<PromiseLike<Option<U>>>,
+  ): PendingOption<U> {
+    // TODO(nikita.demin): check if 2nd callback needed in then in case of error
+    return pendingOption(
+      this.then(async (option) => {
+        if (option.isNone()) {
+          return none<Awaited<U>>();
+        }
+
+        return (await option.value).clone();
+      }),
+    );
+  }
+
+  inspect(f: (x: T) => unknown): PendingOption<T> {
+    return pendingOption(
+      this.#promise.then((option) => {
+        option.inspect(f);
+        return option.clone();
+      }),
+    );
+  }
+
+  map<U>(f: (x: T) => MaybePromise<U>): PendingOption<U> {
+    return pendingOption(
+      this.#promise.then(async (option) => {
+        if (option.isNone()) {
+          return none<U>();
+        }
+
+        return some(await f(option.value));
+      }),
+    );
+  }
+
+  match<U, F = U>(f: (x: T) => U, g: () => F): Promise<U | F> {
+    return this.#promise.then((option) => option.match(f, g));
+  }
+
+  okOr<E>(y: E): Promise<Result<T, E>> {
+    return this.#promise.then((option) => option.okOr(y));
+  }
+
+  okOrElse<E>(mkErr: () => MaybePromise<E>): Promise<Result<T, E>> {
+    return this.#promise.then(async (option) => {
+      if (option.isNone()) {
+        return err(await mkErr());
+      }
+
+      return ok(option.value);
+    });
+  }
+
+  or(x: MaybePromise<Option<T>>): PendingOption<T> {
+    return pendingOption(
+      this.#promise.then((option) => (option.isSome() ? option : x)),
+    );
+  }
+
+  orElse(f: () => MaybePromise<Option<T>>): PendingOption<T> {
+    return pendingOption(
+      this.#promise.then((option) => (option.isSome() ? option : f())),
+    );
+  }
+
+  replace(x: MaybePromise<T>): PendingOption<T> {
+    const oldOption = this.clone();
+
+    this.#promise = isPromise(x) ? x.then(some) : Promise.resolve(some(x));
+
+    return oldOption;
+  }
+
+  take(): PendingOption<T> {
+    const oldOption = this.clone();
+    this.#promise = Promise.resolve(none<T>());
+    return oldOption;
+  }
+
+  takeIf(f: (x: T) => MaybePromise<boolean>): PendingOption<T> {
+    return pendingOption(
+      this.#promise.then(async (option) => {
+        if (option.isNone()) {
+          return none<T>();
+        }
+
+        return (await f(option.value)) ? this.take() : none<T>();
+      }),
+    );
+  }
+
+  toString(): string {
+    return "PendingOption { promise }";
+  }
+
+  transposeResult<V, E>(
+    this: PendingOption<Result<V, E>>,
+  ): Promise<Result<Option<V>, E>> {
+    return promisify(this.then((option) => option.transposeResult()));
+  }
+
+  transposeAwaitable<V>(
+    this: PendingOption<PromiseLike<V>>,
+  ): PendingOption<Awaited<V>> {
+    return pendingOption(
+      this.then(async (option) => {
+        if (option.isNone()) {
+          return none<Awaited<V>>();
+        }
+
+        return some(await option.value);
+      }),
+    );
+  }
+
+  xor(y: MaybePromise<Option<T>>): PendingOption<T> {
+    return pendingOption(
+      this.#promise.then(async (option) => option.xor(await y)),
+    );
+  }
+}

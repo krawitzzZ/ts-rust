@@ -32,7 +32,7 @@
     "clean": "rm -rf ./dist",
     "clean:deps": "rm -rf ./node_modules",
     "prebuild": "pnpm --stream --filter \"@ts-rust/internal...\" build",
-    "build": "pnpm typecheck && rollup --config",
+    "build": "pnpm typecheck && rollup --config --failAfterWarnings",
     "prepack": "pnpm build",
     "changeset": "changeset",
     "release": "changeset publish",
