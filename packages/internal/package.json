@@ -1,0 +1,37 @@
+{
+  "name": "@ts-rust/internal",
+  "version": "0.0.1",
+  "description": "Internal utilities for @ts-rust packages",
+  "author": "Nikita Demin",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krawitzzZ/ts-rust.git"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "ci": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build",
+    "test": "jest",
+    "lint": "eslint -c ../../eslint.config.mjs **/*.ts --no-warn-ignored",
+    "lint:fix": "pnpm lint --fix",
+    "format": "prettier --check --config ../../.prettierrc.json ./src/**/*.ts",
+    "format:fix": "prettier --write --config ../../.prettierrc.json ./src/**/*.ts",
+    "typecheck": "tsc --build --force --noEmit",
+    "clean": "rm -rf ./dist",
+    "clean:deps": "rm -rf ./node_modules",
+    "build": "pnpm typecheck && rollup --config"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

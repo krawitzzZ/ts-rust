@@ -1,23 +1,23 @@
-import { stringify } from "./internal";
+import { stringify } from "@ts-rust/internal";
 
 export class AnyError<T> extends Error {
   readonly kind: T;
 
-  readonly cause: Error | undefined;
+  readonly reason: Error | undefined;
 
-  constructor(message: string, kind: T, cause?: unknown) {
+  constructor(message: string, kind: T, reason?: unknown) {
     super(message);
 
     Object.setPrototypeOf(this, AnyError.prototype);
 
     this.name = this.constructor.name;
     this.kind = kind;
-    this.cause = makeCause(cause);
+    this.reason = makeReason(reason);
     this.message = `${message}. Reason: ${stringify(kind)}.`;
   }
 }
 
-function makeCause(cause?: unknown): Error | undefined {
+function makeReason(cause?: unknown): Error | undefined {
   if (arguments.length === 0) {
     return undefined;
   }

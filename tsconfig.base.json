@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
-    "target": "ES6",
+    "outDir": "./dist",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "baseUrl": "./src",
     "declaration": true,
-    "outDir": "./dist",
     "isolatedDeclarations": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
@@ -29,7 +29,5 @@
     "noPropertyAccessFromIndexSignature": true,
     "skipDefaultLibCheck": true,
     "skipLibCheck": true
-  },
-  "include": ["./src/**/*.ts"],
-  "exclude": ["node_modules", "**/*.spec.ts"]
+  }
 }

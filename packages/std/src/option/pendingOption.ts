@@ -1,9 +1,9 @@
+import { isPromise, promisify } from "@ts-rust/internal";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Result, Ok, Err, err, ok } from "../result";
-import { isPromise, promisify } from "../internal";
 import { MaybePromise } from "../types";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Option, type Some, type None, some, none, isOption } from "./index";
+import { Option, Some, None, some, none, isOption } from "./index";
 
 export type { PendingOption };
 

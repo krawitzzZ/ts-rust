@@ -1,0 +1,47 @@
+{
+  "name": "@ts-rust/std",
+  "version": "0.0.1",
+  "description": "A TypeScript adaptation of Rust's standard library, bringing Rust-inspired utilities and patterns to JavaScript environments",
+  "author": "Nikita Demin",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krawitzzZ/ts-rust.git"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "ci": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build",
+    "test": "jest",
+    "lint": "eslint -c ../../eslint.config.mjs **/*.ts --no-warn-ignored",
+    "lint:fix": "pnpm lint --fix",
+    "format": "prettier --check --config ../../.prettierrc.json ./src/**/*.ts",
+    "format:fix": "prettier --write --config ../../.prettierrc.json ./src/**/*.ts",
+    "typecheck": "tsc --build --force --noEmit",
+    "clean": "rm -rf ./dist",
+    "clean:deps": "rm -rf ./node_modules",
+    "prebuild": "pnpm --stream --filter \"@ts-rust/internal...\" build",
+    "build": "pnpm typecheck && rollup --config",
+    "prepack": "pnpm build",
+    "changeset": "changeset",
+    "release": "changeset publish",
+    "version": "changeset version"
+  },
+  "dependencies": {
+    "@ts-rust/internal": "workspace:*"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

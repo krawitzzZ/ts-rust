@@ -1,4 +1,4 @@
-import { isPromise, stringify, noop } from "../internal";
+import { isPromise, stringify, noop } from "@ts-rust/internal";
 import { AnyError } from "../error";
 import { err, isSafeResult, ok, Result } from "../result";
 import { MaybePromise } from "../types";

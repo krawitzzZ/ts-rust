@@ -3,3 +3,4 @@ tmp
 build
 dist
 src/draft.ts
+**/tsconfig.tsbuildinfo

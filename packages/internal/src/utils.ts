@@ -1,5 +1,3 @@
-import { MaybePromise } from "../types";
-
 /**
  * Checks if a value is a {@link Promise}, narrowing its type to {@link Promise<unknown>}.
  *
@@ -48,9 +46,8 @@ export function isPromise(x: unknown): x is Promise<unknown> {
  * expect(await asyncPromise).toBe("hello");
  * ```
  */
-export const promisify = <T>(
-  x: MaybePromise<T> | PromiseLike<T>,
-): Promise<T> => (isPromise(x) ? x : Promise.resolve(x));
+export const promisify = <T>(x: T | Promise<T> | PromiseLike<T>): Promise<T> =>
+  isPromise(x) ? x : Promise.resolve(x);
 
 /**
  * A no-operation function that performs no action and returns nothing.
