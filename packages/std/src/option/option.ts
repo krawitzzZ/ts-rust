@@ -224,7 +224,7 @@ class _Option<T> implements IOption<T> {
    * {@link None} will throw an {@link AnyError}.
    *
    * ## Throws
-   * - {@link AnyError} when {@link value} is accessed on {@link None}.
+   * - {@link AnyError} if {@link value} is accessed on {@link None}.
    */
   get value(): T {
     if (isNothing(this.#value)) {

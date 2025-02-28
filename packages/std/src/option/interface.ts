@@ -136,7 +136,7 @@ export interface IOption<T> {
    * with the provided message (or a default) if {@link None}.
    *
    * ## Throws
-   * {@link AnyError} if value is {@link None}
+   * - {@link AnyError} if value is {@link None}
    *
    * ### Example
    * ```ts
@@ -210,8 +210,7 @@ export interface IOption<T> {
    * result of `f` if {@link None}.
    *
    * ## Throws
-   * If `f` throws, rethrows {@link AnyError} with original error being set as
-   * {@link AnyError.reason}.
+   * - {@link AnyError} if `f` throws, original error will be set as {@link AnyError.reason}.
    *
    * ### Note
    * This method mutates the option. If `f` throws, the option **remains unchanged**.
@@ -376,8 +375,8 @@ export interface IOption<T> {
    * returns the result of `mkDef`.
    *
    * ## Throws
-   * If `mkDef` is called and throws, rethrows {@link AnyError} with original error
-   * being set as {@link AnyError.reason}.
+   * - {@link AnyError} if `mkDef` is called and throws, original error will be
+   * set as {@link AnyError.reason}.
    *
    * ### Note
    * If `f` throws, the error is silently ignored and result of `mkDef` is returned.
@@ -395,11 +394,12 @@ export interface IOption<T> {
    */
   mapOrElse<U>(mkDef: () => U, f: (x: T) => U): U;
   /**
-   * Matches the option, returning `f` applied to the value if {@link Some}, or `g` if {@link None}.
+   * Matches the option, returning `f` applied to the value if {@link Some},
+   * or `g` if {@link None}.
    *
    * ## Throws
-   * If either `f` or `g` throws, rethrows {@link AnyError} with original error
-   * being set as {@link AnyError.reason}.
+   * - {@link AnyError} if either `f` or `g` throws, original error will be set
+   * as {@link AnyError.reason}.
    *
    * ### Example
    * ```ts
@@ -665,7 +665,7 @@ export interface IOption<T> {
    * Returns the contained value if {@link Some}, or throws {@link AnyError} if {@link None}.
    *
    * ## Throws
-   * {@link AnyError} if value is {@link None}
+   * - {@link AnyError} if value is {@link None}
    *
    * ### Example
    * ```ts
@@ -694,8 +694,8 @@ export interface IOption<T> {
    * Returns the contained value if {@link Some}, or the result of `mkDef` if {@link None}.
    *
    * ## Throws
-   * If `mkDef` throws, rethrows {@link AnyError} with original error being
-   * set as {@link AnyError.reason}.
+   * - {@link AnyError} if `mkDef` throws, original error will be set as
+   * {@link AnyError.reason}.
    *
    * ### Example
    * ```ts
