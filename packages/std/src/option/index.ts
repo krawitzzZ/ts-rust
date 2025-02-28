@@ -1,4 +1,3 @@
-export { MaybePendingOption, FlattenedPendingOption } from "./types";
 export { IOption } from "./interface";
 export {
   Option,

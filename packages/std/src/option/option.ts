@@ -1,12 +1,7 @@
 import { MaybePromise, isPromise, stringify, noop } from "@ts-rust/internal";
 import { AnyError } from "../error";
 import { err, isSafeResult, ok, Result } from "../result";
-import {
-  IOption,
-  MaybePendingOption,
-  PendingOption,
-  pendingOption,
-} from "./index";
+import { IOption, PendingOption, pendingOption } from "./index";
 
 /**
  * A type that represents either a value ({@link Some | Some\<T>}) or
@@ -559,3 +554,5 @@ class _Option<T> implements IOption<T> {
     return this.#replaceValue(nothing);
   }
 }
+
+type MaybePendingOption<T> = Option<T> | PendingOption<T>;
