@@ -29,7 +29,7 @@
     "typecheck": "tsc --build --force --noEmit",
     "clean": "rm -rf ./dist",
     "clean:deps": "rm -rf ./node_modules",
-    "build": "pnpm typecheck && rollup --config"
+    "build": "pnpm typecheck && rollup --config --failAfterWarnings"
   },
   "engines": {
     "node": ">=20"

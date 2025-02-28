@@ -1,7 +1,6 @@
-import { isPromise, stringify, noop } from "@ts-rust/internal";
+import { MaybePromise, isPromise, stringify, noop } from "@ts-rust/internal";
 import { AnyError } from "../error";
 import { err, isSafeResult, ok, Result } from "../result";
-import { MaybePromise } from "../types";
 import {
   IOption,
   MaybePendingOption,

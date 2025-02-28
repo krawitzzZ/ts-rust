@@ -24,7 +24,7 @@ export function isPromise(x: unknown): x is Promise<unknown> {
 }
 
 /**
- * Converts a {@link MaybePromise} or {@link PromiseLike} value into a {@link Promise}.
+ * Converts {@link Promise}, {@link PromiseLike} or an actual value into a {@link Promise}.
  *
  * This utility function normalizes its input by returning the input directly if it is
  * already a {@link Promise}, or wrapping it in a resolved {@link Promise} if it is not.

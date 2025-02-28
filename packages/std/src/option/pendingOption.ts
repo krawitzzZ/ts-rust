@@ -1,7 +1,6 @@
-import { isPromise, promisify } from "@ts-rust/internal";
+import { MaybePromise, isPromise, promisify } from "@ts-rust/internal";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Result, Ok, Err, err, ok } from "../result";
-import { MaybePromise } from "../types";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Option, Some, None, some, none, isOption } from "./index";
 
@@ -155,7 +154,7 @@ class PendingOption<T> implements IPendingOption<T>, PromiseLike<Option<T>> {
    */
   and<U>(x: MaybePromise<Option<U>>): PendingOption<U> {
     return pendingOption(
-      this.#promise.then(async (option) => {
+      this.#promise.then((option) => {
         if (option.isNone()) {
           return none<U>();
         }
@@ -186,7 +185,7 @@ class PendingOption<T> implements IPendingOption<T>, PromiseLike<Option<T>> {
    */
   andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingOption<U> {
     return pendingOption(
-      this.#promise.then(async (option) => {
+      this.#promise.then((option) => {
         if (option.isNone()) {
           return none<U>();
         }
