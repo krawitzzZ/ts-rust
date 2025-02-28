@@ -14,17 +14,19 @@
     "url": "git+https://github.com/krawitzzZ/ts-rust.git"
   },
   "scripts": {
-    "lint": "pnpm --recursive --parallel --stream lint",
-    "lint:fix": "pnpm --recursive --parallel --stream lint:fix",
-    "format": "pnpm --recursive --parallel --stream format",
-    "format:fix": "pnpm --recursive --parallel --stream format:fix",
-    "ci": "pnpm --recursive --parallel --stream ci",
-    "test": "pnpm --recursive --parallel --stream test",
-    "typecheck": "pnpm --recursive --parallel --stream typecheck",
-    "clean": "rm -rf ./dist && pnpm --recursive --parallel --stream clean",
-    "clean:deps": "rm -rf ./node_modules && pnpm --recursive --parallel --stream clean:deps",
-    "prebuild": "pnpm clean",
-    "build": "pnpm --recursive --stream --filter \"@ts-rust/*...\" build"
+    "lint": "pnpm run --recursive --parallel --stream lint",
+    "lint:fix": "pnpm run --recursive --parallel --stream lint:fix",
+    "format": "pnpm run --recursive --parallel --stream format",
+    "format:fix": "pnpm run --recursive --parallel --stream format:fix",
+    "ci": "pnpm run run --recursive --parallel --stream ci",
+    "test": "pnpm run --recursive --parallel --stream test",
+    "typecheck": "pnpm run --recursive --parallel --stream typecheck",
+    "clean": "rm -rf ./dist && pnpm run --recursive --parallel --stream clean",
+    "clean:deps": "rm -rf ./node_modules && pnpm run --recursive --parallel --stream clean:deps",
+    "prebuild": "pnpm run clean",
+    "build": "pnpm run --recursive --stream --filter \"!@ts-rust/internal\" --filter \"@ts-rust/*...\" build",
+    "build:examples": "pnpm run --recursive --stream --filter \"@examples/*\" build",
+    "build:all": "pnpm run build && pnpm run build:examples"
   },
   "devDependencies": {
     "@changesets/cli": "2.28.1",

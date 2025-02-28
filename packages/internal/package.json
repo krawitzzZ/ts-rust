@@ -20,16 +20,16 @@
     "dist"
   ],
   "scripts": {
-    "ci": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build",
+    "ci": "pnpm run typecheck && pnpm run lint && pnpm run format && pnpm run test && pnpm run build",
     "test": "jest",
     "lint": "eslint -c ../../eslint.config.mjs **/*.ts --no-warn-ignored",
-    "lint:fix": "pnpm lint --fix",
+    "lint:fix": "pnpm run lint --fix",
     "format": "prettier --check --config ../../.prettierrc.json ./src/**/*.ts",
     "format:fix": "prettier --write --config ../../.prettierrc.json ./src/**/*.ts",
     "typecheck": "tsc --build --force --noEmit",
     "clean": "rm -rf ./dist",
     "clean:deps": "rm -rf ./node_modules",
-    "build": "pnpm typecheck && rollup --config --failAfterWarnings"
+    "build": "pnpm run typecheck && rollup --config --failAfterWarnings"
   },
   "engines": {
     "node": ">=20"
