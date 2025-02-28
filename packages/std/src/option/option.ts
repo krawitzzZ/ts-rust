@@ -607,8 +607,6 @@ class _Option<T> implements IOption<T> {
  * or to its {@link None} invariant on failure. Methods mirror those of {@link Option},
  * adapted for asynchronous resolution.
  */
-// TODO(nikita.demin): test that .catch in constructor is enough for every method
-// to return none<T>() in case of errors thrown by predicate/callbacks
 class _PendingOption<T> implements PendingOption<T> {
   static create<T>(
     option: Option<T> | PendingOption<T> | PromiseLike<Option<T>>,
@@ -677,7 +675,6 @@ class _PendingOption<T> implements PendingOption<T> {
       | PendingOption<PendingOption<U>>
       | PendingOption<PromiseLike<Option<U>>>,
   ): PendingOption<U> {
-    // TODO(nikita.demin): check if 2nd callback needed in then in case of error
     return pendingOption(
       this.then(async (option) => {
         if (option.isNone()) {

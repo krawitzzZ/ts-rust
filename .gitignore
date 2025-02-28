@@ -2,5 +2,5 @@ node_modules
 tmp
 build
 dist
-src/draft.ts
+**/debug.ts
 **/tsconfig.tsbuildinfo
