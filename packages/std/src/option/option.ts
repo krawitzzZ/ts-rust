@@ -192,26 +192,28 @@ class _Option<T> implements IOption<T> {
    * Stores either a value of type `T` for {@link Some} instances or the {@link Nothing}
    * symbol for {@link None} instances. This field is managed internally through the
    * private `#value` getter and setter to ensure type safety and encapsulation.
+   *
+   * ### IMPORTANT
+   * **This property shall only be used in `#value` getter and setter**
    */
   #x: T | Nothing = nothing;
 
   /**
-   * Internal getter for the value that this Option holds.
+   * Internal value (getter and setter) that this {@link Option} holds.
    *
-   * This getter shall be used **everywhere within this class** to access the value.
+   * The `getter` shall be used everywhere **within this class** to access the value.
    *
-   * **{@link value} getter should only be used to access the value from outside**.
+   * The `setter` takes care of keeping the internal state consistent by also
+   * updating the {@link phantom} property.
+   *
+   * ### IMPORTANT
+   * **{@link value} getter should only be used to access the value from the
+   * outside and never within the class**.
    */
   get #value(): T | Nothing {
     return this.#x;
   }
 
-  /**
-   * Internal setter for the value that this Option holds.
-   *
-   * Takes care of keeping the internal state consistent by also updating the
-   * {@link phantom} property.
-   */
   set #value(value: T | Nothing) {
     this.#x = value;
     this[phantom] = isNothing(this.#x) ? "none" : "some";

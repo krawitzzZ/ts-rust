@@ -1146,7 +1146,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
 }
 
 /**
- * A private symbol-keyed property used as a type discriminant.
+ * Internal symbol-keyed property used as a type discriminant.
  *
  * This field holds either `"some"` or `"none"` to indicate whether the
  * {@link Option} is a {@link Some} or {@link None} variant. It is not
@@ -1157,5 +1157,4 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
  * interference while allowing the class to mutate its state (e.g., from
  * `None` to `Some`) as needed.
  */
-// TODO(nikita.demin): check that this symbol cannot be accessed by the package users
 export const phantom: unique symbol = Symbol("OptionPhantom");
