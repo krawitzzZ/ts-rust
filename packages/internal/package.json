@@ -20,7 +20,7 @@
     "dist"
   ],
   "scripts": {
-    "ci": "pnpm run typecheck && pnpm run lint && pnpm run format && pnpm run test && pnpm run build",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format && pnpm run test && pnpm run build",
     "test": "jest",
     "lint": "eslint -c ../../eslint.config.mjs **/*.ts --no-warn-ignored",
     "lint:fix": "pnpm run lint --fix",
