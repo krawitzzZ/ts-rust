@@ -13,13 +13,13 @@ export class AnyError<T> extends Error {
     this.name = this.constructor.name;
     this.kind = kind;
     this.reason = makeReason(reason);
-    this.message = `${message}. Reason: ${stringify(kind)}.`;
+    this.message = `[${stringify(kind)}] ${message}. Reason: ${stringify(reason)}.`;
   }
 }
 
 function makeReason(cause?: unknown): Error | undefined {
-  if (arguments.length === 0) {
-    return undefined;
+  if (cause === undefined) {
+    return cause;
   }
 
   return cause instanceof Error ? cause : new Error(stringify(cause));
