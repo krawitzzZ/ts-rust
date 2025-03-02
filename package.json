@@ -20,6 +20,7 @@
     "format:fix": "pnpm run --recursive --parallel --stream format:fix",
     "check": "pnpm run --recursive --stream check",
     "test": "pnpm run --recursive --parallel --stream test",
+    "test:cov": "pnpm run --recursive --parallel --stream test:cov",
     "typecheck": "pnpm run --recursive --parallel --stream typecheck",
     "clean": "rm -rf ./dist && pnpm run --recursive --parallel --stream clean",
     "clean:deps": "rm -rf ./node_modules && pnpm run --recursive --parallel --stream clean:deps",

@@ -22,8 +22,9 @@
     "access": "public"
   },
   "scripts": {
-    "check": "pnpm run typecheck && pnpm run lint && pnpm run format && pnpm run test && pnpm run build",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format && pnpm run test:cov && pnpm run build",
     "test": "jest",
+    "test:cov": "jest --coverage",
     "lint": "eslint -c ../../eslint.config.mjs **/*.ts --no-warn-ignored",
     "lint:fix": "pnpm run lint --fix",
     "format": "prettier --check --config ../../.prettierrc.json ./src/**/*.ts",
