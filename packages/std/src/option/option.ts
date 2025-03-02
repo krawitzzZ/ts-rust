@@ -2,7 +2,6 @@ import {
   MaybePromise,
   isPromise,
   stringify,
-  noop,
   promisify,
 } from "@ts-rust/internal";
 import { AnyError } from "../error";
@@ -466,19 +465,8 @@ class _Option<T> implements IOption<T> {
     }
   }
 
-  replace(x: T): Option<T>;
-  replace(x: Promise<T>): readonly [Option<T>, Promise<void>];
-  replace(x: MaybePromise<T>): Option<T> | readonly [Option<T>, Promise<void>] {
-    if (isPromise(x)) {
-      const promise = x.then((val) => {
-        this.#value = val;
-      }, noop);
-
-      return [this.clone(), promise];
-    }
-
+  replace(x: T): Option<T> {
     const value = this.#replaceValue(x);
-
     return isNothing(value) ? none() : some(value);
   }
 
@@ -498,8 +486,7 @@ class _Option<T> implements IOption<T> {
 
     try {
       if (f(this.#value)) {
-        const value = this.#takeValue();
-        return isNothing(value) ? none() : some(value);
+        return this.take();
       }
 
       return none();

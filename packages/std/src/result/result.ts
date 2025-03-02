@@ -36,7 +36,8 @@ export enum ResultErrorKind {
   OkErrorAccessed = "OkErrorAccessed", // error accessed on Ok
   ErrValueAccessed = "ErrValueAccessed", // ok accessed on Err
   ErrExpected = "ErrExpected",
-  ErrUnwrapped = "ErrUnwrapped",
+  ErrUnwrappedAsOk = "ErrUnwrappedAsOk",
+  OkUnwrappedAsErr = "OkUnwrappedAsErr",
   PredicateException = "PredicateException",
 }
 
@@ -136,5 +137,27 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
     return isOk(this.#state)
       ? `Ok { ${stringify(this.#state.value, true)} }`
       : `Err { ${stringify(this.#state.error, true)} }`;
+  }
+
+  unwrap(): T {
+    if (isErr(this.#state)) {
+      throw new AnyError(
+        "`unwrap` is called on `Err`",
+        ResultErrorKind.ErrUnwrappedAsOk,
+      );
+    }
+
+    return this.#state.value;
+  }
+
+  unwrapErr(): E {
+    if (isOk(this.#state)) {
+      throw new AnyError(
+        "`unwrapErr` is called on `Ok`",
+        ResultErrorKind.OkUnwrappedAsErr,
+      );
+    }
+
+    return this.#state.error;
   }
 }

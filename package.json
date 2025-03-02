@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "2.28.1",
+    "@golevelup/ts-jest": "0.6.2",
     "@rollup/plugin-node-resolve": "16.0.0",
     "@rollup/plugin-typescript": "12.1.2",
     "@types/jest": "29.5.14",

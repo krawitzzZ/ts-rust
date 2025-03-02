@@ -512,54 +512,6 @@ export interface IOption<T> {
    */
   replace(x: T): Option<T>;
   /**
-   * Special case of {@link replace} for async `x`.
-   *
-   * Asynchronously replaces the current {@link Option} with the resolved value of `x`,
-   * returning the original value and a {@link Promise} that triggers the replacement.
-   *
-   * Since `x` is a {@link Promise} that resolves asynchronously, this method defers the
-   * update until `x` resolves. It:
-   * 1. Captures the current {@link Option} (either {@link Some} or {@link None}).
-   * 2. Returns a tuple where:
-   *    - The first element is the original {@link Option} before any changes.
-   *    - The second element is a {@link Promise} that, when awaited, mutates this
-   *      {@link Option} to {@link Some} containing the resolved value of `x`.
-   * 3. If `x` rejects, no mutation occurs, and the option remains unchanged.
-   *
-   * This is an asynchronous variant of {@link Option.replace}, designed for deferred
-   * updates with pending values.
-   *
-   * ### Note
-   * This method mutates the original {@link Option}, but the mutation is deferred until
-   * the returned {@link Promise} resolves successfully. The option remains in its
-   * original state until then.
-   *
-   * ### Example
-   * ```ts
-   * const x = some(2);
-   * const y = none<number>();
-   *
-   * const xResult = x.replace(Promise.resolve(5));
-   * const yResult = y.replace(Promise.resolve(3));
-   *
-   * // Check tuple structure
-   * expect(xResult).toHaveLength(2);
-   * expect(xResult[0]).toStrictEqual(some(2)); // Original value
-   * expect(xResult[1]).toBeInstanceOf(Promise);
-   * expect(x.isSome()).toBe(true); // x unchanged until promise resolves
-   * await xResult[1]; // Trigger mutation
-   * expect(x).toStrictEqual(some(5)); // x is now Some(5)
-   *
-   * expect(yResult).toHaveLength(2);
-   * expect(yResult[0]).toStrictEqual(none()); // Original value
-   * expect(yResult[1]).toBeInstanceOf(Promise);
-   * expect(y.isNone()).toBe(true); // y unchanged until promise resolves
-   * await yResult[1]; // Trigger mutation
-   * expect(y).toStrictEqual(some(3)); // y is now Some(3)
-   * ```
-   */
-  replace(x: Promise<T>): readonly [Option<T>, Promise<void>];
-  /**
    * Takes the value out of the option, leaving {@link None} in its place.
    *
    * ### Note

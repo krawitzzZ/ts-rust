@@ -19,6 +19,8 @@ export interface IResult<T, E> {
    * ```
    */
   toString(): string;
+  unwrap(): T;
+  unwrapErr(): E;
 }
 
 export interface ISafeResult<T, E> extends IResult<T, E> {
