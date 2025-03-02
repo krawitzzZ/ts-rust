@@ -21,6 +21,7 @@ export default [
   },
 
   {
+    name: "JavaScript and tests",
     files: ["**/*.js", "**/*spec.ts"],
     ...tslint.configs.disableTypeChecked,
   },
@@ -70,6 +71,14 @@ export default [
     files: ["**/interface/*.ts", "**/*interface.ts", "**/*types.ts"],
     rules: {
       "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
+    },
+  },
+
+  {
+    name: "Tests",
+    files: ["**/*.spec.ts"],
+    rules: {
+      "import/no-extraneous-dependencies": "off",
     },
   },
 
