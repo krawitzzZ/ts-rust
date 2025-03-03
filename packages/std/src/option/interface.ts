@@ -708,7 +708,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * Accepts both synchronous and asynchronous `x`.
    *
-   * Similar to the {@link Option.and}.
+   * This is the asynchronous version of the {@link Option.and}.
    *
    * ### Example
    * ```ts
@@ -730,7 +730,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * The function `f` may return synchronously or asynchronously.
    *
-   * Similar to {@link Option.andThen}.
+   * This is the asynchronous version of the {@link Option.andThen}.
    *
    * ### Example
    * ```ts
@@ -747,7 +747,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
   /**
    * Creates a shallow copy of this {@link PendingOption}.
    *
-   * Similar to {@link Option.clone}.
+   * This is the asynchronous version of the {@link Option.clone}.
    *
    * ### Example
    * ```ts
@@ -767,7 +767,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * The predicate `f` may return synchronously or asynchronously.
    *
-   * Similar to {@link Option.filter}.
+   * This is the asynchronous version of the {@link Option.filter}.
    *
    * ### Example
    * ```ts
@@ -784,7 +784,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * Flattens a {@link PendingOption} of a {@link PendingOption} or {@link Option},
    * resolving nested pending states.
    *
-   * Similar to {@link Option.flatten}.
+   * This is the asynchronous version of the {@link Option.flatten}.
    *
    * ### Example
    * ```ts
@@ -808,7 +808,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * Calls `f` with the resolved value if this option is {@link Some}, then returns this
    * {@link PendingOption} unchanged. Useful for side effects.
    *
-   * Similar to {@link Option.inspect}.
+   * This is the asynchronous version of the {@link Option.inspect}.
    *
    * ### Note
    * Returns a new {@link PendingOption} instance with the same value as the original,
@@ -834,7 +834,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * The function `f` may return synchronously or asynchronously.
    *
-   * Similar to {@link Option.map}.
+   * This is the asynchronous version of the {@link Option.map}.
    *
    * ### Example
    * ```ts
@@ -851,7 +851,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * Matches the resolved option, returning `f` applied to the value if {@link Some},
    * or `g` if {@link None}. Returns a {@link Promise} with the result.
    *
-   * Similar to {@link Option.match}.
+   * This is the asynchronous version of the {@link Option.match}.
    *
    * ### Example
    * ```ts
@@ -867,7 +867,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * Converts to a {@link Promise} of a {@link Result}, using `y` as the error value if
    * this {@link PendingOption} resolves to {@link None}.
    *
-   * Similar to {@link Option.okOr}, check it for more details.
+   * This is the asynchronous version of the {@link Option.okOr}, check it for more details.
    *
    * ### Example
    * ```ts
@@ -885,7 +885,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * `mkErr` may return synchronously or asynchronously.
    *
-   * Similar to {@link Option.okOrElse}, check it for more details.
+   * This is the asynchronous version of the {@link Option.okOrElse}, check it for more details.
    *
    * ### Example
    * ```ts
@@ -896,6 +896,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * expect(await y.okOrElse(() => Promise.resolve("error"))).toStrictEqual(err("error"));
    * ```
    */
+  // TODO(nikita.demin): think of how to handle the error if thrown (after result is done)
   okOrElse<E>(mkErr: () => E | Promise<E>): Promise<Result<T, E>>;
   /**
    * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
@@ -903,7 +904,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * Accepts both synchronous and asynchronous `x`.
    *
-   * Similar to {@link Option.or}.
+   * This is the asynchronous version of the {@link Option.or}.
    *
    * ### Example
    * ```ts
@@ -923,7 +924,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * The function `f` may return synchronously or asynchronously.
    *
-   * Similar to {@link Option.orElse}.
+   * This is the asynchronous version of the {@link Option.orElse}.
    *
    * ### Example
    * ```ts
@@ -942,7 +943,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * Accepts both synchronous and asynchronous `x`.
    *
-   * Similar to {@link Option.replace}.
+   * This is the asynchronous version of the {@link Option.replace}.
    *
    * ### Note
    * This method mutates the {@link PendingOption}.
@@ -966,7 +967,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * Takes the resolved value out of this {@link PendingOption}, leaving it as
    * {@link PendingOption} with {@link None}.
    *
-   * Similar to {@link Option.take}.
+   * This is the asynchronous version of the {@link Option.take}.
    *
    * ### Note
    * This method mutates the {@link PendingOption}.
@@ -994,7 +995,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * The predicate `f` may return synchronously or asynchronously.
    *
-   * Similar to {@link Option.takeIf}.
+   * This is the asynchronous version of the {@link Option.takeIf}.
    *
    * ### Note
    * This method mutates the {@link PendingOption}.
@@ -1022,7 +1023,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
   /**
    * Returns a string representation of this {@link PendingOption}'s current state.
    *
-   * Similar to {@link Option.toString}.
+   * This is the asynchronous version of the {@link Option.toString}.
    *
    * ### Example
    * ```ts
@@ -1040,7 +1041,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * {@link Result} containing a {@link PendingOption}. Resolves to {@link Ok}({@link None})
    * if this option is {@link None}, or propagates the error if the result is {@link Err}.
    *
-   * Similar to {@link Option.transposeResult}.
+   * This is the asynchronous version of the {@link Option.transposeResult}.
    *
    * ### Example
    * ```ts
@@ -1060,7 +1061,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * Transposes a {@link PendingOption} of an {@link PromiseLike} into a {@link PendingOption}
    * with the fully awaited value.
    *
-   * Similar to {@link Option.transposeAwaitable}.
+   * This is the asynchronous version of the {@link Option.transposeAwaitable}.
    *
    * ### Example
    * ```ts
@@ -1081,7 +1082,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * Accepts both synchronous and asynchronous `y`.
    *
-   * Similar to {@link Option.xor}.
+   * This is the asynchronous version of the {@link Option.xor}.
    *
    * ### Example
    * ```ts

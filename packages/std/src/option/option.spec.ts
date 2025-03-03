@@ -9,6 +9,9 @@ describe("Option", () => {
   const two = 222;
   const zero = 0;
 
+  // TODO(nikita.demin): add checks that shallow copies are returned
+  // TODO(nikita.demin): add checks that provided callbacks that are promises and rejects do not kill the process
+  // TODO(nikita.demin): add checks that MaybePromises that reject do not kill the process
   describe("value", () => {
     it("returns inner value if self is `Some`", () => {
       const option = some(one);
@@ -224,7 +227,7 @@ describe("Option", () => {
       expect(() => result.unwrap()).toThrow(AnyError);
     });
 
-    it("returns inner `Option` if self is `Option<Option<T>>`", () => {
+    it("returns inner `Option` if self is `Some<Option<T>>`", () => {
       const option = some(some(one));
       const result = option.flatten();
 
@@ -344,11 +347,22 @@ describe("Option", () => {
       expect(callback).not.toHaveBeenCalled();
     });
 
-    it("does not throw if provided callback throws and returns self", () => {
+    it("does not throw and returns self if provided callback throws", () => {
       const option = some(one);
       const callback = jest.fn(() => {
         throw new Error("error");
       });
+      const result = option.inspect(callback);
+
+      expect(result).not.toBe(option);
+      expect(result.unwrap()).toBe(option.unwrap());
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(one);
+    });
+
+    it("does not throw and returns self if provided callback rejects", async () => {
+      const option = some(one);
+      const callback = jest.fn(() => Promise.reject(new Error("error")));
       const result = option.inspect(callback);
 
       expect(result).not.toBe(option);

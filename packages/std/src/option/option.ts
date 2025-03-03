@@ -338,7 +338,11 @@ class _Option<T> implements IOption<T> {
   inspect(f: (x: T) => unknown): Option<T> {
     if (isSomething(this.#value)) {
       try {
-        f(this.#value);
+        const inspection = f(this.#value);
+
+        if (isPromise(inspection)) {
+          inspection.catch(() => void 0);
+        }
       } catch {
         // do not care about the error
       }
@@ -676,12 +680,7 @@ class _PendingOption<T> implements PendingOption<T> {
   }
 
   inspect(f: (x: T) => unknown): PendingOption<T> {
-    return pendingOption(
-      this.#promise.then((option) => {
-        option.inspect(f);
-        return option.clone();
-      }),
-    );
+    return pendingOption(this.#promise.then((option) => option.inspect(f)));
   }
 
   map<U>(f: (x: T) => MaybePromise<U>): PendingOption<U> {
@@ -716,7 +715,7 @@ class _PendingOption<T> implements PendingOption<T> {
 
   or(x: MaybePromise<Option<T>>): PendingOption<T> {
     return pendingOption(
-      this.#promise.then((option) => (option.isSome() ? option : x)),
+      this.#promise.then(async (option) => option.or(await x)),
     );
   }
 

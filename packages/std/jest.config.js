@@ -14,4 +14,5 @@ module.exports = {
   },
   coverageReporters: ["text", "lcov"],
   coverageDirectory: "coverage",
+  clearMocks: true,
 };
