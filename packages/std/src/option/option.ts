@@ -1,6 +1,8 @@
-import { isPromise, stringify, promisify, Sync, id } from "@ts-rust/internal";
+import { isPromise, stringify, promisify, id } from "@ts-rust/internal";
 import { AnyError } from "../error";
 import { Result, err, ok, isResult } from "../result";
+import { Clone, Cloneable, Sync } from "../interface";
+import { isPrimitive } from "../type.utils";
 import {
   Optional,
   Option,
@@ -250,8 +252,20 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  clone(): Option<T> {
-    return isNothing(this.#value) ? none() : some(this.#value);
+  clone(this: Option<Cloneable<T>>): Option<T> {
+    if (this.isNone()) {
+      return none();
+    }
+
+    if (isPrimitive(this.value)) {
+      return some<T>(this.value);
+    }
+
+    return some(this.value.clone());
+  }
+
+  copy(): Option<T> {
+    return isSomething(this.#value) ? some(this.#value) : none();
   }
 
   expect(this: SettledOption<T>, msg?: string): T {
@@ -282,7 +296,7 @@ class _Option<T> implements Optional<T> {
       return none();
     }
 
-    return this.value.clone();
+    return this.value.copy();
   }
 
   getOrInsert(this: SettledOption<T>, x: T): T;
@@ -331,7 +345,7 @@ class _Option<T> implements Optional<T> {
       }
     }
 
-    return this.clone();
+    return this.copy();
   }
 
   isNone(): this is None<T> {
@@ -384,7 +398,7 @@ class _Option<T> implements Optional<T> {
     f: (x: Option<T>) => MaybePromise<Option<U>>,
   ): MaybePendingOption<U> {
     try {
-      const mapped = f(this.clone());
+      const mapped = f(this.copy());
       return isPromise(mapped) ? pendingOption(mapped) : mapped;
     } catch {
       return none();
@@ -501,6 +515,10 @@ class _Option<T> implements Optional<T> {
   }
 
   toPending(): PendingOption<T> {
+    return pendingOption(this.copy());
+  }
+
+  toPendingCloned(this: Clone<Option<T>>): PendingOption<T> {
     return pendingOption(this.clone());
   }
 
@@ -649,7 +667,7 @@ class _PendingOption<T> implements PendingOption<T> {
 
   // TODO(nikita.demin): DELETE!!!
   clone(): PendingOption<T> {
-    return pendingOption(this.#promise.then((x) => x.clone()));
+    throw new Error();
   }
 
   filter(f: (x: T) => MaybePromise<boolean>): PendingOption<T> {
@@ -659,7 +677,7 @@ class _PendingOption<T> implements PendingOption<T> {
           return none<T>();
         }
 
-        return (await f(option.value)) ? option.clone() : none<T>();
+        return (await f(option.value)) ? option.copy() : none<T>();
       }),
     );
   }
@@ -676,7 +694,6 @@ class _PendingOption<T> implements PendingOption<T> {
           return none<Awaited<U>>();
         }
 
-        // return pendingOption(option.value).map(id);
         return pendingOption(option.value).map(id);
       }),
     );
@@ -696,45 +713,6 @@ class _PendingOption<T> implements PendingOption<T> {
         return some(await f(option.value));
       }),
     );
-  }
-
-  mapOr<U>(def: U, f: (x: T) => U | Promise<U>): Promise<Awaited<U>> {
-    return this.#promise.then(async (option): Promise<Awaited<U>> => {
-      try {
-        if (option.isNone()) {
-          return await def;
-        }
-
-        return await f(option.value);
-      } catch (e) {
-        throw new AnyError(
-          "`PendingOption.mapOr` - callback `f` or default `def` threw an exception",
-          OptionErrorKind.PredicateException,
-          e,
-        );
-      }
-    });
-  }
-
-  mapOrElse<U>(
-    mkDef: () => U | Promise<U>,
-    f: (x: T) => U | Promise<U>,
-  ): Promise<Awaited<U>> {
-    return this.#promise.then(async (option): Promise<Awaited<U>> => {
-      try {
-        if (option.isNone()) {
-          return await mkDef();
-        }
-
-        return await f(option.value);
-      } catch (e) {
-        throw new AnyError(
-          "`PendingOption.mapOr` - callback `f` or `mkDef` threw an exception",
-          OptionErrorKind.PredicateException,
-          e,
-        );
-      }
-    });
   }
 
   match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>> {
@@ -763,13 +741,12 @@ class _PendingOption<T> implements PendingOption<T> {
 
   orElse(f: () => MaybePromise<Option<T>>): PendingOption<T> {
     return pendingOption(
-      this.#promise.then((option) => (option.isSome() ? option.clone() : f())),
+      this.#promise.then((option) => (option.isSome() ? option.copy() : f())),
     );
   }
 
-  // TODO(nikita.demin):  implement according to the docs
   replace(x: MaybePromise<T>): PendingOption<T> {
-    const oldOption = this.clone();
+    const oldOption = this.#clone();
 
     this.#promise = isPromise(x) ? x.then(some) : Promise.resolve(some(x));
 
@@ -822,5 +799,9 @@ class _PendingOption<T> implements PendingOption<T> {
     return pendingOption(
       this.#promise.then(async (option) => option.xor(await y)),
     );
+  }
+
+  #clone(): PendingOption<T> {
+    throw new Error();
   }
 }

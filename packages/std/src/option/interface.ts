@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { Sync } from "@ts-rust/internal";
 import type { AnyError } from "../error";
+import type { Clone, Cloneable, Sync } from "../interface";
 import type { Result, Ok, Err } from "../result";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
@@ -120,6 +120,25 @@ export interface Optional<T> {
   andThen<U>(f: (x: T) => Option<U>): Option<U>;
 
   /**
+   * Returns a clone of the {@link Option}.
+   *
+   * Only exists on {@link Option}s that hold {@link Cloneable} values.
+   *
+   * ### Example
+   * ```ts
+   * const x = some(1);
+   * const y = none<{ a: number }>();
+   *
+   * expect(x.clone()).toStrictEqual(some(1));
+   * expect(x.clone()).not.toBe(x); // Different reference
+   * expect(x.clone().unwrap()).toBe(1);
+   * // error: method does not exist on options that hold non-cloneable values
+   * // expect(y.clone()).toStrictEqual(none());
+   * ```
+   */
+  clone(this: Option<Cloneable<T>>): Option<T>;
+
+  /**
    * Returns a **shallow** copy of the {@link Option}.
    *
    * ### Example
@@ -128,13 +147,13 @@ export interface Optional<T> {
    * const x = some(value);
    * const y = none<{ a: number }>();
    *
-   * expect(x.clone()).toStrictEqual(some({ a: 1 }));
-   * expect(x.clone()).not.toBe(x); // Different reference
-   * expect(x.clone().unwrap()).toBe(value); // Same reference
-   * expect(y.clone()).toStrictEqual(none());
+   * expect(x.copy()).toStrictEqual(some({ a: 1 }));
+   * expect(x.copy()).not.toBe(x); // Different option reference
+   * expect(x.copy().unwrap()).toBe(value); // Same value reference
+   * expect(y.copy()).toStrictEqual(none());
    * ```
    */
-  clone(): Option<T>;
+  copy(): Option<T>;
 
   /**
    * Returns the contained value if {@link Some}, or throws {@link AnyError}
@@ -640,19 +659,44 @@ export interface Optional<T> {
   takeIf(f: (x: T) => boolean): Option<T>;
 
   /**
-   * Converts the option to a {@link PendingOption}.
+   * Maps this option to a {@link PendingOption} by supplying a shallow
+   * {@link Optional.copy | copy} of this option to {@link PendingOption} factory.
    *
    * ### Example
    * ```ts
-   * const x = some(2);
+   * const value = { a: 1 };
+   * const x = some(value);
    * const y = none<number>();
+   * const pendingX = x.toPending();
    *
-   * expect(isPendingOption(x.toPending())).toBe(true);
-   * expect(await x.toPending()).toStrictEqual(some(2));
+   * expect(isPendingOption(pendingX)).toBe(true);
+   * expect(await pendingX).toStrictEqual(some({ a: 1 }));
+   * value.a = 2;
+   * expect(await pendingX).toStrictEqual(some({ a: 2 }));
    * expect(await y.toPending()).toStrictEqual(none());
    * ```
    */
   toPending(): PendingOption<T>;
+
+  /**
+   * Maps this option to a {@link PendingOption} by supplying a
+   * {@link Optional.clone | clone} of this option to {@link PendingOption} factory.
+   *
+   * ### Example
+   * ```ts
+   * const value = { a: 0, clone: () => ({ a: 0 })};
+   * const x = some(value);
+   * const y = none<number>();
+   * const pendingX = x.toPendingCloned();
+   *
+   * expect(isPendingOption(pendingX)).toBe(true);
+   * expect((await pendingX).unwrap().a).toBe(0);
+   * value.a = 42;
+   * expect((await pendingX).unwrap().a).toBe(0);
+   * expect(await y.toPendingCloned()).toStrictEqual(none());
+   * ```
+   */
+  toPendingCloned(this: Clone<Option<T>>): PendingOption<T>;
 
   /**
    * Returns a string representation of the {@link Option}.
@@ -929,59 +973,14 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
   map<U>(f: (x: T) => U): PendingOption<Awaited<U>>;
 
   /**
-   * Returns a {@link Promise} with `f` applied to the resolved value if this option
-   * is {@link Some}, otherwise returns a {@link Promise} with the awaited `def` value.
-   *
-   * This is an asynchronous version of {@link Option.mapOr}
-   *
-   * ## Rejects
-   * - With {@link AnyError} if the {@link Promise} returned by `f` or `def` rejects.
-   *   It's up to the caller to handle the rejection.
-   *
-   * ### Example
-   * ```ts
-   * const asyncOpt = pendingOption(some(2));
-   * const noneAsync = pendingOption(none<number>());
-   *
-   * expect(await asyncOpt.mapOr(0, async x => x * 2)).toBe(4);
-   * expect(await noneAsync.mapOr(0, async x => x * 2)).toBe(0);
-   * await expect(asyncOpt.mapOr(0, x => Promise.reject(new Error()))).rejects.toThrow(Error);
-   * ```
-   */
-  mapOr<U>(def: U, f: (x: T) => U | Promise<U>): Promise<Awaited<U>>;
-
-  /**
-   * Returns a {@link Promise} with `f` applied to the resolved value if this option
-   * is {@link Some}, otherwise returns a {@link Promise} with the resolved result
-   * of `mkDef`.
-   *
-   * This is an asynchronous version of {@link Option.mapOrElse}
-   *
-   * ## Rejects
-   * - With {@link AnyError} if the {@link Promise} returned by `f` or `mkDef` rejects.
-   *   It's up to the caller to handle the rejection.
-   *
-   * ### Example
-   * ```ts
-   * const asyncOpt = pendingOption(some(2));
-   * const noneAsync = pendingOption(none<number>());
-   *
-   * expect(await asyncOpt.mapOrElse(() => 0, async x => x * 2)).toBe(4);
-   * expect(await asyncOpt.mapOrElse(async () => 1, async x => x * 2)).toBe(4);
-   * expect(await noneAsync.mapOrElse(async () => 0, async x => x * 2)).toBe(0);
-   * await expect(asyncOpt.mapOrElse(() => 0, x => Promise.reject(new Error()))).rejects.toThrow(Error);
-   * ```
-   */
-  mapOrElse<U>(
-    mkDef: () => U | Promise<U>,
-    f: (x: T) => U | Promise<U>,
-  ): Promise<Awaited<U>>;
-
-  /**
    * Matches the resolved option, returning `f` applied to the value if {@link Some},
    * or `g` if {@link None}. Returns a {@link Promise} with the result.
    *
    * This is the asynchronous version of the {@link Option.match}.
+   *
+   * ## Rejects
+   * - With {@link AnyError} if `f` or `g` throws an exception, original error
+   *   will be set as {@link AnyError.reason}.
    *
    * ### Example
    * ```ts
@@ -990,6 +989,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    *
    * expect(await x.match(n => n * 2, () => 0)).toBe(4);
    * expect(await y.match(n => n * 2, () => 0)).toBe(0);
+   * await expect(y.match(n => n * 2, () => { throw new Error() })).rejects.toThrow(AnyError);
    * ```
    */
   match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>>;
@@ -1009,6 +1009,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * expect(await y.okOr("error")).toStrictEqual(err("error"));
    * ```
    */
+  // TODO(nikita.demin): should be PendingResult
   okOr<E>(y: Sync<E>): Promise<Result<T, E>>;
 
   /**
@@ -1026,6 +1027,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * expect(await y.okOrElse(() => Promise.resolve("error"))).toStrictEqual(err("error"));
    * ```
    */
+  // TODO(nikita.demin): should be PendingResult
   // TODO(nikita.demin): think of how to handle the error if thrown (after result is done)
   // TODO(nikita.demin): should this be just `E` without `Promise<E>`?
   okOrElse<E>(mkErr: () => E | Promise<E>): Promise<Result<T, E>>;
@@ -1047,6 +1049,7 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * expect(await y.or(Promise.resolve(none()))).toStrictEqual(none());
    * ```
    */
+  // TODO(nikita.demin): CONTINUE HERE
   or(x: Option<T> | Promise<Option<T>>): PendingOption<T>;
 
   /**

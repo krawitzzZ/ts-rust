@@ -1,4 +1,4 @@
-import { id } from "./utils";
+import { id } from "./fp";
 
 // TODO(nikita.demin): write tests
 

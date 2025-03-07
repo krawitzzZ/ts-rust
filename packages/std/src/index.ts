@@ -1,13 +1,5 @@
-export {
-  ResultErrorKind,
-  PendingResult,
-  Result,
-  Ok,
-  Err,
-  ok,
-  err,
-  isResult,
-} from "./result";
+export { AnyError } from "./error";
+export { Copy, Clone, Cloneable, Primitive, Sync, Async } from "./interface";
 export {
   OptionErrorKind,
   PendingOption,
@@ -20,4 +12,13 @@ export {
   isOption,
   isPendingOption,
 } from "./option";
-export { AnyError } from "./error";
+export {
+  ResultErrorKind,
+  PendingResult,
+  Result,
+  Ok,
+  Err,
+  ok,
+  err,
+  isResult,
+} from "./result";
