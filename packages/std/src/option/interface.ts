@@ -6,7 +6,6 @@ import type { Result, Ok, Err } from "../result";
 
 // TODO(nikita.demin): make sure all the methods that return sync values `T`
 // (e.g. `unwrap` or `expect`) are called with `this: Option<Sync<T>>` and
-// all the methods that return async values are called with `this: PendingOption<T>`.
 
 /**
  * Represents an {@link Option} containing a value of type `T`.
@@ -84,7 +83,7 @@ export interface Optional<T> {
   and<U>(x: Option<U>): Option<U>;
   /**
    * Returns {@link PendingOption} with {@link None} if the promise resolves to
-   * {@link None}, otherwise returns {@link PendingOption} with `x`.
+   * {@link None}, otherwise returns {@link PendingOption} with {@link Awaited} `x`.
    *
    * ### Example
    * ```ts
@@ -98,7 +97,7 @@ export interface Optional<T> {
    * expect(await y.and(Promise.resolve(none())).toStrictEqual(none());
    * ```
    */
-  and<U>(x: Promise<Option<U>>): PendingOption<U>;
+  and<U>(x: Promise<Option<U>>): PendingOption<Awaited<U>>;
   /**
    * Applies `f` to the contained value if {@link Some}, returning its result; otherwise,
    * returns {@link None}. Also known as `flatMap`.
@@ -136,7 +135,7 @@ export interface Optional<T> {
    * // expect(y.clone()).toStrictEqual(none());
    * ```
    */
-  clone(this: Option<Cloneable<T>>): Option<T>;
+  clone<U>(this: Option<Cloneable<U>>): Option<U>;
 
   /**
    * Returns a **shallow** copy of the {@link Option}.
@@ -635,7 +634,8 @@ export interface Optional<T> {
   take(): Option<T>;
 
   /**
-   * Takes the value if {@link Some} and `f` returns `true`, leaving {@link None} otherwise.
+   * Takes the value out of the {@link Option}, but only if `f` returns `true`.
+   * Similar to {@link take}, but conditional.
    *
    * ### Notes
    * - *Mutation*: This method mutates the {@link Option}.
@@ -696,7 +696,7 @@ export interface Optional<T> {
    * expect(await y.toPendingCloned()).toStrictEqual(none());
    * ```
    */
-  toPendingCloned(this: Clone<Option<T>>): PendingOption<T>;
+  toPendingCloned(this: Option<Cloneable<T>>): PendingOption<T>;
 
   /**
    * Returns a string representation of the {@link Option}.
@@ -1049,7 +1049,6 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * expect(await y.or(Promise.resolve(none()))).toStrictEqual(none());
    * ```
    */
-  // TODO(nikita.demin): CONTINUE HERE
   or(x: Option<T> | Promise<Option<T>>): PendingOption<T>;
 
   /**
@@ -1071,8 +1070,8 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
   orElse(f: () => Option<T> | Promise<Option<T>>): PendingOption<T>;
 
   /**
-   * Replaces the inner {@link Option} with {@link Some | Some(x)} and returns
-   * a new {@link PendingOption}.
+   * Replaces the current value in inner {@link Option} with {@link Some | Some(x)}
+   * and returns the old {@link PendingOption}.
    *
    * This is the asynchronous version of the {@link Option.replace}.
    *
@@ -1184,28 +1183,10 @@ export interface PendingOption<T> extends PromiseLike<Option<T>> {
    * expect(await z.transposeResult()).toStrictEqual(ok(none()));
    * ```
    */
+  // TODO(nikita.demin): should be pending result
   transposeResult<U, E>(
     this: PendingOption<Result<U, E>>,
   ): Promise<Result<Option<U>, E>>;
-
-  /**
-   * Transposes a {@link PendingOption} of an {@link PromiseLike} into a {@link PendingOption}
-   * with the fully awaited value.
-   *
-   * This is the asynchronous version of the {@link Option.transposeAwaitable}.
-   *
-   * ### Example
-   * ```ts
-   * const x: PendingOption<Promise<Promise<number>>> = getPendingOption();
-   * const y: PendingOption<number> = x.transposeAwaitable();
-   *
-   * const a: PendingOption<Promise<Promise<PendingOption<number>>>> = getPendingOption();
-   * const b: PendingOption<Option<number>> = a.transposeAwaitable();
-   * ```
-   */
-  transposeAwaitable<U>(
-    this: PendingOption<PromiseLike<U>>,
-  ): PendingOption<Awaited<U>>;
 
   /**
    * Returns a {@link PendingOption} with {@link Some} if exactly one of this option or

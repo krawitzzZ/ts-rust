@@ -1,6 +1,7 @@
 import { createMock } from "@golevelup/ts-jest";
 import { AnyError } from "../error";
 import { err, ok, Result } from "../result";
+import { Clone } from "../interface";
 import { Option, PendingOption, Some } from "./interface";
 import { some, none, isPendingOption, OptionErrorKind } from "./option";
 
@@ -118,30 +119,46 @@ describe("Option", () => {
   });
 
   describe("clone", () => {
-    it("returns `Some` with the same value", () => {
-      const option = some(one);
-      const result = option.clone();
+    class Counter implements Clone<Counter> {
+      constructor(public data: { count: number }) {}
+      clone(this: Clone<Counter>): Counter {
+        return new Counter({ count: 0 });
+      }
+    }
 
-      expect(result.isSome()).toBe(true);
-      expect(result.unwrap()).toBe(option.unwrap());
+    it("returns `Some` with the same value", () => {
+      const counter = new Counter({ count: 0 });
+      const self = some(counter);
+      const cloned = self.clone();
+
+      expect(cloned.isSome()).toBe(true);
+      expect(cloned).not.toBe(self);
+      expect(cloned.unwrap()).toStrictEqual(self.unwrap());
     });
 
-    // it("returns `None` if self is `None`", () => {
-    //   const option = none();
-    //   const result = option.clone();
+    it("returns `None` if self is `None`", () => {
+      const self = none<Option<number>>();
+      const cloned = self.clone();
 
-    //   expect(result.isNone()).toBe(true);
-    //   expect(() => result.unwrap()).toThrow(AnyError);
-    // });
+      expect(cloned.isNone()).toBe(true);
+      expect(() => cloned.unwrap()).toThrow(AnyError);
+    });
 
-    // it("creates a shallow copy, not a deep copy", () => {
-    //   const value = { a: 1 };
-    //   const option = some(value);
-    //   const result = option.clone();
+    it("creates a deep copy, not a shallow copy", () => {
+      const counter = new Counter({ count: 0 });
+      const self = some(counter);
+      const cloned = self.clone();
 
-    //   expect(result).not.toBe(option);
-    //   expect(result.unwrap()).toBe(value);
-    // });
+      expect(cloned.isSome()).toBe(true);
+      expect(cloned).not.toBe(self);
+      expect(cloned.unwrap()).not.toBe(self.unwrap());
+      expect(cloned.unwrap().data).not.toBe(self.unwrap().data);
+      expect(cloned.unwrap().data).toStrictEqual(self.unwrap().data);
+
+      counter.data.count += 1;
+
+      expect(cloned.unwrap().data.count).not.toEqual(self.unwrap().data.count);
+    });
   });
 
   describe("expect", () => {

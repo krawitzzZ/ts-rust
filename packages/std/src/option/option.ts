@@ -1,7 +1,7 @@
 import { isPromise, stringify, promisify, id } from "@ts-rust/internal";
 import { AnyError } from "../error";
 import { Result, err, ok, isResult } from "../result";
-import { Clone, Cloneable, Sync } from "../interface";
+import { Cloneable, Copy, Sync } from "../interface";
 import { isPrimitive } from "../type.utils";
 import {
   Optional,
@@ -150,7 +150,7 @@ class _Option<T> implements Optional<T> {
    * Creates {@link None} invariant of {@link Option}.
    */
   static none<T>(): Option<T> {
-    return new _Option();
+    return new _Option<T>(nothing);
   }
 
   /**
@@ -222,17 +222,13 @@ class _Option<T> implements Optional<T> {
     return this.#value;
   }
 
-  private constructor(value?: T) {
-    // no arguments => `None` is created
-    // argument provided => `Some` is created, even if it's undefined
-    if (arguments.length > 0) {
-      this.#value = value as T;
-    }
+  private constructor(value: T | Nothing) {
+    this.#value = value;
   }
 
   and<U>(x: Option<U>): Option<U>;
-  and<U>(x: Promise<Option<U>>): PendingOption<U>;
-  and<U>(x: MaybePromise<Option<U>>): MaybePendingOption<U> {
+  and<U>(x: Promise<Option<U>>): PendingOption<Awaited<U>>;
+  and<U>(x: MaybePromise<Option<U>>): Option<U> | PendingOption<Awaited<U>> {
     if (isPromise(x)) {
       return this.toPending().and(x);
     }
@@ -252,13 +248,13 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  clone(this: Option<Cloneable<T>>): Option<T> {
+  clone<U>(this: Option<Cloneable<U>>): Option<U> {
     if (this.isNone()) {
       return none();
     }
 
     if (isPrimitive(this.value)) {
-      return some<T>(this.value);
+      return some<Copy<U>>(this.value);
     }
 
     return some(this.value.clone());
@@ -518,7 +514,7 @@ class _Option<T> implements Optional<T> {
     return pendingOption(this.copy());
   }
 
-  toPendingCloned(this: Clone<Option<T>>): PendingOption<T> {
+  toPendingCloned(this: Option<Cloneable<T>>): PendingOption<T> {
     return pendingOption(this.clone());
   }
 
@@ -665,11 +661,6 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  // TODO(nikita.demin): DELETE!!!
-  clone(): PendingOption<T> {
-    throw new Error();
-  }
-
   filter(f: (x: T) => MaybePromise<boolean>): PendingOption<T> {
     return pendingOption(
       this.#promise.then(async (option) => {
@@ -746,15 +737,13 @@ class _PendingOption<T> implements PendingOption<T> {
   }
 
   replace(x: MaybePromise<T>): PendingOption<T> {
-    const oldOption = this.#clone();
-
+    const oldOption = this.#copy();
     this.#promise = isPromise(x) ? x.then(some) : Promise.resolve(some(x));
-
     return oldOption;
   }
 
   take(): PendingOption<T> {
-    const oldOption = this.clone();
+    const oldOption = this.#copy();
     this.#promise = Promise.resolve(none<T>());
     return oldOption;
   }
@@ -772,7 +761,7 @@ class _PendingOption<T> implements PendingOption<T> {
   }
 
   toString(): string {
-    return "PendingOption { promise }";
+    return "PendingOption { ... ⏳ ... }";
   }
 
   transposeResult<V, E>(
@@ -781,27 +770,13 @@ class _PendingOption<T> implements PendingOption<T> {
     return promisify(this.then((option) => option.transposeResult()));
   }
 
-  transposeAwaitable<V>(
-    this: PendingOption<PromiseLike<V>>,
-  ): PendingOption<Awaited<V>> {
-    return pendingOption(
-      this.then(async (option) => {
-        if (option.isNone()) {
-          return none<Awaited<V>>();
-        }
-
-        return some(await option.value);
-      }),
-    );
-  }
-
   xor(y: MaybePromise<Option<T>>): PendingOption<T> {
     return pendingOption(
       this.#promise.then(async (option) => option.xor(await y)),
     );
   }
 
-  #clone(): PendingOption<T> {
-    throw new Error();
+  #copy(): PendingOption<T> {
+    return pendingOption(this.#promise.then(id));
   }
 }

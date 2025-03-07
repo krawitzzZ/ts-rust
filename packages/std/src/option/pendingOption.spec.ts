@@ -251,24 +251,24 @@ describe("PendingOption", () => {
   });
 
   describe("inspect", () => {
-    it("calls `inspect` on inner `Option` and returns new instance of self with clone of inner `Option`", async () => {
+    it("calls `inspect` on inner `Option` and returns its result", async () => {
       const inner = some(one);
+      const inspectResult = some(one);
       const self = pendingOption(inner);
       const callback = jest.fn();
-      const inspectSpy = jest.spyOn(inner, "inspect");
-      const cloneSpy = jest.spyOn(inner, "clone");
+      const inspectSpy = jest
+        .spyOn(inner, "inspect")
+        .mockReturnValueOnce(inspectResult);
       const result = self.inspect(callback);
 
       expect(result).not.toBe(self);
       expect(inspectSpy).not.toHaveBeenCalled();
-      expect(cloneSpy).not.toHaveBeenCalled();
 
       const awaited = await result;
 
-      expect(awaited).not.toBe(inner);
+      expect(awaited).toBe(inspectResult);
       expect(awaited.unwrap()).toBe(one);
       expect(inspectSpy).toHaveBeenCalledTimes(1);
-      expect(cloneSpy).toHaveBeenCalledTimes(1);
     });
   });
 
