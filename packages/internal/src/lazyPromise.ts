@@ -88,6 +88,52 @@ export class LazyPromise<T> extends Promise<T> {
   }
 
   /**
+   * Creates a {@link LazyPromise} from a factory function that returns a
+   * `Promise<T>`, delaying execution until the promise is `await`ed or one of
+   * its methods ({@link LazyPromise.then | then}, {@link LazyPromise.catch | catch},
+   * or {@link LazyPromise.finally | finally}) is called.
+   *
+   * This method encapsulates the factory pattern, allowing deferred invocation
+   * of promise-creating logic (e.g., API calls or database queries). The factory
+   * function is executed lazily, and any synchronous errors are caught and
+   * rejected within the lazy promise.
+   *
+   * @param factory - A function that returns a `Promise<T>` to be resolved lazily.
+   * @returns A {@link LazyPromise} resolved with the awaited value of type `Awaited<T>`.
+   *
+   * ### Notes
+   * - *Error Handling*: Synchronous errors in the factory are caught and
+   *   rejected lazily. Asynchronous errors propagate as usual.
+   *
+   * ### Example
+   * ```ts
+   * const fetchData = () => Promise.resolve("data");
+   * const lp = LazyPromise.fromFactory(fetchData);
+   * const piped = lp.pipe((x) => `piped: ${x}`);
+   * // Factory hasn't run yet
+   * expect(piped).toBeInstanceOf(LazyPromise);
+   * console.log(await piped); // "piped: data"
+   *
+   * const failingFactory = () => {
+   *   throw new Error("failed");
+   * };
+   * const errorLp = LazyPromise.fromFactory(failingFactory);
+   * // Factory hasn't run yet
+   * expect(errorLp).toBeInstanceOf(LazyPromise);
+   * errorLp.catch((err) => console.log(err.message)); // "failed"
+   * ```
+   */
+  static fromFactory<T>(factory: () => Promise<T>): LazyPromise<Awaited<T>> {
+    return new LazyPromise<Awaited<T>>((resolve, reject) => {
+      try {
+        resolve(Promise.resolve(factory()));
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
    * Internal property that holds the native {@link Promise} once this
    * {@link LazyPromise}’s execution is initiated.
    */
