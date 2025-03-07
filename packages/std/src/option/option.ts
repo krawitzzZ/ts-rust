@@ -1,4 +1,4 @@
-import { isPromise, stringify, promisify, id } from "@ts-rust/internal";
+import { isPromise, stringify, toPromise, id } from "@ts-rust/internal";
 import { AnyError } from "../error";
 import { Result, err, ok, isResult } from "../result";
 import { Cloneable, Copy, Sync } from "../types";
@@ -625,7 +625,7 @@ class _PendingOption<T> implements PendingOption<T> {
   #promise: Promise<Option<T>>;
 
   private constructor(option: Option<T> | PromiseLike<Option<T>>) {
-    this.#promise = promisify(option).catch(() => none<T>());
+    this.#promise = toPromise(option).catch(() => none<T>());
   }
 
   // Implements the PromiseLike interface, allowing PendingOption to be used
@@ -767,7 +767,7 @@ class _PendingOption<T> implements PendingOption<T> {
   transposeResult<V, E>(
     this: PendingOption<Result<V, E>>,
   ): Promise<Result<Option<V>, E>> {
-    return promisify(this.then((option) => option.transposeResult()));
+    return toPromise(this.then((option) => option.transposeResult()));
   }
 
   xor(y: MaybePromise<Option<T>>): PendingOption<T> {
