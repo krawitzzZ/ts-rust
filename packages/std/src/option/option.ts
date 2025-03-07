@@ -1,8 +1,8 @@
 import { isPromise, stringify, promisify, id } from "@ts-rust/internal";
 import { AnyError } from "../error";
 import { Result, err, ok, isResult } from "../result";
-import { Cloneable, Copy, Sync } from "../interface";
-import { isPrimitive } from "../type.utils";
+import { Cloneable, Copy, Sync } from "../types";
+import { isPrimitive } from "../types.utils";
 import {
   Optional,
   Option,

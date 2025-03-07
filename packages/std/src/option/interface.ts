@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AnyError } from "../error";
-import type { Clone, Cloneable, Sync } from "../interface";
+import type { Clone, Cloneable, Sync } from "../types";
 import type { Result, Ok, Err } from "../result";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 

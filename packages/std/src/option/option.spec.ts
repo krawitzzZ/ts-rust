@@ -1,7 +1,7 @@
 import { createMock } from "@golevelup/ts-jest";
 import { AnyError } from "../error";
 import { err, ok, Result } from "../result";
-import { Clone } from "../interface";
+import { Clone } from "../types";
 import { Option, PendingOption, Some } from "./interface";
 import { some, none, isPendingOption, OptionErrorKind } from "./option";
 

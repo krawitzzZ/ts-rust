@@ -1,4 +1,4 @@
-import { Primitive } from "./interface";
+import { Primitive } from "./types";
 
 /**
  * Checks if a value is a {@link Primitive}, narrowing its type accordingly.

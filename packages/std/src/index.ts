@@ -1,5 +1,5 @@
 export { AnyError } from "./error";
-export { Copy, Clone, Cloneable, Primitive, Sync, Async } from "./interface";
+export { Copy, Clone, Cloneable, Primitive, Sync, Async } from "./types";
 export {
   OptionErrorKind,
   PendingOption,
