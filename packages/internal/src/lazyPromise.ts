@@ -15,6 +15,12 @@ import { id } from "./utils";
  * them immediately.
  *
  * ### Notes
+ * - *Executor timing*: The `executor` function, provided to the constructor, is
+ *   invoked not when the {@link LazyPromise} is created, but when it is first
+ *   `await`ed. As a result, if the `executor` depends on variables in its surrounding
+ *   scope, it will use their values as they exist at the time of evaluation, not
+ *   at the time of instantiation. Be mindful of scope changes that could affect
+ *   behavior.
  * - *Garbage Collection*: If a {@link LazyPromise} is never awaited or used
  *   (e.g., no calls to `then`, `catch`, or `finally`), the executor will not run,
  *   and the instance may be garbage-collected, allowing the script to terminate.
