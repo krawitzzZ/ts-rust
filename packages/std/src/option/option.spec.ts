@@ -11,7 +11,7 @@ describe("Option", () => {
 
   // TODO(nikita.demin): add checks that shallow copies are returned
   // TODO(nikita.demin): add checks that provided callbacks that are promises and rejects do not kill the process
-  // TODO(nikita.demin): add checks that MaybePromises that reject do not kill the process
+  // TODO(nikita.demin): add checks that MaybePromises that reject do not kill the process (e.g. for Result<number, Promise<string>>)
   describe("value", () => {
     it("returns inner value if self is `Some`", () => {
       const option = some(one);
@@ -99,18 +99,6 @@ describe("Option", () => {
 
       expect(result.isSome()).toBe(true);
       expect(result).toBe(some_);
-      expect(callback).toHaveBeenCalledTimes(1);
-      expect(callback).toHaveBeenCalledWith(option.unwrap());
-    });
-
-    it("calls provided callback and returns `PendingOption`, if callback returns `Promise<Option>` and self is `Some`", async () => {
-      const option = some(one);
-      const some_ = some(two);
-      const callback = jest.fn(() => Promise.resolve(some_));
-      const result = option.andThen(callback);
-
-      expect(isPendingOption(result)).toBe(true);
-      expect(await result).toBe(some_);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(option.unwrap());
     });
@@ -513,6 +501,68 @@ describe("Option", () => {
     });
   });
 
+  describe("mapAll", () => {
+    it.each([none<number>(), some(one)])(
+      "calls provided synchronous callback with self and returns mapped `Option`",
+      (option) => {
+        const mapped = some(two);
+        const fn = (_: Option<number>) => mapped;
+        const callback = jest.fn(fn);
+        const result = option.mapAll(callback);
+
+        expect(result).not.toBe(option);
+        expect(result).toBe(mapped);
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback).toHaveBeenCalledWith(option);
+      },
+    );
+
+    it.each([none<number>(), some(one)])(
+      "calls provided synchronous callback with self and returns mapped `Option`",
+      async (option) => {
+        const mapped = some(two);
+        const fn = (_: Option<number>) => Promise.resolve(mapped);
+        const callback = jest.fn(fn);
+        const result = option.mapAll(callback);
+
+        expect(isPendingOption(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited).toBe(mapped);
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback).toHaveBeenCalledWith(option);
+      },
+    );
+
+    it("returns `None` if provided synchronous callback throws", () => {
+      const option = some(one);
+      const callback = jest.fn(() => {
+        throw new Error("error");
+      });
+      const result = option.mapAll(callback);
+
+      expect(result.isNone()).toBe(true);
+      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(option);
+    });
+
+    it("returns `None` if provided asynchronous callback throws", async () => {
+      const option = some(one);
+      const callback = jest.fn(() => Promise.reject(new Error("error")));
+      const result = option.mapAll(callback);
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isNone()).toBe(true);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(option);
+    });
+  });
+
   describe("mapOr", () => {
     it("does not call provided callback and returns provided default if self is `None`", () => {
       const option = none();
@@ -525,11 +575,11 @@ describe("Option", () => {
 
     it("calls provided callback with inner value and returns the result if self is `Some`", () => {
       const option = some(one);
-      const fn = (value: number) => value + value;
+      const fn = (_: number) => two;
       const callback = jest.fn(fn);
-      const result = option.mapOr(two, callback);
+      const result = option.mapOr(zero, callback);
 
-      expect(result).toBe(fn(one));
+      expect(result).toBe(two);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
     });
@@ -622,7 +672,7 @@ describe("Option", () => {
 
       expect(() => option.mapOrElse(mkDefCallback, mapCallback)).toThrow(
         new AnyError(
-          "mapOrElse callback `mkDef` threw an exception",
+          "`Option.mapOrElse` - callback `mkDef` threw an exception",
           OptionErrorKind.PredicateException,
           mkDefError,
         ),
@@ -702,6 +752,7 @@ describe("Option", () => {
     });
   });
 
+  // TODO(nikita.demin): think of how to handle the error if thrown (after result is done)
   describe("okOrElse", () => {
     it("returns `ok` with inner value if self is `Some`", () => {
       const option = some(one);
@@ -740,13 +791,13 @@ describe("Option", () => {
       const pendingOptionMock = createMock<PendingOption<number>>();
       pendingOptionMock.or.mockReturnValueOnce(pendingOrResult);
 
-      const toPendingOptionSpy = jest
-        .spyOn(option, "toPendingOption")
+      const toPendingSpy = jest
+        .spyOn(option, "toPending")
         .mockReturnValueOnce(pendingOptionMock);
 
       const result = option.or(Promise.resolve(some_));
 
-      expect(toPendingOptionSpy).toHaveBeenCalledTimes(1);
+      expect(toPendingSpy).toHaveBeenCalledTimes(1);
       expect(pendingOptionMock.or).toHaveBeenCalledTimes(1);
       expect(result).toBe(pendingOrResult);
     });
@@ -902,11 +953,11 @@ describe("Option", () => {
     });
   });
 
-  describe("toPendingOption", () => {
+  describe("toPending", () => {
     it("returns `PendingOption` with self", async () => {
       const value = { number: one };
       const option = some(value);
-      const result = option.toPendingOption();
+      const result = option.toPending();
 
       expect(isPendingOption(result)).toBe(true);
 
@@ -1055,13 +1106,13 @@ describe("Option", () => {
       const selfPendingOption = createMock<PendingOption<number>>();
       selfPendingOption.xor.mockReturnValueOnce(xorPendingResult);
 
-      const toPendingOptionSpy = jest
-        .spyOn(self, "toPendingOption")
+      const toPendingSpy = jest
+        .spyOn(self, "toPending")
         .mockReturnValueOnce(selfPendingOption);
 
       const result = self.xor(Promise.resolve(other));
 
-      expect(toPendingOptionSpy).toHaveBeenCalledTimes(1);
+      expect(toPendingSpy).toHaveBeenCalledTimes(1);
       expect(selfPendingOption.xor).toHaveBeenCalledTimes(1);
       expect(result).toBe(xorPendingResult);
     });

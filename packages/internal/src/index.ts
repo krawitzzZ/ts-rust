@@ -1,3 +1,4 @@
-export { isPromise, promisify, noop } from "./utils";
+export { isPromise, promisify, noop, id, constant } from "./utils";
 export { stringify } from "./stringify";
-export { MaybePromise } from "./types";
+export { Sync, Async } from "./types";
+export { LazyPromise } from "./lazyPromise";

@@ -86,6 +86,7 @@ export default [
   { name: "ConfigPrettier-Exception" },
   {
     ignores: [
+      "**/sandbox.dev.ts",
       "eslint.config.mjs",
       "rollup.config.mjs",
       "jest.config.js",

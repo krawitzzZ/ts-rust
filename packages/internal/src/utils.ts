@@ -67,3 +67,57 @@ export const promisify = <T>(x: T | Promise<T> | PromiseLike<T>): Promise<T> =>
  * ```
  */
 export function noop(): void {}
+
+/**
+ * The identity function, returning its input unchanged.
+ *
+ * A fundamental concept in functional programming, this function takes a value
+ * of any type and returns it as-is. It serves as a neutral element in function
+ * composition and is often used as a default or placeholder function where
+ * transformation is not needed. Borrowed from languages like Haskell
+ * (where it’s `id`), it’s a simple yet powerful utility for maintaining
+ * referential transparency.
+ *
+ * ### Example
+ * ```ts
+ * const x = 42;
+ * const y = "hello";
+ * const z = { num: 1 };
+ *
+ * expect(id(x)).toBe(42);
+ * expect(id(y)).toBe("hello");
+ * expect(id(z)).toBe(z);
+ *
+ * const composed = id(id(42)); // Still 42
+ * expect(composed).toBe(42);
+ * ```
+ */
+export function id<T>(x: T): T {
+  return x;
+}
+
+/**
+ * Creates a constant function that always returns the same value.
+ *
+ * Inspired by functional programming (e.g., Haskell’s `const`), this utility
+ * takes a value and returns a function that, when called, always returns that
+ * original value, ignoring any arguments passed to it. It’s useful for creating
+ * predictable, immutable behavior in higher-order functions, such as providing
+ * a default value or stubbing out callbacks.
+ *
+ * ### Example
+ * ```ts
+ * const always42 = constant(42);
+ * const alwaysHello = constant("hello");
+ *
+ * expect(always42()).toBe(42);
+ * expect(always42("ignored")).toBe(42); // Arguments are ignored
+ * expect(alwaysHello()).toBe("hello");
+ *
+ * const mapWithDefault = [1, 2, 3].map(constant(0));
+ * expect(mapWithDefault).toEqual([0, 0, 0]);
+ * ```
+ */
+export function constant<T>(value: T): () => T {
+  return () => value;
+}

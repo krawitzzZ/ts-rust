@@ -3,8 +3,8 @@ tmp
 build
 dist
 coverage
-**/debug.ts
-**/tsconfig.tsbuildinfo
+sandbox.dev.ts
+tsconfig.tsbuildinfo
 
 # misc
 .DS_Store

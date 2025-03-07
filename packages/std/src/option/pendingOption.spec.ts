@@ -1,12 +1,25 @@
 import { createMock } from "@golevelup/ts-jest";
 import { Result } from "../result";
 import { Option, phantom } from "./interface";
-import { none, pendingOption, some } from "./option";
+import { isPendingOption, none, pendingOption, some } from "./option";
+
+// TODO(nikita.demin): test that all the methods that return Awaited<T> actually return awaited values
 
 describe("PendingOption", () => {
   const one = 11;
   const two = 222;
   const zero = 0;
+  const syncErrorCallback =
+    <T = Option<number>>(e?: Error) =>
+    (): T => {
+      throw e ?? new Error("sync error");
+    };
+  const asyncErrorCallback =
+    <T = Option<number>>(e?: Error) =>
+    (): Promise<T> =>
+      Promise.reject(e ?? new Error("async error"));
+  const rejectedPromise = <T = Option<number>>(e?: Error): Promise<T> =>
+    Promise.reject(e ?? new Error("async error"));
 
   describe("then", () => {
     it("calls provided `onSuccess` callback with inner `Option` if self resolves", async () => {
@@ -23,11 +36,7 @@ describe("PendingOption", () => {
     });
 
     it("calls provided `onSuccess` callback with `None` if self rejects (never calls `onError` callback)", async () => {
-      const pending = pendingOption(
-        new Promise<Option<number>>((_, reject) => {
-          reject(new Error());
-        }),
-      );
+      const pending = pendingOption(rejectedPromise());
       const onSuccess = jest.fn();
       const onError = jest.fn();
 
@@ -46,10 +55,14 @@ describe("PendingOption", () => {
       const inner = none();
       const self = pendingOption(inner);
       const other = some(one);
-      const result = await self.and(other);
+      const result = self.and(other);
 
-      expect(result.isNone()).toBe(true);
-      expect(result).not.toBe(inner);
+      expect(result).not.toBe(self);
+
+      const awaited = await result;
+
+      expect(awaited.isNone()).toBe(true);
+      expect(awaited).not.toBe(inner);
     });
 
     it.each([some(two), Promise.resolve(some(two))])(
@@ -57,13 +70,30 @@ describe("PendingOption", () => {
       async (other) => {
         const inner = some(one);
         const self = pendingOption(inner);
-        const result = await self.and(other);
+        const result = self.and(other);
 
-        expect(result.isSome()).toBe(true);
-        expect(result.unwrap()).toBe(two);
-        expect(result).not.toBe(inner);
+        expect(result).not.toBe(self);
+
+        const awaited = await result;
+
+        expect(awaited.isSome()).toBe(true);
+        expect(awaited.unwrap()).toBe(two);
+        expect(awaited).not.toBe(inner);
       },
     );
+
+    it("returns `None` if provided `Promise` rejects", async () => {
+      const inner = some(one);
+      const self = pendingOption(inner);
+      const result = self.and(rejectedPromise());
+
+      expect(result).not.toBe(self);
+
+      const awaited = await result;
+
+      expect(awaited.isNone()).toBe(true);
+      expect(awaited).not.toBe(inner);
+    });
   });
 
   describe("andThen", () => {
@@ -110,9 +140,7 @@ describe("PendingOption", () => {
     it("returns `None` if self is `Some` and provided synchronous callback throws an exception", async () => {
       const inner = some(one);
       const self = pendingOption(inner);
-      const callback = jest.fn(() => {
-        throw new Error("error");
-      });
+      const callback = jest.fn(syncErrorCallback());
       const result = await self.andThen(callback);
 
       expect(result.isNone()).toBe(true);
@@ -123,31 +151,13 @@ describe("PendingOption", () => {
     it("returns `None` if self is `Some` and provided asynchronous callback throws an exception", async () => {
       const inner = some(one);
       const self = pendingOption(inner);
-      const callback: () => Promise<Option<number>> = jest.fn(() =>
-        Promise.reject(new Error("error")),
-      );
+      const callback: () => Promise<Option<number>> =
+        jest.fn(asyncErrorCallback());
       const result = await self.andThen(callback);
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(inner);
       expect(callback).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe("clone", () => {
-    it("creates a shallow copy of self by calling `clone` on inner `Option`", async () => {
-      const value = { number: one };
-      const inner = some(value);
-      const self = pendingOption(inner);
-      const spy = jest.spyOn(inner, "clone");
-      const clone = self.clone();
-
-      expect(clone).not.toBe(self);
-
-      const result = await clone;
-
-      expect(result.unwrap()).toBe(value);
-      expect(spy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -197,9 +207,18 @@ describe("PendingOption", () => {
     it("returns `None` if self is `Some` and provided callback throws an exception", async () => {
       const inner = some(one);
       const self = pendingOption(inner);
-      const callback: () => Promise<true> = jest.fn(() =>
-        Promise.reject(new Error("error")),
-      );
+      const callback: () => boolean = jest.fn(syncErrorCallback());
+      const result = await self.filter(callback);
+
+      expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(inner);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns `None` if self is `Some` and `Promise` in provided callback rejects", async () => {
+      const inner = some(one);
+      const self = pendingOption(inner);
+      const callback: () => Promise<boolean> = jest.fn(asyncErrorCallback());
       const result = await self.filter(callback);
 
       expect(result.isNone()).toBe(true);
@@ -292,9 +311,7 @@ describe("PendingOption", () => {
     it("calls provided callback and returns `None` if self is `Some` and provided callback throws an exception", async () => {
       const inner = some(one);
       const self = pendingOption(inner);
-      const callback = jest.fn(() => {
-        throw new Error("error");
-      });
+      const callback = jest.fn(syncErrorCallback());
       const result = self.map(callback);
 
       expect(result).not.toBe(self);
@@ -310,7 +327,7 @@ describe("PendingOption", () => {
     it("calls provided callback and returns `None` if self is `Some` and provided callback rejects with an exception", async () => {
       const inner = some(one);
       const self = pendingOption(inner);
-      const callback = jest.fn(() => Promise.reject(new Error("error")));
+      const callback = jest.fn(asyncErrorCallback());
       const result = self.map(callback);
 
       expect(result).not.toBe(self);
@@ -339,6 +356,7 @@ describe("PendingOption", () => {
     });
   });
 
+  // TODO(nikita.demin): check if Sync<E> needed in interface
   describe("okOr", () => {
     it("calls inner `Option`'s `okOr` method with provided error", async () => {
       const error = new Error();
@@ -354,6 +372,7 @@ describe("PendingOption", () => {
     });
   });
 
+  // TODO(nikita.demin): think of how to handle the error if thrown (after result is done)
   describe("okOrElse", () => {
     it("does not call provided callback and returns `Ok` with inner value if self is `Some`", async () => {
       const inner = some(one);
@@ -412,8 +431,7 @@ describe("PendingOption", () => {
       const inner = some(one);
       const spy = jest.spyOn(inner, "or");
       const self = pendingOption(inner);
-      const other = Promise.reject(new Error());
-      const result = self.or(other);
+      const result = self.or(rejectedPromise());
 
       expect(result).not.toBe(self);
 
@@ -425,6 +443,67 @@ describe("PendingOption", () => {
   });
 
   describe("orElse", () => {
-    it.todo("");
+    it("does not call provided callback and returns shallow copy of inner `Option` if self is `Some`", async () => {
+      const inner = some(one);
+      const self = pendingOption(inner);
+      const callback = jest.fn();
+      const result = self.orElse(callback);
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(inner);
+      expect(awaited.unwrap()).toBe(one);
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it.each([some(two), Promise.resolve(some(two))])(
+      "calls provided callback and returns its (awaited) result `%O` if self is `None`",
+      async (other) => {
+        const inner = none();
+        const self = pendingOption(inner);
+        const callback = jest.fn(() => other);
+        const result = self.orElse(callback);
+
+        expect(isPendingOption(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited).not.toBe(inner);
+        expect(awaited.unwrap()).toBe((await other).unwrap());
+        expect(callback).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it("return `None` if self is `None` and provided callback throws an exception", async () => {
+      const inner = none();
+      const self = pendingOption(inner);
+      const callback = jest.fn(syncErrorCallback());
+      const result = self.orElse(callback);
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(inner);
+      expect(awaited.isNone()).toBe(true);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it("return `None` if self is `None` and `Promise` in provided callback rejects", async () => {
+      const inner = none();
+      const self = pendingOption(inner);
+      const callback = jest.fn(asyncErrorCallback());
+      const result = self.orElse(callback);
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(inner);
+      expect(awaited.isNone()).toBe(true);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
   });
 });

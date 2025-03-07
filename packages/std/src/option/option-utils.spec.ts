@@ -65,21 +65,6 @@ describe("Option utils", () => {
       expect(awaited.isNone()).toBe(true);
       expect(() => awaited.unwrap()).toThrow(AnyError);
     });
-
-    it("clones provided option if it is `PendingOption` itself", async () => {
-      const value = 42;
-      const some_ = some(value);
-      const pending = pendingOption(some_);
-      const pendingClone = pendingOption(some_);
-      const cloneSpy = jest
-        .spyOn(pending, "clone")
-        .mockReturnValueOnce(pendingClone);
-      const option = pendingOption(pending);
-
-      expect(isPendingOption(option)).toBe(true);
-      expect(cloneSpy).toHaveBeenCalledTimes(1);
-      expect(option).toBe(pendingClone);
-    });
   });
 
   describe("isPendingOption", () => {
