@@ -38,6 +38,56 @@ import { id } from "./utils";
  */
 export class LazyPromise<T> extends Promise<T> {
   /**
+   * Creates a new resolved {@link LazyPromise | LazyPromise\<void> }.
+   *
+   * Overrides {@link Promise.resolve | Promise.resolve} to return a {@link LazyPromise}
+   * that resolves once `await`ed, maintaining the lazy behavior of the class.
+   *
+   * @returns A new resolved {@link LazyPromise | LazyPromise\<void>}.
+   */
+  static override resolve(): LazyPromise<void>;
+  /**
+   * Creates a resolved {@link LazyPromise | LazyPromise\<T>} with the provided
+   * value.
+   *
+   * Overrides {@link Promise.resolve | Promise.resolve} to return a lazy promise
+   * that resolves once `await`ed, maintaining the lazy behavior of the class.
+   *
+   * @param value - The value to resolve with, which can be a `T` or a `PromiseLike<T>`.
+   * @returns A {@link LazyPromise} resolved with the awaited value of type `Awaited<T>`.
+   */
+  static override resolve<T>(
+    value: T | PromiseLike<T>,
+  ): LazyPromise<Awaited<T>>;
+  static override resolve<T>(value?: T): LazyPromise<Awaited<T>> {
+    return new LazyPromise<Awaited<T>>((resolve) => {
+      if (value === undefined) {
+        // LazyPromise<void>
+        resolve(undefined as Awaited<T>);
+        return;
+      }
+
+      resolve(Promise.resolve(value));
+    });
+  }
+
+  /**
+   * Creates a rejected {@link LazyPromise} with the specified reason.
+   *
+   * Overrides {@link Promise.reject | Promise.reject} to return a lazy promise
+   * that rejects with the provided reason, maintaining the lazy behavior of the class.
+   * The generic type `T` defaults to `never`, consistent with native `Promise.reject`.
+   *
+   * @param reason - The reason for rejection, optional and of type `unknown`.
+   * @returns A {@link LazyPromise} that rejects with the specified reason.
+   */
+  static override reject<T = never>(reason?: unknown): LazyPromise<T> {
+    return new LazyPromise<T>((_, reject) => {
+      reject(reason);
+    });
+  }
+
+  /**
    * Internal property that holds the native {@link Promise} once this
    * {@link LazyPromise}’s execution is initiated.
    */
