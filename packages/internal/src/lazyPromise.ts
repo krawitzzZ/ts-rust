@@ -1,45 +1,34 @@
 import { id } from "./fp";
 
-// TODO(nikita.demin): write tests
-
 /**
  * A {@link Promise} implementation that delays execution of the provided
  * {@link Executor} until the promise is `await`ed or one of its methods
  * ({@link LazyPromise.then | then}, {@link LazyPromise.catch | catch}, or
  * {@link LazyPromise.finally | finally}) is called.
  *
- * This class supports lazy transformations via the {@link LazyPromise.pipe | pipe}
- * method, which chains operations without triggering execution, similar to
- * {@link Promise.then | Promise.then} but deferred. This makes it ideal for
- * scenarios where you want to compose asynchronous operations without starting
- * them immediately.
+ * This class supports lazy transformations via {@link LazyPromise.pipe | pipe}
+ * and error recovery via {@link LazyPromise.recover | recover}, which chain
+ * operations without triggering execution, similar to {@link Promise.then | Promise.then}
+ * and {@link Promise.catch | Promise.catch} but deferred. The executor runs exactly
+ * once when first consumed, and the result is cached.
  *
  * ### Notes
- * - *Executor timing*: The `executor` function, provided to the constructor, is
- *   invoked not when the {@link LazyPromise} is created, but when it is first
- *   `await`ed. As a result, if the `executor` depends on variables in its surrounding
- *   scope, it will use their values as they exist at the time of evaluation, not
- *   at the time of instantiation. Be mindful of scope changes that could affect
- *   behavior.
- * - *Garbage Collection*: If a {@link LazyPromise} is never awaited or used
- *   (e.g., no calls to `then`, `catch`, or `finally`), the executor will not run,
- *   and the instance may be garbage-collected, allowing the script to terminate.
- * - *Error Handling*: Errors in the executor or piped functions propagate to
- *   the final `catch` handler.
- * - *Cancellation*: This implementation does not support cancellation. The
- *   executor will run once triggered and cannot be stopped.
+ * - *Executor Timing*: The `executor` is invoked only when the promise is first
+ *   consumed, using the values of surrounding scope variables at that time.
+ * - *Garbage Collection*: If never consumed, the executor does not run, and the
+ *   instance may be garbage-collected.
+ * - *Error Handling*: Errors are recovered by a function set via
+ *   {@link LazyPromise.pipe | pipe} or {@link LazyPromise.recover | recover}
+ *   (if present) or propagate to the final `catch` handler.
+ * - *Cancellation*: Not supported; the executor runs once triggered.
  *
  * ### Example
  * ```ts
- * const lp = new LazyPromise<string>((res) => {
- *   setTimeout(() => res("lazy done"), 1000);
- * });
- * const transformed = lp.pipe((x) => x.length).pipe((x) => x > 0);
+ * const lp = new LazyPromise<string>((res) => setTimeout(() => res("hello"), 1000));
+ * const transformed = lp.pipe((x) => x.length, () => 0).pipe((x) => x > 0);
  * // Executor hasn't run yet
- * setTimeout(async () => {
- *   const result = await transformed; // Triggers executor
- *   console.log(result); // true
- * }, 2000);
+ * console.log(await transformed); // true (runs executor, applies pipe chain)
+ * console.log(await transformed.then((x) => !x)); // false (chains off cached result)
  * ```
  */
 export class LazyPromise<T> extends Promise<T> {
@@ -140,10 +129,13 @@ export class LazyPromise<T> extends Promise<T> {
   }
 
   /**
-   * Internal property that holds the native {@link Promise} once this
+   * Internal property that holds and caches the native {@link Promise} once this
    * {@link LazyPromise}’s execution is initiated.
+   *
+   * ## IMPORTANT
+   * Only used in `#promise` getter.
    */
-  #initializedPromise: Promise<T> | undefined;
+  #nativePromise: Promise<T> | undefined;
 
   /**
    * The executor function provided to the constructor, delayed until execution
@@ -152,7 +144,7 @@ export class LazyPromise<T> extends Promise<T> {
    * Uses `Executor<unknown>` to avoid an additional generic parameter while
    * preserving the initial type through the {@link LazyPromise.pipe | pipe} chain.
    */
-  #executor: Executor<unknown>;
+  readonly #executor: Executor<unknown>;
 
   /**
    * The composed transformation function that maps the executor’s resolved value
@@ -166,20 +158,37 @@ export class LazyPromise<T> extends Promise<T> {
   #pipe: Pipe<unknown, T>;
 
   /**
-   * Internal getter that lazily initializes and returns the native {@link Promise},
+   * An optional recovery function that handles errors in the executor or transformation
+   * chain, mapping an error reason of type `unknown` to a value of type `T` (or a
+   * `PromiseLike<T>`).
+   *
+   * Set via {@link LazyPromise.pipe | pipe}’s optional second argument or
+   * {@link LazyPromise.recover | recover}. If undefined, errors propagate as rejections.
+   */
+  #recover: RecoveryPipe<T> | undefined;
+
+  /**
+   * Internal getter that lazily initializes and caches the native {@link Promise},
    * triggering the executor and applying the transformation chain from
-   * {@link LazyPromise.pipe | pipe}.
+   * {@link LazyPromise.pipe | pipe} and recovery from {@link LazyPromise.recover | recover}.
+   *
+   * The promise is materialized only once, and the result is reused, ensuring the
+   * executor runs exactly once.
    */
   get #promise(): Promise<T> {
-    if (this.#initializedPromise) {
-      return this.#initializedPromise;
+    if (!this.#nativePromise) {
+      this.#nativePromise = new Promise(this.#executor)
+        .then(async (value) => this.#pipe(await value))
+        .catch((reason: unknown) => {
+          if (this.#recover) {
+            return this.#recover(reason);
+          }
+
+          throw reason;
+        });
     }
 
-    this.#initializedPromise = new Promise(this.#executor).then(async (x) =>
-      this.#pipe(await x),
-    );
-
-    return this.#initializedPromise;
+    return this.#nativePromise;
   }
 
   /**
@@ -187,6 +196,8 @@ export class LazyPromise<T> extends Promise<T> {
    * {@link Executor} until the promise is `await`ed or one of its methods
    * ({@link LazyPromise.then | then}, {@link LazyPromise.catch | catch}, or
    * {@link LazyPromise.finally | finally}) is called.
+   *
+   * @param executor - The function to execute lazily when the promise is consumed.
    */
   constructor(executor: Executor<T>) {
     super(() => {});
@@ -196,11 +207,17 @@ export class LazyPromise<T> extends Promise<T> {
   }
 
   /**
-   * Initiates execution of the lazy promise and registers a callback to handle
-   * the resolved value or rejection.
+   * Initiates execution of the lazy promise and chains a new promise with callbacks
+   * to handle the resolved value or rejection.
    *
    * Overrides {@link Promise.then | Promise.then} to trigger the delayed executor
-   * and apply the chained transformations from {@link LazyPromise.pipe | pipe}.
+   * and apply the chained transformations from {@link LazyPromise.pipe | pipe} and
+   * recovery from {@link LazyPromise.recover | recover}. The result is cached after
+   * the first call.
+   *
+   * @param onfulfilled - Optional callback to transform the resolved value from `T` to `R1`.
+   * @param onrejected - Optional callback to handle rejection, transforming `unknown` to `R2`.
+   * @returns A native {@link Promise} with type `R1 | R2`.
    */
   override then<R1 = T, R2 = never>(
     onfulfilled?: ((value: T) => R1 | PromiseLike<R1>) | null,
@@ -210,11 +227,16 @@ export class LazyPromise<T> extends Promise<T> {
   }
 
   /**
-   * Initiates execution of the lazy promise and registers a callback to handle
-   * rejection.
+   * Initiates execution of the lazy promise and chains a new promise with a callback
+   * to handle rejection.
    *
    * Overrides {@link Promise.catch | Promise.catch} to trigger the delayed executor
-   * and apply the chained transformations from {@link LazyPromise.pipe | pipe}.
+   * and apply the chained transformations from {@link LazyPromise.pipe | pipe} and
+   * recovery from {@link LazyPromise.recover | recover}. The result is cached after
+   * the first call.
+   *
+   * @param onrejected - Optional callback to handle rejection, transforming `unknown` to `R`.
+   * @returns A native {@link Promise} with type `T | R`.
    */
   override catch<R = never>(
     onrejected?: ((reason: unknown) => R | PromiseLike<R>) | null,
@@ -223,11 +245,16 @@ export class LazyPromise<T> extends Promise<T> {
   }
 
   /**
-   * Initiates execution of the lazy promise and registers a callback to run after
-   * the promise settles (resolves or rejects).
+   * Initiates execution of the lazy promise and chains a new promise with a callback
+   * to run after settlement.
    *
-   * Overrides {@link Promise.finally | Promise.finally} to trigger the delayed
-   * executor and apply the chained transformations from {@link LazyPromise.pipe | pipe}.
+   * Overrides {@link Promise.finally | Promise.finally} to trigger the delayed executor
+   * and apply the chained transformations from {@link LazyPromise.pipe | pipe} and
+   * recovery from {@link LazyPromise.recover | recover}. The result is cached after
+   * the first call.
+   *
+   * @param onfinally - Optional callback to run after settlement.
+   * @returns A native {@link Promise} with type `T`.
    */
   override finally(onfinally?: (() => void) | null): Promise<T> {
     return this.#promise.finally(onfinally);
@@ -237,33 +264,78 @@ export class LazyPromise<T> extends Promise<T> {
    * Lazily applies a transformation to the resolved value, returning a new
    * {@link LazyPromise} with the transformed type, without triggering execution.
    *
-   * Similar to {@link Promise.then | Promise.then}, this method chains a function
-   * that transforms the resolved value from type `T` to `U` (or a `PromiseLike<U>`),
-   * but defers execution until the promise is `await`ed or one of its methods
-   * ({@link LazyPromise.then | then}, {@link LazyPromise.catch | catch}, or
-   * {@link LazyPromise.finally | finally}) is called. The transformations are
-   * applied in the order they are piped.
+   * Similar to {@link Promise.then | Promise.then}, this method chains a transformation
+   * function `f` that maps `T` to `U` (or `PromiseLike<U>`), deferring execution until
+   * the promise is consumed. An optional recovery function `g` can handle errors lazily.
    *
    * ### Notes
-   * - *Error Handling*: If the pipe function throws or rejects, the error
-   *   propagates to the final `catch` handler.
-   * - *Performance*: Long chains of pipes create new {@link LazyPromise}
-   *   instances, which may add overhead, though execution only occurs once and
-   *   remains lazy.
+   * - *Execution*: Transformation and recovery are lazy and execute only when consumed.
+   * - *Error Handling*: Errors are recovered by `g` if provided, else propagate.
+   * - *Performance*: Creates a new instance, adding minor overhead.
    *
    * ### Example
    * ```ts
    * const lp = new LazyPromise<string>((res) => res("hello"));
-   * const transformed = lp.pipe((x) => x.length).pipe((x) => x > 0);
-   * // Type: LazyPromise<boolean>
-   * console.log(await transformed); // true
+   * const transformed = lp.pipe((x) => x.length, () => 0);
+   * console.log(await transformed); // 5
    * ```
+   *
+   * @param f - Transformation function from `T` to `U`.
+   * @param g - Optional recovery function from `unknown` to `U`.
+   * @returns A new {@link LazyPromise} of type `U`.
    */
-  pipe<U>(f: Pipe<T, U>): LazyPromise<U> {
+  pipe<U>(f: Pipe<T, U>, g?: RecoveryPipe<U>): LazyPromise<U> {
     const pipe: Pipe<T, U> = async (x: Awaited<T>) => f(await this.#pipe(x));
+    return this.#new(pipe, g);
+  }
+
+  /**
+   * Lazily attaches a recovery function to handle errors, returning a new
+   * {@link LazyPromise} with type `T`, without triggering execution.
+   *
+   * Similar to {@link Promise.catch | Promise.catch}, this method schedules a recovery
+   * function `g` to map errors to `T` (or `PromiseLike<T>`), deferring execution until
+   * consumed.
+   *
+   * ### Notes
+   * - *Execution*: Recovery is lazy and runs only on error when consumed.
+   * - *Difference from `pipe`*: Preserves type `T`, only handling errors.
+   *
+   * ### Example
+   * ```ts
+   * const lp = new LazyPromise<string>((_, rej) => rej("error"));
+   * const recovered = lp.recover((err) => `recovered: ${err}`);
+   * console.log(await recovered); // "recovered: error"
+   * ```
+   *
+   * @param g - Recovery function from `unknown` to `T`.
+   * @returns A new {@link LazyPromise} of type `T`.
+   */
+  recover(g: RecoveryPipe<T>): LazyPromise<T> {
+    return this.#new(this.#pipe, g);
+  }
+
+  /**
+   * Creates a new {@link LazyPromise} with the provided transformation and optional
+   * recovery function, reusing the original executor.
+   *
+   * Used by {@link LazyPromise.pipe | pipe} and {@link LazyPromise.recover | recover}
+   * to build the lazy chain without triggering execution.
+   *
+   * ### Type Safety and Casts
+   * - *Executor Cast*: `this.#executor` from `Executor<unknown>` to `Executor<U>` is safe
+   *   as the `#pipe` chain adapts the type.
+   * - *Pipe Cast*: `pipe` from `Pipe<T, U>` to `Pipe<unknown, U>` is safe due to the
+   *   initial `Pipe<unknown, T>` typing and composition.
+   */
+  #new<U>(pipe: Pipe<T, U>, recover?: RecoveryPipe<U>): LazyPromise<U> {
     const lp = new LazyPromise<U>(this.#executor as Executor<U>);
 
     lp.#pipe = pipe as Pipe<unknown, U>;
+
+    if (recover) {
+      lp.#recover = recover;
+    }
 
     return lp;
   }
@@ -279,5 +351,17 @@ export class LazyPromise<T> extends Promise<T> {
  * transformations.
  */
 export type Pipe<From, To = From> = (x: Awaited<From>) => To | PromiseLike<To>;
+
+/**
+ * A function type that defines a recovery operation for handling errors in a
+ * {@link LazyPromise}, mapping an error reason to a fallback value.
+ *
+ * Used in {@link LazyPromise.pipe | pipe} (as the optional second argument) and
+ * {@link LazyPromise.recover | recover}, this type takes an error reason of type
+ * `unknown` and returns a value of type `T` (or a `PromiseLike<T>`), allowing the
+ * promise to resolve instead of reject. It supports both synchronous and asynchronous
+ * recovery logic.
+ */
+export type RecoveryPipe<T> = (reason: unknown) => T | PromiseLike<T>;
 
 type Executor<T> = ConstructorParameters<typeof Promise<T>>[0];
