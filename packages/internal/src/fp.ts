@@ -50,23 +50,22 @@ export function id<T>(x: T): T {
  *
  * Inspired by functional programming (e.g., Haskell’s `const`), this utility
  * takes a value and returns a function that, when called, always returns that
- * original value, ignoring any arguments passed to it. It’s useful for creating
- * predictable, immutable behavior in higher-order functions, such as providing
- * a default value or stubbing out callbacks.
+ * original value, ignoring any arguments. Useful for predictable behavior in
+ * higher-order functions, like defaults or stubs.
  *
  * ### Example
  * ```ts
- * const always42 = constant(42);
- * const alwaysHello = constant("hello");
+ * const always42 = cnst(42);
+ * const alwaysHello = cnst("hello");
  *
  * expect(always42()).toBe(42);
  * expect(always42("ignored")).toBe(42); // Arguments are ignored
  * expect(alwaysHello()).toBe("hello");
  *
- * const mapWithDefault = [1, 2, 3].map(constant(0));
+ * const mapWithDefault = [1, 2, 3].map(cnst(0));
  * expect(mapWithDefault).toEqual([0, 0, 0]);
  * ```
  */
-export function constant<T>(value: T): () => T {
+export function cnst<T>(value: T): () => T {
   return () => value;
 }

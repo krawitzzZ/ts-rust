@@ -78,8 +78,7 @@ export const toPromise = <T>(x: T | Promise<T> | PromiseLike<T>): Promise<T> =>
   isPromise(x) ? x : Promise.resolve(x);
 
 /**
- * Converts a value, {@link LazyPromise}, {@link Promise}, or {@link PromiseLike}
- * into a {@link LazyPromise}.
+ * Converts a value, {@link Promise}, or {@link PromiseLike} into a {@link LazyPromise}.
  *
  * This utility function normalizes its input by returning the input directly if it is
  * already a {@link LazyPromise}, or wrapping it in a lazily evaluated {@link LazyPromise}

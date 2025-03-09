@@ -1,4 +1,4 @@
-import { isPromise, stringify, toPromise, id } from "@ts-rust/internal";
+import { isPromise, stringify, toPromise, cnst } from "@ts-rust/internal";
 import { AnyError } from "../error";
 import { Result, err, ok, isResult } from "../result";
 import { Cloneable, Copy, Sync } from "../types";
@@ -42,11 +42,11 @@ export function none<T>(): Option<T> {
 }
 
 /**
- * Creates a {@link PendingOption} from an {@link Option}, {@link PendingOption}
- * or a {@link PromiseLike | PromiseLike\<Option>}.
+ * Creates a {@link PendingOption} from an {@link Option} or a
+ * {@link PromiseLike | PromiseLike\<Option>}.
  */
 export function pendingOption<T>(
-  option: Option<T> | PendingOption<T> | PromiseLike<Option<T>>,
+  option: Option<T> | PromiseLike<Option<T>>,
 ): PendingOption<T> {
   return _PendingOption.create(option);
 }
@@ -510,6 +510,16 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  tap(f: (opt: Option<T>) => void): Option<T> {
+    try {
+      f(this.copy());
+    } catch {
+      // do not care about the error
+    }
+
+    return this.copy();
+  }
+
   toPending(): PendingOption<T> {
     return pendingOption(this.copy());
   }
@@ -539,7 +549,7 @@ class _Option<T> implements Optional<T> {
       return pendingOption(none());
     }
 
-    return pendingOption(Promise.resolve(this.value).then(some));
+    return pendingOption(Promise.resolve(this.value).then(some, cnst(none())));
   }
 
   unwrap(): T {
@@ -617,7 +627,7 @@ class _Option<T> implements Optional<T> {
  */
 class _PendingOption<T> implements PendingOption<T> {
   static create<T>(
-    option: Option<T> | PendingOption<T> | PromiseLike<Option<T>>,
+    option: Option<T> | PromiseLike<Option<T>>,
   ): PendingOption<T> {
     return new _PendingOption(option);
   }
@@ -625,7 +635,7 @@ class _PendingOption<T> implements PendingOption<T> {
   #promise: Promise<Option<T>>;
 
   private constructor(option: Option<T> | PromiseLike<Option<T>>) {
-    this.#promise = toPromise(option).catch(() => none<T>());
+    this.#promise = toPromise(option).catch(cnst(none()));
   }
 
   // Implements the PromiseLike interface, allowing PendingOption to be used
@@ -637,27 +647,31 @@ class _PendingOption<T> implements PendingOption<T> {
     return this.#promise.then(onfulfilled, onrejected);
   }
 
+  catch<R>(
+    onrejected?: (reason: unknown) => R | PromiseLike<R>,
+  ): Promise<Option<T> | R> {
+    return this.#promise.catch(onrejected);
+  }
+
   and<U>(x: MaybePromise<Option<U>>): PendingOption<Awaited<U>> {
     return pendingOption(
-      this.#promise.then((option) => {
-        if (option.isNone()) {
-          return none<Awaited<U>>();
-        }
-
-        return pendingOption(x).map(id);
-      }),
+      this.#promise.then(async (option) => {
+        const r = option.and(await x);
+        return r.isNone() ? none() : some(await r.value);
+      }, cnst(none())),
     );
   }
 
   andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingOption<Awaited<U>> {
     return pendingOption(
-      this.#promise.then((option) => {
+      this.#promise.then(async (option) => {
         if (option.isNone()) {
           return none<Awaited<U>>();
         }
 
-        return pendingOption(f(option.value)).map(id);
-      }),
+        const r = await f(option.value);
+        return r.isNone() ? none() : some(await r.value);
+      }, cnst(none())),
     );
   }
 
@@ -669,7 +683,7 @@ class _PendingOption<T> implements PendingOption<T> {
         }
 
         return (await f(option.value)) ? option.copy() : none<T>();
-      }),
+      }, cnst(none())),
     );
   }
 
@@ -685,8 +699,9 @@ class _PendingOption<T> implements PendingOption<T> {
           return none<Awaited<U>>();
         }
 
-        return pendingOption(option.value).map(id);
-      }),
+        const nested = await option.value;
+        return nested.isNone() ? none() : some(await nested.value);
+      }, cnst(none())),
     );
   }
 
@@ -702,8 +717,12 @@ class _PendingOption<T> implements PendingOption<T> {
         }
 
         return some(await f(option.value));
-      }),
+      }, cnst(none())),
     );
+  }
+
+  mapAll<U>(f: (x: Option<T>) => MaybePromise<Option<U>>): PendingOption<U> {
+    return pendingOption(this.#promise.then(f, cnst(none())));
   }
 
   match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>> {
@@ -726,42 +745,35 @@ class _PendingOption<T> implements PendingOption<T> {
 
   or(x: MaybePromise<Option<T>>): PendingOption<T> {
     return pendingOption(
-      this.#promise.then(async (option) => option.or(await x)),
+      this.#promise.then(async (option) => option.or(await x), cnst(none())),
     );
   }
 
   orElse(f: () => MaybePromise<Option<T>>): PendingOption<T> {
     return pendingOption(
-      this.#promise.then((option) => (option.isSome() ? option.copy() : f())),
+      this.#promise.then(
+        (option) => (option.isSome() ? option.copy() : f()),
+        cnst(none()),
+      ),
     );
   }
 
-  replace(x: MaybePromise<T>): PendingOption<T> {
-    const oldOption = this.#copy();
-    this.#promise = isPromise(x) ? x.then(some) : Promise.resolve(some(x));
-    return oldOption;
-  }
-
-  take(): PendingOption<T> {
-    const oldOption = this.#copy();
-    this.#promise = Promise.resolve(none<T>());
-    return oldOption;
-  }
-
-  takeIf(f: (x: T) => MaybePromise<boolean>): PendingOption<T> {
+  tap(f: (opt: Option<T>) => void | Promise<void>): PendingOption<T> {
     return pendingOption(
-      this.#promise.then(async (option) => {
-        if (option.isNone()) {
-          return none<T>();
+      this.#promise.then(async (opt) => {
+        const r = f(opt);
+
+        if (isPromise(r)) {
+          await r.catch(() => void 0);
         }
 
-        return (await f(option.value)) ? this.take() : none<T>();
+        return opt.copy();
       }),
     );
   }
 
   toString(): string {
-    return "PendingOption { ... ⏳ ... }";
+    return "PendingOption { <⏳> }";
   }
 
   transposeResult<V, E>(
@@ -772,11 +784,7 @@ class _PendingOption<T> implements PendingOption<T> {
 
   xor(y: MaybePromise<Option<T>>): PendingOption<T> {
     return pendingOption(
-      this.#promise.then(async (option) => option.xor(await y)),
+      this.#promise.then(async (option) => option.xor(await y), cnst(none())),
     );
-  }
-
-  #copy(): PendingOption<T> {
-    return pendingOption(this.#promise.then(id));
   }
 }

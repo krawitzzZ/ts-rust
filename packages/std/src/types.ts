@@ -83,6 +83,54 @@ export interface Clone<T> {
 }
 
 /**
+ * Defines a type `T` that is **recoverable**, providing error handling capabilities
+ * for potentially failing operations.
+ *
+ * The {@link Recoverable} interface ensures that any type implementing it can handle
+ * errors gracefully through the `catch` method, allowing for fallback values or
+ * alternative logic when operations fail. The type parameter `T` represents the
+ * successful result type that would be produced in the absence of errors.
+ *
+ * Similar to JavaScript's Promise error handling pattern, this interface standardizes
+ * error recovery across different implementation types. It allows consuming code to
+ * safely handle both the successful and error paths without needing to know the
+ * specific error handling mechanisms of the underlying implementation.
+ *
+ * The `T` type parameter represents the successful value type that will be resolved
+ * if no error occurs. The `R` type parameter in the `catch` method represents the
+ * type that will be produced by the error handler when an error is caught.
+ *
+ * ### Example
+ * ```ts
+ * class Result<T> implements Recoverable<T> {
+ *   constructor(private value: T | Error) {}
+ *
+ *   catch<R>(onrejected: (reason: unknown) => R): Promise<T | R> {
+ *     if (this.value instanceof Error) {
+ *       return Promise.resolve(onrejected(this.value));
+ *     }
+ *     return Promise.resolve(this.value);
+ *   }
+ * }
+ *
+ * // Success case
+ * const success = new Result<number>(42);
+ * const value = await success.catch(err => -1);
+ * expect(value).toBe(42); // Original value returned
+ *
+ * // Error case
+ * const failure = new Result<number>(new Error("Failed"));
+ * const fallback = await failure.catch(err => -1);
+ * expect(fallback).toBe(-1); // Fallback value from error handler
+ * ```
+ */
+export interface Recoverable<T> {
+  catch<R>(
+    onrejected?: (reason: unknown) => R | PromiseLike<R>,
+  ): Promise<T | R>;
+}
+
+/**
  * Ensures that type `T` is a **copyable** (value-cloneable) primitive.
  *
  * The {@link Copy} type includes all JavaScript {@link Primitive | primitives }
