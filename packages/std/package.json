@@ -32,7 +32,7 @@
     "typecheck": "tsc --build --force --noEmit",
     "clean": "rm -rf ./dist",
     "clean:deps": "rm -rf ./node_modules",
-    "prebuild": "pnpm run --stream --filter \"@ts-rust/internal...\" build",
+    "prebuild": "pnpm run --stream --filter \"@ts-rust/shared...\" build",
     "build": "pnpm run typecheck && rollup --config --failAfterWarnings",
     "prepack": "pnpm run build",
     "changeset": "changeset",
@@ -40,7 +40,7 @@
     "version": "changeset version"
   },
   "dependencies": {
-    "@ts-rust/internal": "workspace:*"
+    "@ts-rust/shared": "workspace:*"
   },
   "engines": {
     "node": ">=20"

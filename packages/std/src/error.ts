@@ -1,4 +1,4 @@
-import { stringify } from "@ts-rust/internal";
+import { stringify } from "@ts-rust/shared";
 
 export class AnyError<T> extends Error {
   readonly kind: T;

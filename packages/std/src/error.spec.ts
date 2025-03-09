@@ -1,4 +1,4 @@
-import { stringify } from "@ts-rust/internal";
+import { stringify } from "@ts-rust/shared";
 import { AnyError } from "./error";
 
 describe("AnyError", () => {

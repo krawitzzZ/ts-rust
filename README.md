@@ -7,7 +7,7 @@ type-safe, robust alternatives to traditional JavaScript error handling and opti
 value management.
 
 The primary package, `@ts-rust/std`, provides a foundation for building reliable
-applications with Rust-like ergonomics, while `@ts-rust/internal` contains shared
+applications with Rust-like ergonomics, while `@ts-rust/shared` contains shared
 utilities used across the monorepo’s packages.
 
 ## Features
@@ -24,10 +24,10 @@ utilities used across the monorepo’s packages.
   - Key exports: `Option`, `some`, `none`, `PendingOption`, `pendingOption`, `Result`, `ok`, `err`.
   - Location: `packages/std`.
 
-- `@ts-rust/internal`: Internal utilities supporting `@ts-rust/std` and future packages.
+- `@ts-rust/shared`: Internal shared utilities supporting `@ts-rust/std` and future packages.
 
   - Not intended for public use; bundled into dependent packages.
-  - Location: `packages/internal`.
+  - Location: `packages/shared`.
 
 ## License
 

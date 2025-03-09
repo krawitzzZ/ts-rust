@@ -25,7 +25,7 @@
     "clean": "rm -rf ./dist && pnpm run --recursive --parallel --stream clean",
     "clean:deps": "rm -rf ./node_modules && pnpm run --recursive --parallel --stream clean:deps",
     "prebuild": "pnpm run clean",
-    "build": "pnpm run --recursive --stream --filter \"!@ts-rust/internal\" --filter \"@ts-rust/*...\" build",
+    "build": "pnpm run --recursive --stream --filter \"!@ts-rust/shared\" --filter \"@ts-rust/*...\" build",
     "build:examples": "pnpm run --recursive --stream --filter \"@examples/*\" build",
     "build:all": "pnpm run build && pnpm run build:examples"
   },

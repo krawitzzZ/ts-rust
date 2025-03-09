@@ -1,4 +1,4 @@
-import { isPromise, stringify, toPromise, cnst } from "@ts-rust/internal";
+import { isPromise, stringify, toPromise, cnst } from "@ts-rust/shared";
 import { AnyError } from "../error";
 import { Result, err, ok, isResult } from "../result";
 import { Cloneable, Copy, Sync } from "../types";
