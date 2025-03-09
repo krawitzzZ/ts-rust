@@ -10,9 +10,6 @@ describe("Option", () => {
   const two = 222;
   const zero = 0;
 
-  // TODO(nikita.demin): add checks that shallow copies are returned
-  // TODO(nikita.demin): add checks that provided callbacks that are promises and rejects do not kill the process
-  // TODO(nikita.demin): add checks that MaybePromises that reject do not kill the process (e.g. for Result<number, Promise<string>>)
   describe("value", () => {
     it("returns inner value if self is `Some`", () => {
       const option = some(one);
@@ -23,7 +20,12 @@ describe("Option", () => {
     it("throws `AnyError` if self is `None` (wrongly casted)", () => {
       const option = none();
 
-      expect(() => (option as Some<number>).value).toThrow(AnyError);
+      expect(() => (option as Some<number>).value).toThrow(
+        new AnyError(
+          "`Option.value` - accessed on `None`",
+          OptionErrorKind.NoneValueAccessed,
+        ),
+      );
     });
   });
 
@@ -34,6 +36,8 @@ describe("Option", () => {
       const result = option.and(some_);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
+      expect(result).not.toBe(some_);
       expect(() => result.unwrap()).toThrow(AnyError);
     });
 
@@ -49,35 +53,43 @@ describe("Option", () => {
     it("returns `PendingOption` if self is `None` and provided `Option` is `Promise<Option>`", () => {
       const option = none();
       const some_ = Promise.resolve(some(one));
+      const spy = jest.spyOn(option, "toPending");
       const result = option.and(some_);
 
       expect(isPendingOption(result)).toBe(true);
+      expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it("returns `PendingOption` if self is `Some` and provided `Option` is `Promise<Option>`", () => {
       const option = some(one);
       const some_ = Promise.resolve(some(two));
+      const spy = jest.spyOn(option, "toPending");
       const result = option.and(some_);
 
       expect(isPendingOption(result)).toBe(true);
+      expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it("returns `PendingOption` with `None` if self is `None` and provided `Option` is `Promise<Option>`", async () => {
       const option = none();
       const some_ = Promise.resolve(some(one));
+      const spy = jest.spyOn(option, "toPending");
       const result = await option.and(some_);
 
       expect(result.isNone()).toBe(true);
       expect(() => result.unwrap()).toThrow(AnyError);
+      expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it("returns `PendingOption` with provided `Option` if self is `Some` and provided `Option` is `Promise<Option>`", async () => {
       const option = some(one);
       const some_ = Promise.resolve(some(two));
+      const spy = jest.spyOn(option, "toPending");
       const result = await option.and(some_);
 
       expect(result.isSome()).toBe(true);
       expect(result.unwrap()).toBe((await some_).unwrap());
+      expect(spy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -88,6 +100,7 @@ describe("Option", () => {
       const result = option.andThen(callback);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(callback).not.toHaveBeenCalled();
     });
@@ -112,6 +125,7 @@ describe("Option", () => {
       const result = option.andThen(callback);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(option.unwrap());
@@ -126,26 +140,40 @@ describe("Option", () => {
       }
     }
 
+    it("returns `None` if self is `None`", () => {
+      const self = none<number>();
+      const cloned = self.clone();
+
+      expect(cloned.isNone()).toBe(true);
+      expect(cloned).not.toBe(self);
+      expect(() => cloned.unwrap()).toThrow(AnyError);
+    });
+
     it("returns `Some` with the same value", () => {
-      const counter = new Counter({ count: 0 });
+      const counter = new Counter({ count: 10 });
       const self = some(counter);
       const cloned = self.clone();
 
       expect(cloned.isSome()).toBe(true);
       expect(cloned).not.toBe(self);
-      expect(cloned.unwrap()).toStrictEqual(self.unwrap());
+      expect(cloned.unwrap()).not.toBe(self.unwrap());
+      expect(cloned.unwrap()).toStrictEqual(counter.clone());
     });
 
-    it("returns `None` if self is `None`", () => {
-      const self = none<Option<number>>();
-      const cloned = self.clone();
+    it.each([null, undefined, 0, 1, "string", Symbol("symbol"), true, false])(
+      "creates a deep copy if the option holds a primitive",
+      (v) => {
+        const self = some(v);
+        const cloned = self.clone();
 
-      expect(cloned.isNone()).toBe(true);
-      expect(() => cloned.unwrap()).toThrow(AnyError);
-    });
+        expect(cloned.isSome()).toBe(true);
+        expect(cloned).not.toBe(self);
+        expect(cloned.unwrap()).toBe(v);
+      },
+    );
 
     it("creates a deep copy, not a shallow copy", () => {
-      const counter = new Counter({ count: 0 });
+      const counter = new Counter({ count: 10 });
       const self = some(counter);
       const cloned = self.clone();
 
@@ -153,11 +181,32 @@ describe("Option", () => {
       expect(cloned).not.toBe(self);
       expect(cloned.unwrap()).not.toBe(self.unwrap());
       expect(cloned.unwrap().data).not.toBe(self.unwrap().data);
-      expect(cloned.unwrap().data).toStrictEqual(self.unwrap().data);
+      expect(cloned.unwrap().data).toStrictEqual(counter.clone().data);
 
-      counter.data.count += 1;
+      counter.data.count = 100;
 
-      expect(cloned.unwrap().data.count).not.toEqual(self.unwrap().data.count);
+      expect(self.unwrap().data.count).toBe(100);
+      expect(cloned.unwrap().data.count).toBe(counter.clone().data.count);
+    });
+  });
+
+  describe("copy", () => {
+    it("returns a new Option with the same value but different reference if self is `Some`", () => {
+      const value = { number: one };
+      const option = some(value);
+      const result = option.copy();
+
+      expect(result).not.toBe(option); // Different Option reference
+      expect(result.isSome()).toBe(true);
+      expect(result.unwrap()).toBe(value); // Same value reference
+    });
+
+    it("returns a new None if self is `None`", () => {
+      const option = none();
+      const result = option.copy();
+
+      expect(result).not.toBe(option); // Different Option reference
+      expect(result.isNone()).toBe(true);
     });
   });
 
@@ -169,11 +218,19 @@ describe("Option", () => {
       expect(result).toBe(one);
     });
 
-    it("throws `AnyError` if self is `None`", () => {
-      const option = none();
+    it.each(["oi oi oi", undefined])(
+      "throws `AnyError` if self is `None`",
+      (msg) => {
+        const option = none();
 
-      expect(() => option.expect("error")).toThrow(AnyError);
-    });
+        expect(() => option.expect(msg)).toThrow(
+          new AnyError(
+            msg ?? "`Option.expect` - called on `None`",
+            OptionErrorKind.NoneExpected,
+          ),
+        );
+      },
+    );
   });
 
   describe("filter", () => {
@@ -183,6 +240,7 @@ describe("Option", () => {
       const result = option.filter(callback);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(callback).not.toHaveBeenCalled();
     });
@@ -193,6 +251,7 @@ describe("Option", () => {
       const result = option.filter(callback);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
@@ -204,6 +263,7 @@ describe("Option", () => {
       const result = option.filter(callback);
 
       expect(result.isSome()).toBe(true);
+      expect(result).not.toBe(option);
       expect(result.unwrap()).toBe(one);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
@@ -229,20 +289,26 @@ describe("Option", () => {
       const result = option.flatten();
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
     });
 
     it("returns inner `Option` if self is `Some<Option<T>>`", () => {
-      const option = some(some(one));
+      const inner = some(one);
+      const option = some(inner);
+      const spy = jest.spyOn(inner, "copy");
       const result = option.flatten();
 
+      expect(result).not.toBe(option);
+      expect(result).not.toBe(inner);
       expect(result.isSome()).toBe(true);
       expect(result.unwrap()).toBe(one);
+      expect(spy).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("getOrInsert", () => {
-    it("returns inner value if self is `Some`", () => {
+    it("returns inner value unchanged if self is `Some`", () => {
       const option = some(one);
       const result = option.getOrInsert(two);
 
@@ -260,50 +326,79 @@ describe("Option", () => {
   });
 
   describe("getOrInsertWith", () => {
-    it("does not call provided callback and returns inner value if self is `Some`", () => {
-      const option = some(one);
-      const callback = jest.fn(() => two);
-      const result = option.getOrInsertWith(callback);
+    it.each([one, true, { count: 3 }])(
+      "does not call provided callback and returns inner value if self is `Some { %p }`",
+      (val) => {
+        const option = some(val);
+        const callback = jest.fn(() => two);
+        const result = option.getOrInsertWith(callback);
 
-      expect(result).toBe(one);
-      expect(option.unwrap()).toBe(one);
-      expect(callback).not.toHaveBeenCalled();
-    });
+        expect(result).toBe(val);
+        expect(option.unwrap()).toBe(val);
+        expect(callback).not.toHaveBeenCalled();
+      },
+    );
 
-    it("updates inner value with the result of provided callback and returns it if self is `None`", () => {
-      const option = none();
-      const callback = jest.fn(() => two);
-      const result = option.getOrInsertWith(callback);
+    it.each([one, true, { count: 3 }])(
+      "updates inner value with the result of provided callback and returns it if self is `None`",
+      (val) => {
+        const option = none();
+        const callback = jest.fn(() => val);
+        const result = option.getOrInsertWith(callback);
 
-      expect(result).toBe(two);
-      expect(option.unwrap()).toBe(two);
-      expect(callback).toHaveBeenCalledTimes(1);
-    });
+        expect(result).toBe(val);
+        expect(option.unwrap()).toBe(val);
+        expect(callback).toHaveBeenCalledTimes(1);
+      },
+    );
 
     it("rethrows `AnyError` with original error as reason if provided callback throws", () => {
       const option = none();
+      const error = new Error("error");
       const callback = jest.fn(() => {
         throw new Error("error");
       });
 
-      expect(() => option.getOrInsertWith(callback)).toThrow(AnyError);
+      expect(() => option.getOrInsertWith(callback)).toThrow(
+        new AnyError(
+          "`Option.getOrInsertWith` - callback `f` threw an exception",
+          OptionErrorKind.PredicateException,
+          error,
+        ),
+      );
       expect(callback).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("insert", () => {
-    it("updates inner value with provided value and returns it", () => {
+    it("updates inner value with provided value and returns it if self is `Some`", () => {
       const option = some(one);
       const result = option.insert(two);
 
       expect(result).toBe(two);
       expect(option.unwrap()).toBe(two);
     });
+
+    it.each([
+      one,
+      true,
+      Symbol("symbol"),
+      { count: 3 },
+      [1, 2, 3],
+      new Error("error"),
+    ])("sets inner value to `%p` and returns it if self is `None`", (val) => {
+      const option = none();
+      const result = option.insert(val);
+
+      expect(result).toBe(val);
+      expect(option.unwrap()).toBe(val);
+    });
   });
 
   describe("inspect", () => {
     it("calls provided callback with current value and returns self if self is `Some`", () => {
       const option = some(one);
+      const spy = jest.spyOn(option, "copy");
       const callback = jest.fn();
       const result = option.inspect(callback);
 
@@ -311,6 +406,7 @@ describe("Option", () => {
       expect(result.unwrap()).toBe(option.unwrap());
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
+      expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it("calls provided callback and does not await its result if self is `Some` and provided callback returns `Promise`", async () => {
@@ -318,6 +414,7 @@ describe("Option", () => {
       let sideEffect = 0;
       const timeout = 1000;
       const option = some(one);
+      const spy = jest.spyOn(option, "copy");
       const callback = jest.fn(async () => {
         setTimeout(() => {
           sideEffect = 1;
@@ -336,6 +433,7 @@ describe("Option", () => {
       expect(result.unwrap()).toBe(option.unwrap());
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
+      expect(spy).toHaveBeenCalledTimes(1);
       expect(sideEffect).toBe(1);
 
       jest.useRealTimers();
@@ -343,6 +441,7 @@ describe("Option", () => {
 
     it("does not call provided callback and returns self if self is `None`", () => {
       const option = none();
+      const spy = jest.spyOn(option, "copy");
       const callback = jest.fn();
       const result = option.inspect(callback);
 
@@ -350,10 +449,12 @@ describe("Option", () => {
       expect(result.isNone()).toBe(true);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(callback).not.toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it("does not throw and returns self if provided callback throws", () => {
       const option = some(one);
+      const spy = jest.spyOn(option, "copy");
       const callback = jest.fn(() => {
         throw new Error("error");
       });
@@ -363,10 +464,12 @@ describe("Option", () => {
       expect(result.unwrap()).toBe(option.unwrap());
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
+      expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it("does not throw and returns self if provided callback rejects", async () => {
       const option = some(one);
+      const spy = jest.spyOn(option, "copy");
       const callback = jest.fn(() => Promise.reject(new Error("error")));
       const result = option.inspect(callback);
 
@@ -374,6 +477,7 @@ describe("Option", () => {
       expect(result.unwrap()).toBe(option.unwrap());
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
+      expect(spy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -390,7 +494,7 @@ describe("Option", () => {
     it("does not call provided callback and returns `true` if self is `None`", () => {
       const option = none();
       const callback = jest.fn(() => false);
-      const result = option.isNoneOr(() => false);
+      const result = option.isNoneOr(callback);
 
       expect(result).toBe(true);
       expect(callback).not.toHaveBeenCalled();
@@ -488,18 +592,18 @@ describe("Option", () => {
       const result = option.map(callback);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(callback).not.toHaveBeenCalled();
     });
 
     it("calls provided callback with inner value and returns new `Option` with result", () => {
       const option = some(one);
-      const fn = (value: number) => value + value;
-      const callback = jest.fn(fn);
+      const callback = jest.fn(() => 123);
       const result = option.map(callback);
 
       expect(result.isSome()).toBe(true);
-      expect(result.unwrap()).toBe(fn(one));
+      expect(result.unwrap()).toBe(123);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
     });
@@ -535,7 +639,7 @@ describe("Option", () => {
     );
 
     it.each([none<number>(), some(one)])(
-      "calls provided synchronous callback with self and returns mapped `Option`",
+      "calls provided asynchronous callback with self and returns `PendingOption` with mapped option",
       async (option) => {
         const mapped = some(two);
         const fn = (_: Option<number>) => Promise.resolve(mapped);
@@ -617,112 +721,114 @@ describe("Option", () => {
   describe("mapOrElse", () => {
     it("calls provided `mkDef` callback and returns its result if self is `None`", () => {
       const option: Option<number> = none();
-      const map = (value: number) => value + value;
-      const mkDef = () => two;
-      const mapCallback = jest.fn(map);
-      const mkDefCallback = jest.fn(mkDef);
-      const result = option.mapOrElse(mkDefCallback, mapCallback);
+      const map = jest.fn(() => zero);
+      const mkDef = jest.fn(() => two);
+      const result = option.mapOrElse(mkDef, map);
 
-      expect(result).toBe(mkDef());
-      expect(mapCallback).not.toHaveBeenCalled();
-      expect(mkDefCallback).toHaveBeenCalledTimes(1);
+      expect(result).toBe(two);
+      expect(map).not.toHaveBeenCalled();
+      expect(mkDef).toHaveBeenCalledTimes(1);
     });
 
     it("rethrows `AnyError` with original error set as reason if self is `None` and `mkDef` callback throws", () => {
+      const error = new Error("error");
       const option: Option<number> = none();
-      const map = (value: number) => value + value;
-      const mkDef = () => {
-        throw new Error();
-      };
-      const mapCallback = jest.fn(map);
-      const mkDefCallback = jest.fn(mkDef);
+      const map = jest.fn(() => zero);
+      const mkDef = jest.fn(() => {
+        throw error;
+      });
 
-      expect(() => option.mapOrElse(mkDefCallback, mapCallback)).toThrow(
-        AnyError,
+      expect(() => option.mapOrElse(mkDef, map)).toThrow(
+        new AnyError(
+          "`Option.mapOrElse` - callback `mkDef` threw an exception",
+          OptionErrorKind.PredicateException,
+          error,
+        ),
       );
-      expect(mapCallback).not.toHaveBeenCalled();
-      expect(mkDefCallback).toHaveBeenCalledTimes(1);
+      expect(map).not.toHaveBeenCalled();
+      expect(mkDef).toHaveBeenCalledTimes(1);
     });
 
     it("calls provided `map` callback and returns its result if self is `Some`", () => {
       const option = some(one);
-      const map = (value: number) => value + value;
-      const mkDef = () => two;
-      const mapCallback = jest.fn(map);
-      const mkDefCallback = jest.fn(mkDef);
-      const result = option.mapOrElse(mkDefCallback, mapCallback);
+      const map = jest.fn(() => zero);
+      const mkDef = jest.fn(() => two);
+      const result = option.mapOrElse(mkDef, map);
 
-      expect(result).toBe(map(one));
-      expect(mapCallback).toHaveBeenCalledTimes(1);
-      expect(mapCallback).toHaveBeenCalledWith(one);
-      expect(mkDefCallback).not.toHaveBeenCalled();
+      expect(result).toBe(zero);
+      expect(map).toHaveBeenCalledTimes(1);
+      expect(map).toHaveBeenCalledWith(one);
+      expect(mkDef).not.toHaveBeenCalled();
     });
 
     it("ignores exception if provided `map` callback throws, calls provided `mkDef` callback and returns its result if self is `None`", () => {
+      const error = new Error("error");
       const option = some(one);
-      const map = (_: number) => {
-        throw new Error();
-      };
-      const mkDef = () => two;
-      const mapCallback = jest.fn(map);
-      const mkDefCallback = jest.fn(mkDef);
-      const result = option.mapOrElse(mkDefCallback, mapCallback);
+      const map = jest.fn(() => {
+        throw error;
+      });
+      const mkDef = jest.fn(() => two);
+      const result = option.mapOrElse(mkDef, map);
 
-      expect(result).toBe(mkDef());
-      expect(mapCallback).toHaveBeenCalledTimes(1);
-      expect(mapCallback).toHaveBeenCalledWith(one);
-      expect(mkDefCallback).toHaveBeenCalledTimes(1);
+      expect(result).toBe(two);
+      expect(map).toHaveBeenCalledTimes(1);
+      expect(map).toHaveBeenCalledWith(one);
+      expect(mkDef).toHaveBeenCalledTimes(1);
     });
 
     it("rethrows `AnyError` with original error set as reason if self is `Some` and provided `mkDef` callback throws", () => {
       const mapError = new Error("map");
       const mkDefError = new Error("make default error");
       const option = some(one);
-      const map = (_: number) => {
+      const map = jest.fn(() => {
         throw mapError;
-      };
-      const mkDef = () => {
+      });
+      const mkDef = jest.fn(() => {
         throw mkDefError;
-      };
-      const mapCallback = jest.fn(map);
-      const mkDefCallback = jest.fn(mkDef);
+      });
 
-      expect(() => option.mapOrElse(mkDefCallback, mapCallback)).toThrow(
+      expect(() => option.mapOrElse(mkDef, map)).toThrow(
         new AnyError(
           "`Option.mapOrElse` - callback `mkDef` threw an exception",
           OptionErrorKind.PredicateException,
           mkDefError,
         ),
       );
-      expect(mapCallback).toHaveBeenCalledTimes(1);
-      expect(mapCallback).toHaveBeenCalledWith(one);
-      expect(mkDefCallback).toHaveBeenCalledTimes(1);
+      expect(map).toHaveBeenCalledTimes(1);
+      expect(map).toHaveBeenCalledWith(one);
+      expect(mkDef).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("match", () => {
-    it("calls provided `some` callback and returns its result if self is `Some`", () => {
-      const option = some(one);
-      const some_ = jest.fn(() => two);
-      const none_ = jest.fn(() => zero);
-      const result = option.match(some_, none_);
+    it.each([one, true, { count: 3 }, Promise.resolve(1)])(
+      "calls provided `some` callback and returns its result (%p) if self is `Some`",
+      (val) => {
+        const option = some(one);
+        const some_ = jest.fn(() => val);
+        const none_ = jest.fn(() => zero);
+        const result = option.match(some_, none_);
 
-      expect(result).toBe(two);
-      expect(some_).toHaveBeenCalledTimes(1);
-      expect(some_).toHaveBeenCalledWith(one);
-      expect(none_).not.toHaveBeenCalled();
-    });
+        expect(result).toBe(val);
+        expect(some_).toHaveBeenCalledTimes(1);
+        expect(some_).toHaveBeenCalledWith(one);
+        expect(none_).not.toHaveBeenCalled();
+      },
+    );
 
-    it("calls provided `none` callback and returns its result if self is `None`", () => {
-      const option = none();
-      const some_ = jest.fn(() => two);
-      const none_ = jest.fn(() => zero);
-      const result = option.match(some_, none_);
+    it.each([zero, true, { count: 3 }, Promise.resolve(1)])(
+      "calls provided `none` callback and returns its result (%p) if self is `None`",
+      (val) => {
+        const option = none();
+        const some_ = jest.fn(() => two);
+        const none_ = jest.fn(() => val);
+        const result = option.match(some_, none_);
 
-      expect(result).toBe(zero);
-      expect(some_).not.toHaveBeenCalled();
-      expect(none_).toHaveBeenCalledTimes(1);
-    });
+        expect(result).toBe(val);
+        expect(some_).not.toHaveBeenCalled();
+        expect(none_).toHaveBeenCalledTimes(1);
+      },
+    );
 
     it("rethrows `AnyError` with original error set as reason if self is `Some` and provided `some` callback throws", () => {
       const option = some(one);
@@ -748,6 +854,35 @@ describe("Option", () => {
       expect(some_).not.toHaveBeenCalled();
       expect(none_).toHaveBeenCalledTimes(1);
     });
+
+    it("returns a promise that rejects if self is `Some` and provided `some` callback returns a promise that rejects", async () => {
+      const error = new Error("rejection");
+      const promise = Promise.reject(error);
+      const option = some(one);
+      const some_ = jest.fn(() => promise);
+      const none_ = jest.fn(() => zero);
+      const result = option.match(some_, none_);
+
+      expect(result).toBe(promise);
+      await expect(result).rejects.toThrow(error);
+      expect(some_).toHaveBeenCalledTimes(1);
+      expect(some_).toHaveBeenCalledWith(one);
+      expect(none_).not.toHaveBeenCalled();
+    });
+
+    it("returns a promise that rejects if self is `None` and provided `none` callback returns a promise that rejects", async () => {
+      const error = new Error("rejection");
+      const promise = Promise.reject(error);
+      const option = none();
+      const some_ = jest.fn(() => one);
+      const none_ = jest.fn(() => promise);
+      const result = option.match(some_, none_);
+
+      expect(result).toBe(promise);
+      await expect(result).rejects.toThrow(error);
+      expect(none_).toHaveBeenCalledTimes(1);
+      expect(some_).not.toHaveBeenCalled();
+    });
   });
 
   describe("okOr", () => {
@@ -769,7 +904,6 @@ describe("Option", () => {
     });
   });
 
-  // TODO(nikita.demin): think of how to handle the error if thrown (after result is done)
   describe("okOrElse", () => {
     it("returns `ok` with inner value if self is `Some`", () => {
       const option = some(one);
@@ -804,9 +938,9 @@ describe("Option", () => {
     it("converts to `PendingOption` if provided option is `Promise`, calls `or` on it and returns its result", () => {
       const option: Option<number> = none();
       const some_: Option<number> = some(one);
-      const pendingOrResult = createMock<PendingOption<number>>();
+      const orResult = createMock<PendingOption<number>>();
       const pendingOptionMock = createMock<PendingOption<number>>();
-      pendingOptionMock.or.mockReturnValueOnce(pendingOrResult);
+      pendingOptionMock.or.mockReturnValueOnce(orResult);
 
       const toPendingSpy = jest
         .spyOn(option, "toPending")
@@ -816,7 +950,7 @@ describe("Option", () => {
 
       expect(toPendingSpy).toHaveBeenCalledTimes(1);
       expect(pendingOptionMock.or).toHaveBeenCalledTimes(1);
-      expect(result).toBe(pendingOrResult);
+      expect(result).toBe(orResult);
     });
 
     it("returns provided `Option` if self is `None`", () => {
@@ -825,6 +959,7 @@ describe("Option", () => {
       const result = option.or(some_);
 
       expect(result.isSome()).toBe(true);
+      expect(result).toBe(some_);
       expect(result.unwrap()).toBe(one);
     });
 
@@ -848,6 +983,7 @@ describe("Option", () => {
       const result = option.orElse(callback);
 
       expect(result).toStrictEqual(option);
+      expect(result).not.toBe(option);
       expect(result.unwrap()).toBe(one);
       expect(callback).not.toHaveBeenCalled();
     });
@@ -870,27 +1006,30 @@ describe("Option", () => {
       const result = option.orElse(callback);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(callback).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("replace", () => {
-    it("replaces inner value with provided value and returns `Some` if self was originally `Some`", () => {
+    it("replaces inner value with provided value and returns `Some` (shallow copy of self) if self was originally `Some`", () => {
       const option = some(one);
       const result = option.replace(two);
 
       expect(result.isSome()).toBe(true);
       expect(result.unwrap()).toBe(one);
+      expect(result).not.toBe(option);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(two);
     });
 
-    it("replaces inner value with provided value and returns `None` if self was originally `None`", () => {
+    it("replaces inner value with provided value and returns `None` (shallow copy of self) if self was originally `None`", () => {
       const option = none();
       const result = option.replace(two);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(two);
@@ -903,6 +1042,7 @@ describe("Option", () => {
       const result = option.take();
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
     });
 
@@ -912,6 +1052,7 @@ describe("Option", () => {
 
       expect(result.isSome()).toBe(true);
       expect(result.unwrap()).toBe(one);
+      expect(result).not.toBe(option);
       expect(option.isNone()).toBe(true);
       expect(() => option.unwrap()).toThrow(AnyError);
     });
@@ -924,6 +1065,7 @@ describe("Option", () => {
       const result = option.takeIf(callback);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(callback).not.toHaveBeenCalled();
     });
@@ -935,6 +1077,7 @@ describe("Option", () => {
 
       expect(result.isSome()).toBe(true);
       expect(result.unwrap()).toBe(one);
+      expect(result).not.toBe(option);
       expect(option.isNone()).toBe(true);
       expect(() => option.unwrap()).toThrow(AnyError);
       expect(callback).toHaveBeenCalledTimes(1);
@@ -947,6 +1090,7 @@ describe("Option", () => {
       const result = option.takeIf(callback);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(one);
@@ -962,6 +1106,7 @@ describe("Option", () => {
       const result = option.takeIf(callback);
 
       expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
       expect(() => result.unwrap()).toThrow(AnyError);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(one);
@@ -970,18 +1115,108 @@ describe("Option", () => {
     });
   });
 
+  describe("tap", () => {
+    it.each([none<number>(), some(one)])(
+      "calls provided callback with a copy of the option and returns a copy of self if self is `%s`",
+      (option) => {
+        let capturedOption: Option<number> | null = null;
+        const callback = jest.fn((opt: Option<number>) => {
+          capturedOption = opt;
+        });
+
+        const result = option.tap(callback);
+
+        expect(result).not.toBe(option); // Different Option reference
+        expect(result.isSome()).toBe(option.isSome());
+        if (result.isSome()) {
+          expect(result.unwrap()).toBe(option.unwrap());
+        }
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(capturedOption).not.toBe(option); // Callback receives copy
+        expect(capturedOption).toStrictEqual(option);
+      },
+    );
+
+    it("does not throw and returns a copy of self if provided callback throws", () => {
+      const option = some(one);
+      const callback = jest.fn(() => {
+        throw new Error("error");
+      });
+
+      const result = option.tap(callback);
+
+      expect(result).not.toBe(option);
+      expect(result.isSome()).toBe(true);
+      expect(result.unwrap()).toBe(one);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("toPending", () => {
     it("returns `PendingOption` with self", async () => {
       const value = { number: one };
       const option = some(value);
+      const spy = jest.spyOn(option, "copy");
       const result = option.toPending();
+
+      expect(isPendingOption(result)).toBe(true);
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      const awaited = await result;
+
+      expect(awaited.unwrap()).toBe(value);
+    });
+  });
+
+  describe("toPendingCloned", () => {
+    class Counter implements Clone<Counter> {
+      constructor(public data: { count: number }) {}
+      clone(this: Clone<Counter>): Counter {
+        return new Counter({ count: 0 });
+      }
+    }
+
+    it("returns a PendingOption that resolves to a clone of self if self is `Some`", async () => {
+      const counter = new Counter({ count: 42 });
+      const option = some(counter);
+      const result = option.toPendingCloned();
 
       expect(isPendingOption(result)).toBe(true);
 
       const awaited = await result;
 
-      expect(awaited).toStrictEqual(option);
-      expect(awaited.unwrap()).toBe(value);
+      expect(awaited).not.toBe(option);
+      expect(awaited.isSome()).toBe(true);
+      expect(awaited.unwrap()).not.toBe(counter); // Different value reference (cloned)
+      expect(awaited.unwrap().data).not.toBe(counter.data); // Different data reference (deep clone)
+      expect(awaited.unwrap().data.count).toBe(0);
+    });
+
+    it("returns a PendingOption that resolves to None if self is `None`", async () => {
+      const option = none<Counter>();
+      const result = option.toPendingCloned();
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(option);
+      expect(awaited.isNone()).toBe(true);
+    });
+
+    it("creates a clone that doesn't change when the original is modified", async () => {
+      const counter = new Counter({ count: 42 });
+      const option = some(counter);
+      const result = option.toPendingCloned();
+
+      // Modify original after cloning
+      counter.data.count = 100;
+
+      const awaited = await result;
+
+      expect(awaited.isSome()).toBe(true);
+      expect(awaited.unwrap().data.count).toBe(0); // Cloned value still has original count
+      expect(option.unwrap().data.count).toBe(100); // Original was updated
     });
   });
 
@@ -992,7 +1227,7 @@ describe("Option", () => {
       expect(option.toString()).toBe("None");
     });
 
-    it("returns `Some { }` if self is `Some`", () => {
+    it(`returns 'Some { ${one} }' if self is 'Some'`, () => {
       const option = some(one);
 
       expect(option.toString()).toBe(`Some { ${one} }`);
@@ -1010,7 +1245,7 @@ describe("Option", () => {
 
     it("returns `Ok` with `None` if self is `Some` but does not contain a result as its value", () => {
       // @ts-expect-error -- for testing purposes
-      const option: Option<Result<number, string>> = some(none());
+      const option: Option<Result<number, string>> = some(some(1));
       const result = option.transposeResult();
 
       expect(result.isOk()).toBe(true);
@@ -1045,12 +1280,21 @@ describe("Option", () => {
       expect((await result).isNone()).toBe(true);
     });
 
-    it("returns `PendingOption` with awaited inner value if self is `Some`", async () => {
+    it("returns `PendingOption` with awaited inner value if self is `Some<Promise<T>>`", async () => {
       const option: Option<Promise<number>> = some(Promise.resolve(one));
       const result = option.transposeAwaitable();
 
       expect(isPendingOption(result)).toBe(true);
       expect((await result).unwrap()).toBe(one);
+    });
+
+    it("returns `PendingOption` with awaited `None` if self is `Some<Promise<T>>` that rejects", async () => {
+      const error = new Error("rejected");
+      const option: Option<Promise<number>> = some(Promise.reject(error));
+      const result = option.transposeAwaitable();
+
+      expect(isPendingOption(result)).toBe(true);
+      expect((await result).isNone()).toBe(true);
     });
   });
 
@@ -1065,7 +1309,12 @@ describe("Option", () => {
     it("throws `AnyError` if self is `None`", () => {
       const option = none();
 
-      expect(() => option.unwrap()).toThrow(AnyError);
+      expect(() => option.unwrap()).toThrow(
+        new AnyError(
+          "`Option.unwrap` - called on `None`",
+          OptionErrorKind.NoneUnwrapped,
+        ),
+      );
     });
   });
 
@@ -1105,12 +1354,19 @@ describe("Option", () => {
     });
 
     it("rethrows `AnyError` if self is `None` and provided callback throws", () => {
+      const error = new Error("unwrapped");
       const option = none();
       const callback = jest.fn(() => {
-        throw new Error("error");
+        throw error;
       });
 
-      expect(() => option.unwrapOrElse(callback)).toThrow(AnyError);
+      expect(() => option.unwrapOrElse(callback)).toThrow(
+        new AnyError(
+          "`Option.unwrapOrElse` - callback `mkDef` threw an exception",
+          OptionErrorKind.PredicateException,
+          error,
+        ),
+      );
       expect(callback).toHaveBeenCalledTimes(1);
     });
   });

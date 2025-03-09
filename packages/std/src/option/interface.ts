@@ -486,8 +486,12 @@ export interface Optional<T> {
    * or `g` if {@link None}.
    *
    * ## Throws
-   * - {@link AnyError} if `f` or `g` throws an exception, original error will be set
-   *   as {@link AnyError.reason}.
+   * - {@link AnyError} if `f` or `g` throws an exception, original error will be
+   *   set as {@link AnyError.reason}.
+   *
+   * ### Notes
+   * - If `f` or `g` return a {@link Promise} that rejects, the caller is responsible
+   *   for handling the rejection.
    *
    * ### Example
    * ```ts
@@ -500,6 +504,7 @@ export interface Optional<T> {
    * expect(() => y.match(n => n * 2, () => { throw new Error() })).toThrow(AnyError);
    * ```
    */
+  // TODO(nikita.demin): provide a 3rd optional callback to handler the error (also for other returning values methods)
   match<U, F = U>(f: (x: T) => U, g: () => F): U | F;
 
   /**

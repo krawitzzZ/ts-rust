@@ -1,29 +1,29 @@
 /**
  * Defines a type `T` that is **cloneable**, capable of being duplicated either
- * implicitly as a {@link Copy} primitive or explicitly via a {@link Clone} implementation.
+ * implicitly as a {@link Primitive} or explicitly via a {@link Clone} implementation.
  *
  * The {@link Cloneable} type encompasses all values that can be cloned into a new,
  * independent instance. It is a union of:
- * - {@link Copy} types: JavaScript {@link Primitive | primitives} (e.g., `number`,
+ * - {@link Primitive} type: JavaScript {@link Primitive | primitives} (e.g., `number`,
  *   `string`, `boolean`) that are inherently copied by value through assignment.
  * - {@link Clone} types: Types that provide an explicit `clone()` method to create
  *   a duplicate instance of `T`.
  *
  * Inspired by Rust's distinction between `Copy` and `Clone`, this type captures:
- * - **Implicit cloning**: For {@link Copy} types, where assignment (e.g., `let y = x`)
- *   creates a new copy due to their value semantics.
+ * - **Implicit cloning**: For {@link Primitive} types, where assignment
+ *   (e.g., `let y = x`) creates a new copy due to their value semantics.
  * - **Explicit cloning**: For {@link Clone} types, where a `clone()` method must be
  *   invoked to produce a new instance.
  *
  * This type is broader than {@link Clone} alone, as it includes both implicitly
- * copyable primitives and explicitly cloneable types. For non-{@link Copy} types,
+ * copyable {@link Primitives} and explicitly cloneable types. For non-primitive types,
  * the `clone()` method should return a distinct instance, though the depth of the
  * copy (shallow or deep) depends on the implementation.
  *
  *
  * ### Example
  * ```ts
- * // Primitive satisfies Cloneable<number> via Copy<number>
+ * // Primitive satisfies Cloneable<number>
  * const num: Cloneable<number> = 42;
  * const numCopy = num; // Implicitly copied by value
  * console.log(numCopy === num); // true (same value)
@@ -41,7 +41,11 @@
  * console.log(duplicate !== original); // true (different reference)
  * ```
  */
-export type Cloneable<T> = Copy<T> | Clone<T>;
+export type Cloneable<T> = T extends Primitive
+  ? T
+  : T extends Clone<T>
+    ? T
+    : never;
 
 /**
  * Defines a type `T` that is **cloneable**, providing a method to create a new,
@@ -53,7 +57,7 @@ export type Cloneable<T> = Copy<T> | Clone<T>;
  *
  * Similar to Rust's `Clone` trait, this interface is intended for types that
  * need explicit duplication logic (e.g., objects or complex structures),
- * as opposed to {@link Copy} types, which are implicitly copied by value.
+ * as opposed to {@link Primitive} types, which are implicitly copied by value.
  * Unlike reference types that might share state, a {@link Copy.clone | clone}
  * implementation should produce a distinct instance, though the depth of the copy
  * (shallow or deep) is left to the implementor.
@@ -125,32 +129,10 @@ export interface Clone<T> {
  * ```
  */
 export interface Recoverable<T> {
-  catch<R>(
+  catch<R = never>(
     onrejected?: (reason: unknown) => R | PromiseLike<R>,
   ): Promise<T | R>;
 }
-
-/**
- * Ensures that type `T` is a **copyable** (value-cloneable) primitive.
- *
- * The {@link Copy} type includes all JavaScript {@link Primitive | primitives }
- * that are copied **by value** rather than by reference. This includes:
- * - `boolean`
- * - `string`
- * - `number`
- * - `bigint`
- * - `symbol`
- * - `null`
- * - `undefined`
- *
- * Unlike objects, arrays, functions, and other reference types, these values do
- * not require explicit cloning. They are inherently immutable or can be freely
- * reassigned without affecting their original instance.
- *
- * Similar to Rust's `Copy` trait, this type helps enforce that values remain
- * independently assignable without unexpected shared mutations.
- */
-export type Copy<T> = T extends Primitive ? T : never;
 
 /**
  * Ensures that type `T` is **not** a {@link PromiseLike}.

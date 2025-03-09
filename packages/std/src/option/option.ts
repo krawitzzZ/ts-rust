@@ -1,7 +1,7 @@
 import { isPromise, stringify, toPromise, cnst } from "@ts-rust/shared";
 import { AnyError } from "../error";
 import { Result, err, ok, isResult } from "../result";
-import { Cloneable, Copy, Sync } from "../types";
+import { Cloneable, Sync } from "../types";
 import { isPrimitive } from "../types.utils";
 import {
   Optional,
@@ -254,7 +254,7 @@ class _Option<T> implements Optional<T> {
     }
 
     if (isPrimitive(this.value)) {
-      return some<Copy<U>>(this.value);
+      return some<U>(this.value);
     }
 
     return some(this.value.clone());
@@ -441,7 +441,6 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  // TODO(nikita.demin): make U and F Sync
   match<U, F = U>(f: (x: T) => U, g: () => F): U | F {
     try {
       return isSomething(this.#value) ? f(this.#value) : g();
@@ -469,7 +468,7 @@ class _Option<T> implements Optional<T> {
       return this.toPending().or(x);
     }
 
-    return isSomething(this.#value) ? some(this.#value) : x;
+    return isNothing(this.#value) ? x : some(this.#value);
   }
 
   orElse(f: () => Option<T>): Option<T> {
