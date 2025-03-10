@@ -4,9 +4,6 @@ import type { Cloneable, Recoverable, Sync } from "../types";
 import type { Result, Ok, Err } from "../result";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
-// TODO(nikita.demin): make sure all the methods that return sync values `T`
-// (e.g. `unwrap` or `expect`) are called with `this: Option<Sync<T>>` and
-
 /**
  * Represents an {@link Option} containing a value of type `T`.
  */
@@ -504,7 +501,6 @@ export interface Optional<T> {
    * expect(() => y.match(n => n * 2, () => { throw new Error() })).toThrow(AnyError);
    * ```
    */
-  // TODO(nikita.demin): provide a 3rd optional callback to handler the error (also for other returning values methods)
   match<U, F = U>(f: (x: T) => U, g: () => F): U | F;
 
   /**
@@ -1092,8 +1088,6 @@ export interface PendingOption<T>
    * ```
    */
   // TODO(nikita.demin): will be PendingResult as soon as it's implemented
-  // TODO(nikita.demin): think of how to handle the error if thrown (after result is done)
-  // TODO(nikita.demin): should this be just `E` without `Promise<E>`?
   okOrElse<E>(mkErr: () => E | Promise<E>): Promise<Result<T, E>>;
 
   /**

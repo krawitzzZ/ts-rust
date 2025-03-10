@@ -505,7 +505,6 @@ describe("PendingOption", () => {
     });
   });
 
-  // TODO(nikita.demin): check if Sync<E> needed in interface
   describe("okOr", () => {
     it("calls inner `Option`'s `okOr` method with provided error", async () => {
       const error = new Error();
@@ -521,7 +520,6 @@ describe("PendingOption", () => {
     });
   });
 
-  // TODO(nikita.demin): think of how to handle the error if thrown (after result is done)
   describe("okOrElse", () => {
     it("does not call provided callback and returns `Ok` with inner value if self is `Some`", async () => {
       const inner = some(one);
