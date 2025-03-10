@@ -1139,6 +1139,7 @@ describe("Option", () => {
 
     it("does not throw and returns a copy of self if provided callback throws", () => {
       const option = some(one);
+      const spy = jest.spyOn(option, "copy");
       const callback = jest.fn(() => {
         throw new Error("error");
       });
@@ -1148,6 +1149,7 @@ describe("Option", () => {
       expect(result).not.toBe(option);
       expect(result.isSome()).toBe(true);
       expect(result.unwrap()).toBe(one);
+      expect(spy).toHaveBeenCalledTimes(2);
       expect(callback).toHaveBeenCalledTimes(1);
     });
   });

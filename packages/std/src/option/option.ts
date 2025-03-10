@@ -760,10 +760,16 @@ class _PendingOption<T> implements PendingOption<T> {
   tap(f: (opt: Option<T>) => void | Promise<void>): PendingOption<T> {
     return pendingOption(
       this.#promise.then(async (opt) => {
-        const r = f(opt);
+        try {
+          const r = f(opt.copy());
 
-        if (isPromise(r)) {
-          await r.catch(() => void 0);
+          if (isPromise(r)) {
+            await r.catch(() => void 0);
+          }
+
+          return opt.copy();
+        } catch {
+          // do not care about the error
         }
 
         return opt.copy();
