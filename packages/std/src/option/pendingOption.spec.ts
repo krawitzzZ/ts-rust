@@ -415,7 +415,8 @@ describe("PendingOption", () => {
 
       const awaited = await result;
 
-      expect(awaited).toBe(mapped);
+      expect(awaited).not.toBe(mapped);
+      expect(awaited).toStrictEqual(mapped);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(inner);
     });
@@ -432,7 +433,8 @@ describe("PendingOption", () => {
 
       const awaited = await result;
 
-      expect(awaited).toBe(mapped);
+      expect(awaited).not.toBe(mapped);
+      expect(awaited).toStrictEqual(mapped);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(none());
     });
@@ -467,7 +469,8 @@ describe("PendingOption", () => {
 
       const awaited = await result;
 
-      expect(awaited).toBe(mapped);
+      expect(awaited).not.toBe(mapped);
+      expect(awaited).toStrictEqual(mapped);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(inner);
     });
@@ -581,7 +584,8 @@ describe("PendingOption", () => {
 
         const awaited = await result;
 
-        expect(awaited).toBe(await other);
+        expect(awaited).not.toBe(await other);
+        expect(awaited).toStrictEqual(await other);
         expect(spy).toHaveBeenCalledTimes(1);
       },
     );

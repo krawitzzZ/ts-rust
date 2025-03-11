@@ -1031,7 +1031,7 @@ export interface PendingOption<T>
    */
   mapAll<U>(
     f: (x: Option<T>) => Option<U> | Promise<Option<U>>,
-  ): PendingOption<U>;
+  ): PendingOption<Awaited<U>>;
 
   /**
    * Matches the resolved option, returning `f` applied to the value if {@link Some},
@@ -1111,7 +1111,7 @@ export interface PendingOption<T>
    * expect(await y.or(Promise.resolve(none()))).toStrictEqual(none());
    * ```
    */
-  or(x: Option<T> | Promise<Option<T>>): PendingOption<T>;
+  or(x: Option<T> | Promise<Option<T>>): PendingOption<Awaited<T>>;
 
   /**
    * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
@@ -1132,7 +1132,7 @@ export interface PendingOption<T>
    * expect(await y.orElse(() => none())).toStrictEqual(none());
    * ```
    */
-  orElse(f: () => Option<T> | Promise<Option<T>>): PendingOption<T>;
+  orElse(f: () => Option<T> | Promise<Option<T>>): PendingOption<Awaited<T>>;
 
   /**
    * Executes `f` with the resolved option, then returns a new {@link PendingOption}
@@ -1199,7 +1199,7 @@ export interface PendingOption<T>
    * expect(await y.xor(Promise.resolve(none()))).toStrictEqual(none());
    * ```
    */
-  xor(y: Option<T> | Promise<Option<T>>): PendingOption<T>;
+  xor(y: Option<T> | Promise<Option<T>>): PendingOption<Awaited<T>>;
 }
 
 /**
