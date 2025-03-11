@@ -679,6 +679,9 @@ export interface Optional<T> {
    * Maps this option to a {@link PendingOption} by supplying a shallow
    * {@link Optional.copy | copy} of this option to {@link PendingOption} factory.
    *
+   * Useful for transposing an option with {@link PromiseLike} value to a
+   * {@link PendingOption} with {@link Awaited} value.
+   *
    * ### Notes
    * - *Default*: If inner `T` is a promise-like that rejects, maps to a
    *   {@link PendingOption} with {@link None}.
@@ -702,6 +705,9 @@ export interface Optional<T> {
   /**
    * Maps this option to a {@link PendingOption} by supplying a
    * {@link Optional.clone | clone} of this option to {@link PendingOption} factory.
+   *
+   * Useful for transposing an option with {@link PromiseLike} value to a
+   * {@link PendingOption} with {@link Awaited} value.
    *
    * ### Notes
    * - *Default*: If inner `T` is a promise-like that rejects, maps to a
@@ -750,32 +756,12 @@ export interface Optional<T> {
    * const y = some(err("error"));
    * const z = none<Result<number, string>>();
    *
-   * expect(x.transposeResult()).toStrictEqual(ok(some(2)));
-   * expect(y.transposeResult()).toStrictEqual(err("error"));
-   * expect(z.transposeResult()).toStrictEqual(ok(none()));
+   * expect(x.transpose()).toStrictEqual(ok(some(2)));
+   * expect(y.transpose()).toStrictEqual(err("error"));
+   * expect(z.transpose()).toStrictEqual(ok(none()));
    * ```
    */
-  transposeResult<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E>;
-
-  /**
-   * Transposes an {@link Option} of a {@link PromiseLike} into a {@link PendingOption}.
-   *
-   * ### Notes
-   * - *Default*: If the inner promise rejects, returns a {@link PendingOption}
-   *   with {@link None}.
-   *
-   * ### Example
-   * ```ts
-   * const x = some(Promise.resolve(42));
-   * const y = none<Promise<number>>();
-   *
-   * expect(await x.transposeAwaitable()).toStrictEqual(some(42));
-   * expect(await y.transposeAwaitable()).toStrictEqual(none());
-   * ```
-   */
-  transposeAwaitable<U>(
-    this: Option<PromiseLike<U>>,
-  ): PendingOption<Awaited<U>>;
+  transpose<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E>;
 
   /**
    * Returns the value if {@link Some}, or throws an {@link AnyError} if {@link None}.
@@ -1171,7 +1157,7 @@ export interface PendingOption<T>
    * {@link Result} containing a {@link PendingOption}. Resolves to {@link Ok}({@link None})
    * if this option is {@link None}, or propagates the error if the result is {@link Err}.
    *
-   * This is the asynchronous version of the {@link Option.transposeResult}.
+   * This is the asynchronous version of the {@link Option.transpose}.
    *
    * ### Example
    * ```ts
@@ -1179,13 +1165,13 @@ export interface PendingOption<T>
    * const y = pendingOption(some(err("error")));
    * const z = pendingOption(none<Result<number, string>>());
    *
-   * expect(await x.transposeResult()).toStrictEqual(ok(some(2)));
-   * expect(await y.transposeResult()).toStrictEqual(err("error"));
-   * expect(await z.transposeResult()).toStrictEqual(ok(none()));
+   * expect(await x.transpose()).toStrictEqual(ok(some(2)));
+   * expect(await y.transpose()).toStrictEqual(err("error"));
+   * expect(await z.transpose()).toStrictEqual(ok(none()));
    * ```
    */
   // TODO(nikita.demin): will pending result as soon as it's implemented
-  transposeResult<U, E>(
+  transpose<U, E>(
     this: PendingOption<Result<U, E>>,
   ): Promise<Result<Option<U>, E>>;
 

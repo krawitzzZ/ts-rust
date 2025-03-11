@@ -749,12 +749,12 @@ describe("PendingOption", () => {
     });
   });
 
-  describe("transposeResult", () => {
+  describe("transpose", () => {
     it("returns a Promise of `Result<Option<V>, E>` with `Ok(None)` if self resolves to `None`", async () => {
       const inner = none<Result<number, string>>();
       const self = pendingOption(inner);
-      const spy = jest.spyOn(inner, "transposeResult");
-      const result = await self.transposeResult();
+      const spy = jest.spyOn(inner, "transpose");
+      const result = await self.transpose();
 
       expect(spy).toHaveBeenCalledTimes(1);
       expect(result.isOk()).toBe(true);
@@ -764,8 +764,8 @@ describe("PendingOption", () => {
     it("returns a Promise of `Result<Option<V>, E>` with `Ok(Some(v))` if self resolves to `Some(Ok(v))`", async () => {
       const inner = some(ok(one));
       const self = pendingOption(inner);
-      const spy = jest.spyOn(inner, "transposeResult");
-      const result = await self.transposeResult();
+      const spy = jest.spyOn(inner, "transpose");
+      const result = await self.transpose();
 
       expect(spy).toHaveBeenCalledTimes(1);
       expect(result.isOk()).toBe(true);
@@ -777,7 +777,7 @@ describe("PendingOption", () => {
       const error = "error";
       const inner = some(err<number, string>(error));
       const self = pendingOption(inner);
-      const result = await self.transposeResult();
+      const result = await self.transpose();
 
       expect(result.isErr()).toBe(true);
       expect(result.unwrapErr()).toBe(error);
@@ -787,7 +787,7 @@ describe("PendingOption", () => {
       const self = pendingOption<Result<number, string>>(
         Promise.reject(new Error("result error")),
       );
-      const result = await self.transposeResult();
+      const result = await self.transpose();
 
       expect(result.isOk()).toBe(true);
       expect(result.unwrap().isNone()).toBe(true);

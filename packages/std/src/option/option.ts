@@ -558,7 +558,7 @@ class _Option<T> implements Optional<T> {
     return this.isNone() ? "None" : `Some { ${stringify(this.#value, true)} }`;
   }
 
-  transposeResult<V, E>(this: Option<Result<V, E>>): Result<Option<V>, E> {
+  transpose<V, E>(this: Option<Result<V, E>>): Result<Option<V>, E> {
     if (this.isNone() || !isResult(this.value)) {
       return ok(none<V>());
     }
@@ -566,16 +566,6 @@ class _Option<T> implements Optional<T> {
     return this.value.isOk()
       ? ok(some(this.value.value))
       : err(this.value.error);
-  }
-
-  transposeAwaitable<V>(
-    this: Option<PromiseLike<V>>,
-  ): PendingOption<Awaited<V>> {
-    if (this.isNone()) {
-      return pendingOption(none());
-    }
-
-    return pendingOption(Promise.resolve(this.value).then(some, cnst(none())));
   }
 
   unwrap(): T {
@@ -684,7 +674,7 @@ class _PendingOption<T> implements PendingOption<T> {
       this.#promise.then(async (option) => {
         const r = option.and(await x);
         return r.isNone() ? none() : some(await r.value);
-      }, cnst(none())),
+      }),
     );
   }
 
@@ -697,7 +687,7 @@ class _PendingOption<T> implements PendingOption<T> {
 
         const r = await f(option.value);
         return r.isNone() ? none() : some(await r.value);
-      }, cnst(none())),
+      }),
     );
   }
 
@@ -709,7 +699,7 @@ class _PendingOption<T> implements PendingOption<T> {
         }
 
         return (await f(option.value)) ? option.copy() : none<T>();
-      }, cnst(none())),
+      }),
     );
   }
 
@@ -743,12 +733,12 @@ class _PendingOption<T> implements PendingOption<T> {
         }
 
         return some(await f(option.value));
-      }, cnst(none())),
+      }),
     );
   }
 
   mapAll<U>(f: (x: Option<T>) => MaybePromise<Option<U>>): PendingOption<U> {
-    return pendingOption(this.#promise.then(f, cnst(none())));
+    return pendingOption(this.#promise.then(f));
   }
 
   match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>> {
@@ -779,16 +769,13 @@ class _PendingOption<T> implements PendingOption<T> {
 
   or(x: MaybePromise<Option<T>>): PendingOption<T> {
     return pendingOption(
-      this.#promise.then(async (option) => option.or(await x), cnst(none())),
+      this.#promise.then(async (option) => option.or(await x)),
     );
   }
 
   orElse(f: () => MaybePromise<Option<T>>): PendingOption<T> {
     return pendingOption(
-      this.#promise.then(
-        (option) => (option.isSome() ? option.copy() : f()),
-        cnst(none()),
-      ),
+      this.#promise.then((option) => (option.isSome() ? option.copy() : f())),
     );
   }
 
@@ -816,15 +803,15 @@ class _PendingOption<T> implements PendingOption<T> {
     return "PendingOption { <⏳> }";
   }
 
-  transposeResult<V, E>(
+  transpose<V, E>(
     this: PendingOption<Result<V, E>>,
   ): Promise<Result<Option<V>, E>> {
-    return toPromise(this.then((option) => option.transposeResult()));
+    return toPromise(this.then((option) => option.transpose()));
   }
 
   xor(y: MaybePromise<Option<T>>): PendingOption<T> {
     return pendingOption(
-      this.#promise.then(async (option) => option.xor(await y), cnst(none())),
+      this.#promise.then(async (option) => option.xor(await y)),
     );
   }
 }

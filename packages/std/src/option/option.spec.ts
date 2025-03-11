@@ -1234,10 +1234,10 @@ describe("Option", () => {
     });
   });
 
-  describe("transposeResult", () => {
+  describe("transpose", () => {
     it("returns `Ok` with `None` if self is `None`", () => {
       const option: Option<Result<number, string>> = none();
-      const result = option.transposeResult();
+      const result = option.transpose();
 
       expect(result.isOk()).toBe(true);
       expect(result.unwrap().isNone()).toBe(true);
@@ -1246,7 +1246,7 @@ describe("Option", () => {
     it("returns `Ok` with `None` if self is `Some` but does not contain a result as its value", () => {
       // @ts-expect-error -- for testing purposes
       const option: Option<Result<number, string>> = some(some(1));
-      const result = option.transposeResult();
+      const result = option.transpose();
 
       expect(result.isOk()).toBe(true);
       expect(result.unwrap().isNone()).toBe(true);
@@ -1254,7 +1254,7 @@ describe("Option", () => {
 
     it("returns `Ok` with `Some` if inner value is `Ok`", () => {
       const option: Option<Result<number, string>> = some(ok(one));
-      const result = option.transposeResult();
+      const result = option.transpose();
 
       expect(result.isOk()).toBe(true);
       expect(result.unwrap().isSome()).toBe(true);
@@ -1264,37 +1264,10 @@ describe("Option", () => {
     it("returns `Err` if inner value is `Err`", () => {
       const error = "error";
       const option: Option<Result<number, string>> = some(err(error));
-      const result = option.transposeResult();
+      const result = option.transpose();
 
       expect(result.isErr()).toBe(true);
       expect(result.unwrapErr()).toBe(error);
-    });
-  });
-
-  describe("transposeAwaitable", () => {
-    it("returns `PendingOption` with `None` if self is `None`", async () => {
-      const option: Option<Promise<number>> = none();
-      const result = option.transposeAwaitable();
-
-      expect(isPendingOption(result)).toBe(true);
-      expect((await result).isNone()).toBe(true);
-    });
-
-    it("returns `PendingOption` with awaited inner value if self is `Some<Promise<T>>`", async () => {
-      const option: Option<Promise<number>> = some(Promise.resolve(one));
-      const result = option.transposeAwaitable();
-
-      expect(isPendingOption(result)).toBe(true);
-      expect((await result).unwrap()).toBe(one);
-    });
-
-    it("returns `PendingOption` with awaited `None` if self is `Some<Promise<T>>` that rejects", async () => {
-      const error = new Error("rejected");
-      const option: Option<Promise<number>> = some(Promise.reject(error));
-      const result = option.transposeAwaitable();
-
-      expect(isPendingOption(result)).toBe(true);
-      expect((await result).isNone()).toBe(true);
     });
   });
 
