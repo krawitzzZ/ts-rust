@@ -669,7 +669,7 @@ export interface Optional<T> {
    * expect(log).toBe("None");
    * ```
    */
-  tap(f: (opt: Option<T>) => void): Option<T>;
+  tap(f: (opt: Option<T>) => void | Promise<void>): Option<T>;
 
   /**
    * Maps this option to a {@link PendingOption} by supplying a shallow

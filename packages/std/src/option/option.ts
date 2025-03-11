@@ -509,9 +509,13 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  tap(f: (opt: Option<T>) => void): Option<T> {
+  tap(f: (opt: Option<T>) => void | Promise<void>): Option<T> {
     try {
-      f(this.copy());
+      const r = f(this.copy());
+
+      if (isPromise(r)) {
+        r.catch(() => void 0);
+      }
     } catch {
       // do not care about the error
     }

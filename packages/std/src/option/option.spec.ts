@@ -1152,6 +1152,20 @@ describe("Option", () => {
       expect(spy).toHaveBeenCalledTimes(2);
       expect(callback).toHaveBeenCalledTimes(1);
     });
+
+    it("does not throw and returns a copy of self if provided asynchronous callback rejects", () => {
+      const option = some(one);
+      const spy = jest.spyOn(option, "copy");
+      const callback = jest.fn(() => Promise.reject(new Error("oh")));
+
+      const result = option.tap(callback);
+
+      expect(result).not.toBe(option);
+      expect(result.isSome()).toBe(true);
+      expect(result.unwrap()).toBe(one);
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("toPending", () => {
