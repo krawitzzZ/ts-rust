@@ -1,3 +1,10 @@
 export { PendingResult, OkValue, ErrValue } from "./types";
-export { IResult, ISafeResult } from "./interface";
-export { Result, Ok, Err, ResultErrorKind, ok, err, isResult } from "./result";
+export {
+  Resultant as IResult,
+  ISafeResult,
+  Result,
+  Ok,
+  Err,
+} from "./interface";
+export { ok, err, isResult } from "./result";
+export { ResultErrorKind } from "./error";

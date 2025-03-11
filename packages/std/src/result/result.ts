@@ -1,13 +1,6 @@
 import { stringify } from "@ts-rust/shared";
-import { AnyError } from "../error";
-import { AnyResultError } from "./types";
-import { ISafeResult } from "./index";
-
-export type Result<T, E> = Ok<T, E> | Err<T, E>;
-
-export type Ok<T, E> = ISafeResult<T, E> & { readonly value: T };
-
-export type Err<T, E> = ISafeResult<T, E> & { readonly error: E };
+import { ResultError, ResultErrorKind } from "./error";
+import { Err, ISafeResult, Ok, Result } from "./interface";
 
 export function ok<E>(value: void): Result<void, E>;
 export function ok<T, E>(value: T): Result<T, E>;
@@ -23,22 +16,6 @@ export function err<T, E>(error: E): Result<T, E> {
 
 export function isResult(x: unknown): x is Result<unknown, unknown> {
   return x instanceof SafeResult;
-}
-
-/**
- * Enumerates error codes specific to {@link Result} operations.
- *
- * These codes are used in {@link AnyError} instances thrown by methods like
- * {@link Result.unwrap} or {@link Result.expect} when operations fail due to
- * the state of the result.
- */
-export enum ResultErrorKind {
-  OkErrorAccessed = "OkErrorAccessed", // error accessed on Ok
-  ErrValueAccessed = "ErrValueAccessed", // ok accessed on Err
-  ErrExpected = "ErrExpected",
-  ErrUnwrappedAsOk = "ErrUnwrappedAsOk",
-  OkUnwrappedAsErr = "OkUnwrappedAsErr",
-  PredicateException = "PredicateException",
 }
 
 type ResultState<T, E> = { type: "ok"; value: T } | { type: "error"; error: E };
@@ -68,8 +45,8 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
 
   get value(): T {
     if (isErr(this.#state)) {
-      throw new AnyError(
-        "`value` is accessed on `Err`",
+      throw new ResultError(
+        "`Result.value` - accessed on `Err`",
         ResultErrorKind.ErrValueAccessed,
       );
     }
@@ -79,8 +56,8 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
 
   get error(): E {
     if (isOk(this.#state)) {
-      throw new AnyError(
-        "`error` is accessed on `Ok`",
+      throw new ResultError(
+        "`Result.error` - accessed on `Ok`",
         ResultErrorKind.OkErrorAccessed,
       );
     }
@@ -96,7 +73,7 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
     return isOk(this.#state) ? x : err(this.#state.error);
   }
 
-  andThen<U>(f: (x: T) => Result<U, E>): Result<U, E | AnyResultError> {
+  andThen<U>(f: (x: T) => Result<U, E>): Result<U, E | ResultError> {
     if (isErr(this.#state)) {
       return err(this.#state.error);
     }
@@ -105,8 +82,8 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
       return f(this.#state.value);
     } catch (e) {
       return err(
-        new AnyError(
-          "getOrInsertWith callback threw an exception",
+        new ResultError(
+          "`Result.andThen` - callback `f` threw an exception",
           ResultErrorKind.PredicateException,
           e,
         ),
@@ -127,8 +104,8 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
       return this.#state.value;
     }
 
-    throw new AnyError(
-      msg ?? "`expect` is called on `Err`",
+    throw new ResultError(
+      msg ?? "`Result.expect` - called on `Err`",
       ResultErrorKind.ErrExpected,
     );
   }
@@ -141,8 +118,8 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
 
   unwrap(): T {
     if (isErr(this.#state)) {
-      throw new AnyError(
-        "`unwrap` is called on `Err`",
+      throw new ResultError(
+        "`Result.unwrap` - called on `Err`",
         ResultErrorKind.ErrUnwrappedAsOk,
       );
     }
@@ -152,8 +129,8 @@ class SafeResult<T, E> implements ISafeResult<T, E> {
 
   unwrapErr(): E {
     if (isOk(this.#state)) {
-      throw new AnyError(
-        "`unwrapErr` is called on `Ok`",
+      throw new ResultError(
+        "`Result.unwrapErr` - called on `Ok`",
         ResultErrorKind.OkUnwrappedAsErr,
       );
     }
