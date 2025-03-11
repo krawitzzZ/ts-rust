@@ -1,7 +1,7 @@
 import { isPromise, stringify, toPromise, cnst } from "@ts-rust/shared";
 import { AnyError } from "../error";
 import { Result, err, ok, isResult } from "../result";
-import { Cloneable, Sync } from "../types";
+import { Cloneable, MaybePromise, Sync } from "../types";
 import { isPrimitive } from "../types.utils";
 import {
   Optional,
@@ -133,8 +133,6 @@ export enum OptionErrorKind {
  * or `undefined`, e.g. `Option<null>` or `Option<undefined>`.
  */
 type Nothing = typeof nothing;
-
-type MaybePromise<T> = T | Promise<T>;
 
 const nothing: unique symbol = Symbol("Nothing");
 const isNothing = (x: unknown): x is Nothing => x === nothing;

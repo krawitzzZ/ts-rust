@@ -185,3 +185,23 @@ export type Primitive =
   | symbol
   | null
   | undefined;
+
+/**
+ * Represents either a value of type `T` or a {@link Promise} resolving to `T`.
+ *
+ * The {@link MaybePromise} type provides flexibility when working with both synchronous
+ * and asynchronous values in a unified way. It allows functions and interfaces to
+ * accept either immediate values or promises without needing separate implementations,
+ * simplifying API design and improving interoperability between synchronous and
+ * asynchronous code.
+ *
+ * Unlike the more restrictive {@link Sync} and {@link Async} types which enforce
+ * either synchronous or asynchronous values exclusively, {@link MaybePromise} accepts
+ * both paradigms. This is particularly useful for library interfaces that need to
+ * accommodate different usage patterns or when gradual migration from synchronous
+ * to asynchronous code is desired.
+ *
+ * The `T` type parameter represents the actual value type, whether provided directly
+ * or eventually resolved from a Promise.
+ */
+export type MaybePromise<T> = T | Promise<T>;
