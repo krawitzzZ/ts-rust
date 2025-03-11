@@ -376,7 +376,7 @@ export interface Optional<T> {
    * expect(y.map(n => n * 2)).toStrictEqual(none());
    * ```
    */
-  map<U>(f: (x: T) => U): Option<U>;
+  map<U>(f: (x: T) => Sync<U>): Option<U>;
 
   /**
    * Maps this option by applying a callback to its full state, executing the
@@ -501,7 +501,11 @@ export interface Optional<T> {
    * expect(() => y.match(n => n * 2, () => { throw new Error() })).toThrow(AnyError);
    * ```
    */
-  match<U, F = U>(f: (x: T) => U, g: () => F): U | F;
+  match<U, F = U>(
+    this: SettledOption<T>,
+    f: (x: T) => Sync<U>,
+    g: () => Sync<F>,
+  ): U | F;
 
   /**
    * Converts to a {@link Result}, using `y` as the error value if {@link None}.
@@ -669,11 +673,15 @@ export interface Optional<T> {
    * expect(log).toBe("None");
    * ```
    */
-  tap(f: (opt: Option<T>) => void | Promise<void>): Option<T>;
+  tap(f: (opt: Option<T>) => unknown): Option<T>;
 
   /**
    * Maps this option to a {@link PendingOption} by supplying a shallow
    * {@link Optional.copy | copy} of this option to {@link PendingOption} factory.
+   *
+   * ### Notes
+   * - *Default*: If inner `T` is a promise-like that rejects, maps to a
+   *   {@link PendingOption} with {@link None}.
    *
    * ### Example
    * ```ts
@@ -689,11 +697,15 @@ export interface Optional<T> {
    * expect(await y.toPending()).toStrictEqual(none());
    * ```
    */
-  toPending(): PendingOption<T>;
+  toPending(): PendingOption<Awaited<T>>;
 
   /**
    * Maps this option to a {@link PendingOption} by supplying a
    * {@link Optional.clone | clone} of this option to {@link PendingOption} factory.
+   *
+   * ### Notes
+   * - *Default*: If inner `T` is a promise-like that rejects, maps to a
+   *   {@link PendingOption} with {@link None}.
    *
    * ### Example
    * ```ts
@@ -709,7 +721,7 @@ export interface Optional<T> {
    * expect(await y.toPendingCloned()).toStrictEqual(none());
    * ```
    */
-  toPendingCloned(this: Option<Cloneable<T>>): PendingOption<T>;
+  toPendingCloned(this: Option<Cloneable<T>>): PendingOption<Awaited<T>>;
 
   /**
    * Returns a string representation of the {@link Option}.
@@ -1097,7 +1109,7 @@ export interface PendingOption<T>
    * This is the asynchronous version of the {@link Option.or}.
    *
    * ### Notes
-   * - *Default*: If `x` is a {@link Promise} and rejects, {@link None} is returned.
+   * - *Default*: If `x` is a {@link Promise} that rejects, {@link None} is returned.
    *
    * ### Example
    * ```ts
@@ -1185,7 +1197,7 @@ export interface PendingOption<T>
    * This is the asynchronous version of the {@link Option.xor}.
    *
    * ### Notes
-   * - *Default*: If `x` is a {@link Promise} and rejects, {@link None} is returned.
+   * - *Default*: If `y` is a {@link Promise} that rejects, {@link None} is returned.
    *
    * ### Example
    * ```ts

@@ -1,8 +1,7 @@
-import { createMock } from "@golevelup/ts-jest";
 import { AnyError } from "../error";
 import { err, ok, Result } from "../result";
 import { Clone } from "../types";
-import { Option, PendingOption, Some } from "./interface";
+import { Option, Some } from "./interface";
 import { some, none, isPendingOption, OptionErrorKind } from "./option";
 
 describe("Option", () => {
@@ -32,29 +31,30 @@ describe("Option", () => {
   describe("and", () => {
     it("returns `None` if self is `None`", () => {
       const option = none();
-      const some_ = some(one);
-      const result = option.and(some_);
+      const other = some(one);
+      const result = option.and(other);
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(result).not.toBe(some_);
+      expect(result).not.toBe(other);
       expect(() => result.unwrap()).toThrow(AnyError);
     });
 
     it("returns provided `Option` if self is `Some`", () => {
       const option = some(one);
-      const some_ = some(two);
-      const result = option.and(some_);
+      const other = some(two);
+      const result = option.and(other);
 
       expect(result.isSome()).toBe(true);
-      expect(result).toBe(some_);
+      expect(result).not.toBe(other);
+      expect(result).toStrictEqual(other);
     });
 
     it("returns `PendingOption` if self is `None` and provided `Option` is `Promise<Option>`", () => {
       const option = none();
-      const some_ = Promise.resolve(some(one));
+      const other = Promise.resolve(some(one));
       const spy = jest.spyOn(option, "toPending");
-      const result = option.and(some_);
+      const result = option.and(other);
 
       expect(isPendingOption(result)).toBe(true);
       expect(spy).toHaveBeenCalledTimes(1);
@@ -669,7 +669,7 @@ describe("Option", () => {
       expect(callback).toHaveBeenCalledWith(option);
     });
 
-    it("returns `None` if provided asynchronous callback throws", async () => {
+    it("returns `None` if provided asynchronous callback rejects", async () => {
       const option = some(one);
       const callback = jest.fn(() => Promise.reject(new Error("error")));
       const result = option.mapAll(callback);
@@ -801,7 +801,7 @@ describe("Option", () => {
   });
 
   describe("match", () => {
-    it.each([one, true, { count: 3 }, Promise.resolve(1)])(
+    it.each([one, true, { count: 3 }, [1]])(
       "calls provided `some` callback and returns its result (%p) if self is `Some`",
       (val) => {
         const option = some(one);
@@ -816,7 +816,7 @@ describe("Option", () => {
       },
     );
 
-    it.each([zero, true, { count: 3 }, Promise.resolve(1)])(
+    it.each([zero, true, { count: 3 }, [1]])(
       "calls provided `none` callback and returns its result (%p) if self is `None`",
       (val) => {
         const option = none();
@@ -853,35 +853,6 @@ describe("Option", () => {
       expect(() => option.match(some_, none_)).toThrow(AnyError);
       expect(some_).not.toHaveBeenCalled();
       expect(none_).toHaveBeenCalledTimes(1);
-    });
-
-    it("returns a promise that rejects if self is `Some` and provided `some` callback returns a promise that rejects", async () => {
-      const error = new Error("rejection");
-      const promise = Promise.reject(error);
-      const option = some(one);
-      const some_ = jest.fn(() => promise);
-      const none_ = jest.fn(() => zero);
-      const result = option.match(some_, none_);
-
-      expect(result).toBe(promise);
-      await expect(result).rejects.toThrow(error);
-      expect(some_).toHaveBeenCalledTimes(1);
-      expect(some_).toHaveBeenCalledWith(one);
-      expect(none_).not.toHaveBeenCalled();
-    });
-
-    it("returns a promise that rejects if self is `None` and provided `none` callback returns a promise that rejects", async () => {
-      const error = new Error("rejection");
-      const promise = Promise.reject(error);
-      const option = none();
-      const some_ = jest.fn(() => one);
-      const none_ = jest.fn(() => promise);
-      const result = option.match(some_, none_);
-
-      expect(result).toBe(promise);
-      await expect(result).rejects.toThrow(error);
-      expect(none_).toHaveBeenCalledTimes(1);
-      expect(some_).not.toHaveBeenCalled();
     });
   });
 
@@ -935,31 +906,30 @@ describe("Option", () => {
   });
 
   describe("or", () => {
-    it("converts to `PendingOption` if provided option is `Promise`, calls `or` on it and returns its result", () => {
+    it("converts to `PendingOption` if provided option is `Promise` by calling `or` on self after provided promise is awaited", async () => {
       const option: Option<number> = none();
-      const some_: Option<number> = some(one);
-      const orResult = createMock<PendingOption<number>>();
-      const pendingOptionMock = createMock<PendingOption<number>>();
-      pendingOptionMock.or.mockReturnValueOnce(orResult);
+      const orSpy = jest.spyOn(option, "or");
+      const other: Option<number> = some(one);
+      const result = option.or(Promise.resolve(other));
 
-      const toPendingSpy = jest
-        .spyOn(option, "toPending")
-        .mockReturnValueOnce(pendingOptionMock);
+      expect(isPendingOption(result)).toBe(true);
+      expect(orSpy).toHaveBeenCalledTimes(1);
 
-      const result = option.or(Promise.resolve(some_));
+      const awaited = await result;
 
-      expect(toPendingSpy).toHaveBeenCalledTimes(1);
-      expect(pendingOptionMock.or).toHaveBeenCalledTimes(1);
-      expect(result).toBe(orResult);
+      expect(awaited).not.toBe(other);
+      expect(awaited).toStrictEqual(other);
+      expect(orSpy).toHaveBeenCalledTimes(2);
     });
 
     it("returns provided `Option` if self is `None`", () => {
       const option = none<number>();
-      const some_ = some(one);
-      const result = option.or(some_);
+      const other = some(one);
+      const result = option.or(other);
 
       expect(result.isSome()).toBe(true);
-      expect(result).toBe(some_);
+      expect(result).not.toBe(other);
+      expect(result).toStrictEqual(other);
       expect(result.unwrap()).toBe(one);
     });
 
@@ -967,8 +937,8 @@ describe("Option", () => {
       const one_ = { number: one };
       const two_ = { number: two };
       const option = some(one_);
-      const some_ = some(two_);
-      const result = option.or(some_);
+      const other = some(two_);
+      const result = option.or(other);
 
       expect(result.isSome()).toBe(true);
       expect(result).toStrictEqual(option);
@@ -1182,6 +1152,20 @@ describe("Option", () => {
 
       expect(awaited.unwrap()).toBe(value);
     });
+
+    it("returns `PendingOption` with awaited self", async () => {
+      const value = Promise.resolve({ number: one });
+      const option = some(value);
+      const spy = jest.spyOn(option, "copy");
+      const result = option.toPending();
+
+      expect(isPendingOption(result)).toBe(true);
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      const awaited = await result;
+
+      expect(awaited.unwrap()).toBe(await value);
+    });
   });
 
   describe("toPendingCloned", () => {
@@ -1388,22 +1372,20 @@ describe("Option", () => {
   });
 
   describe("xor", () => {
-    it("converts self to `PendingOption`, calls `xor` on it and returns its result if provided option is `Promise<Option<T>>`", () => {
+    it("converts self to `PendingOption` if provided option is `Promise<Option<T>>` by calling `xor` on self after provided option is awaited", async () => {
       const self = none<number>();
+      const xorSpy = jest.spyOn(self, "xor");
       const other = some(one);
-      const xorPendingResult = createMock<PendingOption<number>>();
-      const selfPendingOption = createMock<PendingOption<number>>();
-      selfPendingOption.xor.mockReturnValueOnce(xorPendingResult);
-
-      const toPendingSpy = jest
-        .spyOn(self, "toPending")
-        .mockReturnValueOnce(selfPendingOption);
-
       const result = self.xor(Promise.resolve(other));
 
-      expect(toPendingSpy).toHaveBeenCalledTimes(1);
-      expect(selfPendingOption.xor).toHaveBeenCalledTimes(1);
-      expect(result).toBe(xorPendingResult);
+      expect(isPendingOption(result)).toBe(true);
+      expect(xorSpy).toHaveBeenCalledTimes(1);
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(other);
+      expect(awaited).toStrictEqual(other);
+      expect(xorSpy).toHaveBeenCalledTimes(2);
     });
 
     it("returns `Some` if provided option is `Some` and self is `None`", () => {

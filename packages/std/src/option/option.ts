@@ -42,13 +42,21 @@ export function none<T>(): Option<T> {
 }
 
 /**
- * Creates a {@link PendingOption} from an {@link Option} or a
- * {@link PromiseLike | PromiseLike\<Option>}.
+ * Creates a {@link PendingOption} from an {@link Option}, a
+ * {@link Promise | Promise\<Option>} or from a factory function that returns
+ * either {@link Option} or {@link Promise | Promise\<Option>}.
  */
 export function pendingOption<T>(
-  option: Option<T> | PromiseLike<Option<T>>,
+  optionOrFactory:
+    | Option<T>
+    | Promise<Option<T>>
+    | (() => Option<T> | Promise<Option<T>>),
 ): PendingOption<T> {
-  return _PendingOption.create(option);
+  if (typeof optionOrFactory === "function") {
+    return pendingOption(optionOrFactory());
+  }
+
+  return _PendingOption.create(optionOrFactory);
 }
 
 /**
@@ -233,7 +241,7 @@ class _Option<T> implements Optional<T> {
       return this.toPending().and(x);
     }
 
-    return this.isNone() ? none() : x;
+    return this.isNone() ? none() : x.copy();
   }
 
   andThen<U>(f: (x: T) => Option<U>): Option<U> {
@@ -376,7 +384,7 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  map<U>(f: (x: T) => U): Option<U> {
+  map<U>(f: (x: T) => Sync<U>): Option<U> {
     if (isNothing(this.#value)) {
       return none();
     }
@@ -441,9 +449,9 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  match<U, F = U>(f: (x: T) => U, g: () => F): U | F {
+  match<U, F = U>(this: SettledOption<T>, f: (x: T) => U, g: () => F): U | F {
     try {
-      return isSomething(this.#value) ? f(this.#value) : g();
+      return this.isNone() ? g() : f(this.value);
     } catch (e) {
       throw new AnyError(
         "`Option.match` - one of the predicates threw an exception",
@@ -465,10 +473,10 @@ class _Option<T> implements Optional<T> {
   or(x: Promise<Option<T>>): PendingOption<T>;
   or(x: MaybePromise<Option<T>>): MaybePendingOption<T> {
     if (isPromise(x)) {
-      return this.toPending().or(x);
+      return pendingOption(async () => this.or(await x));
     }
 
-    return isNothing(this.#value) ? x : some(this.#value);
+    return isNothing(this.#value) ? x.copy() : some(this.#value);
   }
 
   orElse(f: () => Option<T>): Option<T> {
@@ -489,8 +497,7 @@ class _Option<T> implements Optional<T> {
       return none();
     }
 
-    const value = this.#takeValue();
-    return isNothing(value) ? none() : some(value);
+    return new _Option(this.#takeValue());
   }
 
   takeIf(f: (x: T) => boolean): Option<T> {
@@ -509,7 +516,7 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  tap(f: (opt: Option<T>) => void | Promise<void>): Option<T> {
+  tap(f: (opt: Option<T>) => unknown): Option<T> {
     try {
       const r = f(this.copy());
 
@@ -523,12 +530,28 @@ class _Option<T> implements Optional<T> {
     return this.copy();
   }
 
-  toPending(): PendingOption<T> {
-    return pendingOption(this.copy());
+  toPending(): PendingOption<Awaited<T>> {
+    return pendingOption(async () => {
+      const copy = this.copy();
+
+      if (copy.isNone()) {
+        return none();
+      }
+
+      return some(await copy.value);
+    });
   }
 
-  toPendingCloned(this: Option<Cloneable<T>>): PendingOption<T> {
-    return pendingOption(this.clone());
+  toPendingCloned(this: Option<Cloneable<T>>): PendingOption<Awaited<T>> {
+    return pendingOption(async () => {
+      const clone = this.clone();
+
+      if (clone.isNone()) {
+        return none();
+      }
+
+      return some(await clone.value);
+    });
   }
 
   toString(): string {
@@ -586,7 +609,7 @@ class _Option<T> implements Optional<T> {
   xor(y: Promise<Option<T>>): PendingOption<T>;
   xor(y: MaybePromise<Option<T>>): MaybePendingOption<T> {
     if (isPromise(y)) {
-      return this.toPending().xor(y);
+      return pendingOption(async () => this.xor(await y));
     }
 
     if (this.isNone() && y.isSome()) {
@@ -696,15 +719,15 @@ class _PendingOption<T> implements PendingOption<T> {
       | PendingOption<PendingOption<U>>
       | PendingOption<PromiseLike<Option<U>>>,
   ): PendingOption<Awaited<U>> {
-    return pendingOption(
+    return pendingOption(async () =>
       this.then(async (option) => {
         if (option.isNone()) {
-          return none<Awaited<U>>();
+          return none();
         }
 
         const nested = await option.value;
         return nested.isNone() ? none() : some(await nested.value);
-      }, cnst(none())),
+      }),
     );
   }
 
@@ -729,7 +752,15 @@ class _PendingOption<T> implements PendingOption<T> {
   }
 
   match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>> {
-    return this.#promise.then((option) => Promise.resolve(option.match(f, g)));
+    return Promise.resolve(
+      this.#promise.then((option) => {
+        if (option.isNone()) {
+          return g();
+        }
+
+        return f(option.value);
+      }),
+    );
   }
 
   okOr<E>(y: Sync<E>): Promise<Result<T, E>> {

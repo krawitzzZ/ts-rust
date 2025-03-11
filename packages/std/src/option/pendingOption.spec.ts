@@ -491,17 +491,29 @@ describe("PendingOption", () => {
   });
 
   describe("match", () => {
-    it("calls inner `Option`'s `match` method with provided callbacks", async () => {
+    it("calls provided `some` callback and returns its result if self resolves to `Some`", async () => {
       const inner = some(one);
-      const spy = jest.spyOn(inner, "match").mockReturnValueOnce(zero);
       const self = pendingOption(inner);
-      const onNone = jest.fn();
-      const onSome = jest.fn();
+      const onSome = jest.fn(() => two);
+      const onNone = jest.fn(() => zero);
+      const awaited = await self.match(onSome, onNone);
+
+      expect(awaited).toBe(two);
+      expect(onSome).toHaveBeenCalledTimes(1);
+      expect(onSome).toHaveBeenCalledWith(one);
+      expect(onNone).not.toHaveBeenCalled();
+    });
+
+    it("calls provided `none` callback and returns its result if self resolves to `None`", async () => {
+      const inner = none();
+      const self = pendingOption(inner);
+      const onSome = jest.fn(() => two);
+      const onNone = jest.fn(() => zero);
       const awaited = await self.match(onSome, onNone);
 
       expect(awaited).toBe(zero);
-      expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith(onSome, onNone);
+      expect(onNone).toHaveBeenCalledTimes(1);
+      expect(onSome).not.toHaveBeenCalled();
     });
   });
 
