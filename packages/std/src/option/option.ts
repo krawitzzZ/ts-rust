@@ -1,4 +1,4 @@
-import { isPromise, stringify, toPromise, cnst } from "@ts-rust/shared";
+import { isPromise, stringify, toPromise, cnst, id } from "@ts-rust/shared";
 import { AnyError } from "../error";
 import { Result, err, ok, isResult } from "../result";
 import { Cloneable, Sync } from "../types";
@@ -397,13 +397,13 @@ class _Option<T> implements Optional<T> {
   }
 
   mapAll<U>(f: (x: Option<T>) => Option<U>): Option<U>;
-  mapAll<U>(f: (x: Option<T>) => Promise<Option<U>>): PendingOption<U>;
+  mapAll<U>(f: (x: Option<T>) => Promise<Option<U>>): PendingOption<Awaited<U>>;
   mapAll<U>(
     f: (x: Option<T>) => MaybePromise<Option<U>>,
-  ): MaybePendingOption<U> {
+  ): Option<U> | PendingOption<Awaited<U>> {
     try {
       const mapped = f(this.copy());
-      return isPromise(mapped) ? pendingOption(mapped) : mapped;
+      return isPromise(mapped) ? pendingOption(mapped).map(id) : mapped;
     } catch {
       return none();
     }

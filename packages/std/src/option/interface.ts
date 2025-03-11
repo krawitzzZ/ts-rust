@@ -426,7 +426,7 @@ export interface Optional<T> {
    * expect(await mappedNone).toStrictEqual(some(1));
    * ```
    */
-  mapAll<U>(f: (x: Option<T>) => Promise<Option<U>>): PendingOption<U>;
+  mapAll<U>(f: (x: Option<T>) => Promise<Option<U>>): PendingOption<Awaited<U>>;
 
   /**
    * Returns `f` applied to the value if {@link Some}, otherwise returns `def`.

@@ -639,7 +639,7 @@ describe("Option", () => {
     );
 
     it.each([none<number>(), some(one)])(
-      "calls provided asynchronous callback with self and returns `PendingOption` with mapped option",
+      "calls provided asynchronous callback with self and returns `PendingOption` with awaited mapped option",
       async (option) => {
         const mapped = some(two);
         const fn = (_: Option<number>) => Promise.resolve(mapped);
@@ -650,7 +650,8 @@ describe("Option", () => {
 
         const awaited = await result;
 
-        expect(awaited).toBe(mapped);
+        expect(awaited).not.toBe(mapped);
+        expect(awaited).toStrictEqual(mapped);
         expect(callback).toHaveBeenCalledTimes(1);
         expect(callback).toHaveBeenCalledWith(option);
       },
