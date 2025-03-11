@@ -135,7 +135,6 @@ export enum OptionErrorKind {
 type Nothing = typeof nothing;
 
 type MaybePromise<T> = T | Promise<T>;
-type MaybePendingOption<T> = Option<T> | PendingOption<T>;
 
 const nothing: unique symbol = Symbol("Nothing");
 const isNothing = (x: unknown): x is Nothing => x === nothing;
@@ -449,7 +448,11 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  match<U, F = U>(this: SettledOption<T>, f: (x: T) => U, g: () => F): U | F {
+  match<U, F = U>(
+    this: SettledOption<T>,
+    f: (x: T) => Sync<U>,
+    g: () => Sync<F>,
+  ): U | F {
     try {
       return this.isNone() ? g() : f(this.value);
     } catch (e) {
@@ -465,15 +468,15 @@ class _Option<T> implements Optional<T> {
     return isSomething(this.#value) ? ok(this.#value) : err(y);
   }
 
-  okOrElse<E>(mkErr: () => E): Result<T, E> {
+  okOrElse<E>(mkErr: () => Sync<E>): Result<T, E> {
     return isSomething(this.#value) ? ok(this.#value) : err(mkErr());
   }
 
   or(x: Option<T>): Option<T>;
-  or(x: Promise<Option<T>>): PendingOption<T>;
-  or(x: MaybePromise<Option<T>>): MaybePendingOption<T> {
+  or(x: Promise<Option<T>>): PendingOption<Awaited<T>>;
+  or(x: MaybePromise<Option<T>>): Option<T> | PendingOption<Awaited<T>> {
     if (isPromise(x)) {
-      return pendingOption(async () => this.or(await x));
+      return pendingOption(async () => this.or(await x)).map(id);
     }
 
     return isNothing(this.#value) ? x.copy() : some(this.#value);
@@ -596,10 +599,10 @@ class _Option<T> implements Optional<T> {
   }
 
   xor(y: Option<T>): Option<T>;
-  xor(y: Promise<Option<T>>): PendingOption<T>;
-  xor(y: MaybePromise<Option<T>>): MaybePendingOption<T> {
+  xor(y: Promise<Option<T>>): PendingOption<Awaited<T>>;
+  xor(y: MaybePromise<Option<T>>): Option<T> | PendingOption<Awaited<T>> {
     if (isPromise(y)) {
-      return pendingOption(async () => this.xor(await y));
+      return pendingOption(async () => this.xor(await y)).map(id);
     }
 
     if (this.isNone() && y.isSome()) {

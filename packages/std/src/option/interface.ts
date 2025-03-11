@@ -510,7 +510,8 @@ export interface Optional<T> {
   /**
    * Converts to a {@link Result}, using `y` as the error value if {@link None}.
    *
-   * {@link Some | Some(v)} is mapped to {@link Ok | Ok(v)} and {@link None} to {@link Err | Err(y)}.
+   * {@link Some | Some(v)} is mapped to {@link Ok | Ok(v)} and {@link None} to
+   * {@link Err | Err(y)}.
    *
    * ### Example
    * ```ts
@@ -524,9 +525,11 @@ export interface Optional<T> {
   okOr<E>(y: Sync<E>): Result<T, E>;
 
   /**
-   * Converts to a {@link Result}, using the result of `mkErr` as the error value if {@link None}.
+   * Converts to a {@link Result}, using the result of `mkErr` as the error
+   * value if {@link None}.
    *
-   * {@link Some | Some(v)} is mapped to {@link Ok | Ok(v)} and {@link None} to {@link Err | Err(mkErr())}.
+   * {@link Some | Some(v)} is mapped to {@link Ok | Ok(v)} and {@link None}
+   * to {@link Err | Err(mkErr())}.
    *
    * ### Example
    * ```ts
@@ -537,7 +540,7 @@ export interface Optional<T> {
    * expect(y.okOrElse(() => "error")).toStrictEqual(err("error"));
    * ```
    */
-  okOrElse<E>(mkErr: () => E): Result<T, E>;
+  okOrElse<E>(mkErr: () => Sync<E>): Result<T, E>;
 
   /**
    * Returns the current option if it is {@link Some}, otherwise returns `x`.
@@ -569,7 +572,7 @@ export interface Optional<T> {
    * expect(await y.or(Promise.resolve(none()))).toStrictEqual(none());
    * ```
    */
-  or(x: Promise<Option<T>>): PendingOption<T>;
+  or(x: Promise<Option<T>>): PendingOption<Awaited<T>>;
 
   /**
    * Returns the current option if {@link Some}, otherwise returns the result of `f`.
@@ -843,7 +846,7 @@ export interface Optional<T> {
    * expect(await y.xor(Promise.resolve(some(3)))).toStrictEqual(some(3));
    * ```
    */
-  xor(y: Promise<Option<T>>): PendingOption<T>;
+  xor(y: Promise<Option<T>>): PendingOption<Awaited<T>>;
 }
 
 /**
