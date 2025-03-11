@@ -568,9 +568,9 @@ class _Option<T> implements Optional<T> {
       : err(this.value.error);
   }
 
-  unwrap(): T {
-    if (isSomething(this.#value)) {
-      return this.#value;
+  unwrap(this: SettledOption<T>): T {
+    if (this.isSome()) {
+      return this.value;
     }
 
     throw new AnyError(
@@ -579,13 +579,13 @@ class _Option<T> implements Optional<T> {
     );
   }
 
-  unwrapOr(def: T): T {
-    return isSomething(this.#value) ? this.#value : def;
+  unwrapOr(this: SettledOption<T>, def: Sync<T>): T {
+    return this.isNone() ? def : this.value;
   }
 
-  unwrapOrElse(mkDef: () => T): T {
+  unwrapOrElse(this: SettledOption<T>, mkDef: () => T): T {
     try {
-      return isSomething(this.#value) ? this.#value : mkDef();
+      return this.isNone() ? mkDef() : this.value;
     } catch (e) {
       throw new AnyError(
         "`Option.unwrapOrElse` - callback `mkDef` threw an exception",

@@ -778,7 +778,7 @@ export interface Optional<T> {
    * expect(() => y.unwrap()).toThrow("`Option.unwrap` - called on `None`");
    * ```
    */
-  unwrap(): T;
+  unwrap(this: SettledOption<T>): T;
 
   /**
    * Returns the contained value if {@link Some}, or `def` if {@link None}.
@@ -792,7 +792,7 @@ export interface Optional<T> {
    * expect(y.unwrapOr(0)).toBe(0);
    * ```
    */
-  unwrapOr(def: T): T;
+  unwrapOr(this: SettledOption<T>, def: Sync<T>): T;
 
   /**
    * Returns the contained value if {@link Some}, or the result of `mkDef` if {@link None}.
@@ -811,7 +811,7 @@ export interface Optional<T> {
    * expect(() => y.unwrapOrElse(() => { throw new Error() })).toThrow(AnyError);
    * ```
    */
-  unwrapOrElse(mkDef: () => T): T;
+  unwrapOrElse(this: SettledOption<T>, mkDef: () => Sync<T>): T;
 
   /**
    * Returns {@link Some} if exactly one of `this` or `y` is {@link Some}, otherwise returns {@link None}.
