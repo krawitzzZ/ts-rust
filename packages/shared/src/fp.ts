@@ -2,20 +2,22 @@
  * A no-operation function that performs no action and returns nothing.
  *
  * This utility function is useful as a placeholder or default callback where an
- * operation is required but no specific behavior is needed. It takes no arguments
- * and has no side effects.
+ * operation is required but no specific behavior is needed. It accepts any number
+ * of arguments but ignores them entirely.
  *
  * ### Example
  * ```ts
  * const x = noop();
  * expect(x).toBeUndefined(); // No return value
  *
+ * noop(1, "test", {}); // Still does nothing
+ *
  * let sideEffect = 0;
- * noop(); // Does nothing
- * expect(sideEffect).toBe(0); // No side effects
+ * noop(sideEffect++); // Does not modify sideEffect
+ * expect(sideEffect).toBe(0);
  * ```
  */
-export function noop(): void {}
+export function noop(..._: unknown[]): void {}
 
 /**
  * The identity function, returning its input unchanged.
@@ -50,8 +52,9 @@ export function id<T>(x: T): T {
  *
  * Inspired by functional programming (e.g., Haskell’s `const`), this utility
  * takes a value and returns a function that, when called, always returns that
- * original value, ignoring any arguments. Useful for predictable behavior in
- * higher-order functions, like defaults or stubs.
+ * original value. The returned function **accepts any number of arguments**,
+ * but ignores them. This is useful for predictable behavior in higher-order
+ * functions, like defaults or stubs.
  *
  * ### Example
  * ```ts
@@ -60,12 +63,16 @@ export function id<T>(x: T): T {
  *
  * expect(always42()).toBe(42);
  * expect(always42("ignored")).toBe(42); // Arguments are ignored
+ * expect(always42(1, 2, 3)).toBe(42); // Still returns 42
  * expect(alwaysHello()).toBe("hello");
  *
  * const mapWithDefault = [1, 2, 3].map(cnst(0));
  * expect(mapWithDefault).toEqual([0, 0, 0]);
  * ```
+ *
+ * @param value - The constant value to be returned by the function.
+ * @returns A function that always returns `value`, ignoring any arguments.
  */
-export function cnst<T>(value: T): () => T {
+export function cnst<T>(value: T): (..._: unknown[]) => T {
   return () => value;
 }
