@@ -154,14 +154,14 @@ class _Option<T> implements Optional<T> {
   }
 
   /**
-   * A private symbol-keyed property used as a type discriminant.
+   * A symbol-keyed property used as a type discriminant.
    *
    * This field holds either `"some"` or `"none"` to indicate whether the
    * {@link Option} is a {@link Some} or {@link None} variant. It is not
    * intended for direct access or modification by users; instead, it serves as
    * an internal mechanism to enable TypeScript's type narrowing for methods
-   * like {@link isSome} and {@link isNone}. The symbol key (`phantom`) ensures
-   * this property remains private to the module, preventing external
+   * like {@link isSome} and {@link isNone}. The symbol key ({@link phantom})
+   * ensures this property remains private to the module, preventing external
    * interference while allowing the class to mutate its state (e.g., from
    * `None` to `Some`) as needed.
    */
