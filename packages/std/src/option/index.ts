@@ -1,9 +1,17 @@
-export { Option, PendingOption, Some, None } from "./interface";
 export {
-  OptionErrorKind,
+  PendingOption,
+  PendingSettledOption,
+  Optional,
+  Option,
+  SettledOption,
+  Some,
+  None,
+} from "./interface";
+export {
+  isPendingOption,
+  isOption,
+  pendingOption,
   some,
   none,
-  pendingOption,
-  isOption,
-  isPendingOption,
+  OptionErrorKind,
 } from "./option";

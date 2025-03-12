@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AnyError } from "../error";
-import type { Cloneable, Recoverable, Sync } from "../types";
+import type { Cloneable, Recoverable } from "../types";
 import type { Result, Ok, Err } from "../result";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
@@ -34,7 +34,19 @@ export type Option<T> = Some<T> | None<T>;
  * like {@link insert}, {@link getOrInsert}, and {@link getOrInsertWith}, which
  * mutate the option. Use it when you need a type-safe, synchronous option.
  */
-export type SettledOption<T> = Option<Sync<T>>;
+export type SettledOption<T> = Option<Awaited<T>>;
+
+/**
+ * An asynchronous {@link PendingOption} where the contained value `T` is guaranteed to be
+ * resolved (non-{@link PromiseLike}), ensuring the inner type is immediately available
+ * once the outer promise settles.
+ *
+ * This type extends {@link PendingOption} with a settled `T` (i.e., {@link Awaited | Awaited\<T>}),
+ * making it suitable for async operations that return fully resolved values. Use it when
+ * you need an {@link Option} whose value, if present, requires no further awaiting after
+ * the initial promise resolution.
+ */
+export type PendingSettledOption<T> = PendingOption<Awaited<T>>;
 
 /**
  * Interface defining the core functionality of an {@link Option}, inspired by Rust's
@@ -376,7 +388,7 @@ export interface Optional<T> {
    * expect(y.map(n => n * 2)).toStrictEqual(none());
    * ```
    */
-  map<U>(f: (x: T) => Sync<U>): Option<U>;
+  map<U>(f: (x: T) => Awaited<U>): Option<U>;
 
   /**
    * Maps this option by applying a callback to its full state, executing the
@@ -445,7 +457,7 @@ export interface Optional<T> {
    * expect(y.mapOr(0, n => n * 2)).toBe(0);
    * ```
    */
-  mapOr<U>(this: SettledOption<T>, def: Sync<U>, f: (x: T) => Sync<U>): U;
+  mapOr<U>(this: SettledOption<T>, def: Awaited<U>, f: (x: T) => Awaited<U>): U;
 
   /**
    * Returns `f` applied to the contained value if {@link Some}, otherwise
@@ -474,8 +486,8 @@ export interface Optional<T> {
    */
   mapOrElse<U>(
     this: SettledOption<T>,
-    mkDef: () => Sync<U>,
-    f: (x: T) => Sync<U>,
+    mkDef: () => Awaited<U>,
+    f: (x: T) => Awaited<U>,
   ): U;
 
   /**
@@ -503,8 +515,8 @@ export interface Optional<T> {
    */
   match<U, F = U>(
     this: SettledOption<T>,
-    f: (x: T) => Sync<U>,
-    g: () => Sync<F>,
+    f: (x: T) => Awaited<U>,
+    g: () => Awaited<F>,
   ): U | F;
 
   /**
@@ -522,7 +534,7 @@ export interface Optional<T> {
    * expect(y.okOr("error")).toStrictEqual(err("error"));
    * ```
    */
-  okOr<E>(y: Sync<E>): Result<T, E>;
+  okOr<E>(y: Awaited<E>): Result<T, E>;
 
   /**
    * Converts to a {@link Result}, using the result of `mkErr` as the error
@@ -540,7 +552,7 @@ export interface Optional<T> {
    * expect(y.okOrElse(() => "error")).toStrictEqual(err("error"));
    * ```
    */
-  okOrElse<E>(mkErr: () => Sync<E>): Result<T, E>;
+  okOrElse<E>(mkErr: () => Awaited<E>): Result<T, E>;
 
   /**
    * Returns the current option if it is {@link Some}, otherwise returns `x`.
@@ -795,7 +807,7 @@ export interface Optional<T> {
    * expect(y.unwrapOr(0)).toBe(0);
    * ```
    */
-  unwrapOr(this: SettledOption<T>, def: Sync<T>): T;
+  unwrapOr(this: SettledOption<T>, def: Awaited<T>): T;
 
   /**
    * Returns the contained value if {@link Some}, or the result of `mkDef` if {@link None}.
@@ -814,7 +826,7 @@ export interface Optional<T> {
    * expect(() => y.unwrapOrElse(() => { throw new Error() })).toThrow(AnyError);
    * ```
    */
-  unwrapOrElse(this: SettledOption<T>, mkDef: () => Sync<T>): T;
+  unwrapOrElse(this: SettledOption<T>, mkDef: () => Awaited<T>): T;
 
   /**
    * Returns {@link Some} if exactly one of `this` or `y` is {@link Some}, otherwise returns {@link None}.
@@ -1071,7 +1083,7 @@ export interface PendingOption<T>
    * ```
    */
   // TODO(nikita.demin): will be PendingResult as soon as it's implemented
-  okOr<E>(y: Sync<E>): Promise<Result<T, E>>;
+  okOr<E>(y: Awaited<E>): Promise<Result<T, E>>;
 
   /**
    * Converts to a {@link Promise} of a {@link Result}, using the result of `mkErr`

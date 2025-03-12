@@ -1,10 +1,13 @@
 export { AnyError } from "./error";
-export { Clone, Cloneable, Primitive, Sync, Async } from "./types";
+export { Clone, Cloneable, Primitive } from "./types";
 export {
   OptionErrorKind,
   PendingOption,
+  PendingSettledOption,
   pendingOption,
+  Optional,
   Option,
+  SettledOption,
   Some,
   None,
   some,

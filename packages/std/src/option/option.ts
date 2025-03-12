@@ -1,7 +1,7 @@
 import { isPromise, stringify, toPromise, cnst } from "@ts-rust/shared";
 import { AnyError } from "../error";
 import { Result, err, ok, isResult } from "../result";
-import { Cloneable, MaybePromise, Sync } from "../types";
+import { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
 import {
   Optional,
@@ -11,6 +11,7 @@ import {
   None,
   phantom,
   SettledOption,
+  PendingSettledOption,
 } from "./interface";
 
 /**
@@ -242,8 +243,8 @@ class _Option<T> implements Optional<T> {
   }
 
   and<U>(x: Option<U>): Option<U>;
-  and<U>(x: Promise<Option<U>>): PendingOption<Awaited<U>>;
-  and<U>(x: MaybePromise<Option<U>>): Option<U> | PendingOption<Awaited<U>> {
+  and<U>(x: Promise<Option<U>>): PendingSettledOption<U>;
+  and<U>(x: MaybePromise<Option<U>>): Option<U> | PendingSettledOption<U> {
     if (isPromise(x)) {
       return this.toPending().and(x);
     }
@@ -311,7 +312,7 @@ class _Option<T> implements Optional<T> {
   }
 
   getOrInsert(this: SettledOption<T>, x: T): T;
-  getOrInsert(x: Sync<T>): T {
+  getOrInsert(x: Awaited<T>): T {
     if (this.isNone()) {
       this.#value = x;
     }
@@ -320,7 +321,7 @@ class _Option<T> implements Optional<T> {
   }
 
   getOrInsertWith(this: SettledOption<T>, f: () => T): T;
-  getOrInsertWith(f: () => Sync<T>): T {
+  getOrInsertWith(f: () => Awaited<T>): T {
     if (this.isSome()) {
       return this.value;
     }
@@ -391,7 +392,7 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  map<U>(f: (x: T) => Sync<U>): Option<U> {
+  map<U>(f: (x: T) => Awaited<U>): Option<U> {
     if (isNothing(this.#value)) {
       return none();
     }
@@ -404,10 +405,10 @@ class _Option<T> implements Optional<T> {
   }
 
   mapAll<U>(f: (x: Option<T>) => Option<U>): Option<U>;
-  mapAll<U>(f: (x: Option<T>) => Promise<Option<U>>): PendingOption<Awaited<U>>;
+  mapAll<U>(f: (x: Option<T>) => Promise<Option<U>>): PendingSettledOption<U>;
   mapAll<U>(
     f: (x: Option<T>) => MaybePromise<Option<U>>,
-  ): Option<U> | PendingOption<Awaited<U>> {
+  ): Option<U> | PendingSettledOption<U> {
     try {
       const mapped = f(this.copy());
 
@@ -421,7 +422,11 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  mapOr<U>(this: SettledOption<T>, def: Sync<U>, f: (x: T) => Sync<U>): U {
+  mapOr<U>(
+    this: SettledOption<T>,
+    def: Awaited<U>,
+    f: (x: T) => Awaited<U>,
+  ): U {
     if (this.isNone()) {
       return def;
     }
@@ -435,8 +440,8 @@ class _Option<T> implements Optional<T> {
 
   mapOrElse<U>(
     this: SettledOption<T>,
-    mkDef: () => Sync<U>,
-    f: (x: T) => Sync<U>,
+    mkDef: () => Awaited<U>,
+    f: (x: T) => Awaited<U>,
   ): U {
     const makeDefault = () => {
       try {
@@ -463,8 +468,8 @@ class _Option<T> implements Optional<T> {
 
   match<U, F = U>(
     this: SettledOption<T>,
-    f: (x: T) => Sync<U>,
-    g: () => Sync<F>,
+    f: (x: T) => Awaited<U>,
+    g: () => Awaited<F>,
   ): U | F {
     try {
       return this.isNone() ? g() : f(this.value);
@@ -477,17 +482,17 @@ class _Option<T> implements Optional<T> {
     }
   }
 
-  okOr<E>(y: Sync<E>): Result<T, E> {
+  okOr<E>(y: Awaited<E>): Result<T, E> {
     return isSomething(this.#value) ? ok(this.#value) : err(y);
   }
 
-  okOrElse<E>(mkErr: () => Sync<E>): Result<T, E> {
+  okOrElse<E>(mkErr: () => Awaited<E>): Result<T, E> {
     return isSomething(this.#value) ? ok(this.#value) : err(mkErr());
   }
 
   or(x: Option<T>): Option<T>;
-  or(x: Promise<Option<T>>): PendingOption<Awaited<T>>;
-  or(x: MaybePromise<Option<T>>): Option<T> | PendingOption<Awaited<T>> {
+  or(x: Promise<Option<T>>): PendingSettledOption<T>;
+  or(x: MaybePromise<Option<T>>): Option<T> | PendingSettledOption<T> {
     if (isPromise(x)) {
       return pendingOption(async () => awaitValue(this.or(await x)));
     }
@@ -546,7 +551,7 @@ class _Option<T> implements Optional<T> {
     return this.copy();
   }
 
-  toPending(): PendingOption<Awaited<T>> {
+  toPending(): PendingSettledOption<T> {
     return pendingOption(async () => {
       const copy = this.copy();
 
@@ -558,7 +563,7 @@ class _Option<T> implements Optional<T> {
     });
   }
 
-  toPendingCloned(this: Option<Cloneable<T>>): PendingOption<Awaited<T>> {
+  toPendingCloned(this: Option<Cloneable<T>>): PendingSettledOption<T> {
     return pendingOption(async () => {
       const clone = this.clone();
 
@@ -595,7 +600,7 @@ class _Option<T> implements Optional<T> {
     );
   }
 
-  unwrapOr(this: SettledOption<T>, def: Sync<T>): T {
+  unwrapOr(this: SettledOption<T>, def: Awaited<T>): T {
     return this.isNone() ? def : this.value;
   }
 
@@ -612,8 +617,8 @@ class _Option<T> implements Optional<T> {
   }
 
   xor(y: Option<T>): Option<T>;
-  xor(y: Promise<Option<T>>): PendingOption<Awaited<T>>;
-  xor(y: MaybePromise<Option<T>>): Option<T> | PendingOption<Awaited<T>> {
+  xor(y: Promise<Option<T>>): PendingSettledOption<T>;
+  xor(y: MaybePromise<Option<T>>): Option<T> | PendingSettledOption<T> {
     if (isPromise(y)) {
       return pendingOption(async () => awaitValue(this.xor(await y)));
     }
@@ -685,7 +690,7 @@ class _PendingOption<T> implements PendingOption<T> {
     return this.#promise.catch(onrejected);
   }
 
-  and<U>(x: MaybePromise<Option<U>>): PendingOption<Awaited<U>> {
+  and<U>(x: MaybePromise<Option<U>>): PendingSettledOption<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
         const r = option.and(await x);
@@ -694,7 +699,7 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingOption<Awaited<U>> {
+  andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingSettledOption<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
         if (option.isNone()) {
@@ -724,7 +729,7 @@ class _PendingOption<T> implements PendingOption<T> {
       | PendingOption<Option<U>>
       | PendingOption<PendingOption<U>>
       | PendingOption<PromiseLike<Option<U>>>,
-  ): PendingOption<Awaited<U>> {
+  ): PendingSettledOption<U> {
     return pendingOption(async () =>
       this.then(async (option) => {
         if (option.isNone()) {
@@ -741,7 +746,7 @@ class _PendingOption<T> implements PendingOption<T> {
     return pendingOption(this.#promise.then((option) => option.inspect(f)));
   }
 
-  map<U>(f: (x: T) => U): PendingOption<Awaited<U>> {
+  map<U>(f: (x: T) => U): PendingSettledOption<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
         if (option.isNone()) {
@@ -755,7 +760,7 @@ class _PendingOption<T> implements PendingOption<T> {
 
   mapAll<U>(
     f: (x: Option<T>) => MaybePromise<Option<U>>,
-  ): PendingOption<Awaited<U>> {
+  ): PendingSettledOption<U> {
     return pendingOption(() => awaitValue(this.#promise.then(f)));
   }
 
@@ -771,7 +776,7 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  okOr<E>(y: Sync<E>): Promise<Result<T, E>> {
+  okOr<E>(y: Awaited<E>): Promise<Result<T, E>> {
     return this.#promise.then((option) => option.okOr(y));
   }
 
@@ -785,13 +790,13 @@ class _PendingOption<T> implements PendingOption<T> {
     });
   }
 
-  or(x: MaybePromise<Option<T>>): PendingOption<Awaited<T>> {
+  or(x: MaybePromise<Option<T>>): PendingSettledOption<T> {
     return pendingOption(() =>
       awaitValue(this.#promise.then(async (option) => option.or(await x))),
     );
   }
 
-  orElse(f: () => MaybePromise<Option<T>>): PendingOption<Awaited<T>> {
+  orElse(f: () => MaybePromise<Option<T>>): PendingSettledOption<T> {
     return pendingOption(() =>
       awaitValue(
         this.#promise.then((option) => (option.isSome() ? option.copy() : f())),
@@ -829,7 +834,7 @@ class _PendingOption<T> implements PendingOption<T> {
     return toPromise(this.then((option) => option.transpose()));
   }
 
-  xor(y: MaybePromise<Option<T>>): PendingOption<Awaited<T>> {
+  xor(y: MaybePromise<Option<T>>): PendingSettledOption<T> {
     return pendingOption(() =>
       awaitValue(this.#promise.then(async (option) => option.xor(await y))),
     );

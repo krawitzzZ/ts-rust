@@ -135,30 +135,6 @@ export interface Recoverable<T> {
 }
 
 /**
- * Ensures that type `T` is **not** a {@link PromiseLike}.
- *
- * This helper type excludes promise-like types (those with a `then` method) from
- * being assigned to `T`. If `T` is a {@link PromiseLike}, it resolves to `never`.
- * Used to enforce synchronous values.
- *
- * Resolves to `never` by default.
- */
-export type Sync<T = never> = T extends PromiseLike<infer _> ? never : T;
-
-/**
- * Ensures that type `T` **is** a {@link PromiseLike}.
- *
- * This helper type restricts `T` to promise-like types (those with a `then` method).
- * If `T` is not a {@link PromiseLike}, it resolves to `never`. Used to define
- * asynchronous values.
- *
- * Resolves to `never` by default.
- */
-export type Async<T = unknown> = [T] extends [PromiseLike<infer R>]
-  ? PromiseLike<Awaited<R>>
-  : never;
-
-/**
  * Represents all JavaScript **primitive** types.
  *
  * A **primitive** is any value that is **not** an object and has no methods.
@@ -194,12 +170,6 @@ export type Primitive =
  * accept either immediate values or promises without needing separate implementations,
  * simplifying API design and improving interoperability between synchronous and
  * asynchronous code.
- *
- * Unlike the more restrictive {@link Sync} and {@link Async} types which enforce
- * either synchronous or asynchronous values exclusively, {@link MaybePromise} accepts
- * both paradigms. This is particularly useful for library interfaces that need to
- * accommodate different usage patterns or when gradual migration from synchronous
- * to asynchronous code is desired.
  *
  * The `T` type parameter represents the actual value type, whether provided directly
  * or eventually resolved from a Promise.
