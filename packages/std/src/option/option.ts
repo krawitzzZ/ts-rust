@@ -140,7 +140,7 @@ const isNothing = (x: unknown): x is Nothing => x === nothing;
 const isSomething = <T>(x: T | Nothing): x is T => !isNothing(x);
 const awaitValue = async <T>(
   optionOrPromise: Option<T> | PromiseLike<Option<T>>,
-): Promise<Option<Awaited<T>>> =>
+): Promise<SettledOption<T>> =>
   toPromise(optionOrPromise).then(async (option) => {
     if (option.isNone()) {
       return none();
