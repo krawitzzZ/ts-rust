@@ -138,7 +138,7 @@ type Nothing = typeof nothing;
 const nothing: unique symbol = Symbol("Nothing");
 const isNothing = (x: unknown): x is Nothing => x === nothing;
 const isSomething = <T>(x: T | Nothing): x is T => !isNothing(x);
-const awaitValue = async <T>(
+const settleOption = async <T>(
   optionOrPromise: Option<T> | PromiseLike<Option<T>>,
 ): Promise<SettledOption<T>> =>
   toPromise(optionOrPromise).then(async (option) => {
@@ -416,7 +416,7 @@ class _Option<T> implements Optional<T> {
         return mapped;
       }
 
-      return pendingOption(() => awaitValue(mapped));
+      return pendingOption(settleOption(mapped));
     } catch {
       return none();
     }
@@ -494,7 +494,7 @@ class _Option<T> implements Optional<T> {
   or(x: Promise<Option<T>>): PendingSettledOption<T>;
   or(x: MaybePromise<Option<T>>): Option<T> | PendingSettledOption<T> {
     if (isPromise(x)) {
-      return pendingOption(async () => awaitValue(this.or(await x)));
+      return pendingOption(async () => settleOption(this.or(await x)));
     }
 
     return isNothing(this.#value) ? x.copy() : some(this.#value);
@@ -620,7 +620,7 @@ class _Option<T> implements Optional<T> {
   xor(y: Promise<Option<T>>): PendingSettledOption<T>;
   xor(y: MaybePromise<Option<T>>): Option<T> | PendingSettledOption<T> {
     if (isPromise(y)) {
-      return pendingOption(async () => awaitValue(this.xor(await y)));
+      return pendingOption(async () => settleOption(this.xor(await y)));
     }
 
     if (this.isNone() && y.isSome()) {
@@ -761,7 +761,7 @@ class _PendingOption<T> implements PendingOption<T> {
   mapAll<U>(
     f: (x: Option<T>) => MaybePromise<Option<U>>,
   ): PendingSettledOption<U> {
-    return pendingOption(() => awaitValue(this.#promise.then(f)));
+    return pendingOption(settleOption(this.#promise.then(f)));
   }
 
   match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>> {
@@ -792,13 +792,13 @@ class _PendingOption<T> implements PendingOption<T> {
 
   or(x: MaybePromise<Option<T>>): PendingSettledOption<T> {
     return pendingOption(() =>
-      awaitValue(this.#promise.then(async (option) => option.or(await x))),
+      settleOption(this.#promise.then(async (option) => option.or(await x))),
     );
   }
 
   orElse(f: () => MaybePromise<Option<T>>): PendingSettledOption<T> {
-    return pendingOption(() =>
-      awaitValue(
+    return pendingOption(
+      settleOption(
         this.#promise.then((option) => (option.isSome() ? option.copy() : f())),
       ),
     );
@@ -835,8 +835,8 @@ class _PendingOption<T> implements PendingOption<T> {
   }
 
   xor(y: MaybePromise<Option<T>>): PendingSettledOption<T> {
-    return pendingOption(() =>
-      awaitValue(this.#promise.then(async (option) => option.xor(await y))),
+    return pendingOption(
+      settleOption(this.#promise.then(async (option) => option.xor(await y))),
     );
   }
 }
