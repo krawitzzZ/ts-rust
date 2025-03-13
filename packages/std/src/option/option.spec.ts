@@ -1,8 +1,9 @@
 import { AnyError } from "../error";
 import { err, ok, Result } from "../result";
 import { Clone } from "../types";
+import { OptionErrorKind } from "./error";
 import { Option, Some } from "./interface";
-import { some, none, isPendingOption, OptionErrorKind } from "./option";
+import { some, none, isPendingOption } from "./option";
 
 describe("Option", () => {
   const one = 11;
@@ -22,7 +23,7 @@ describe("Option", () => {
       expect(() => (option as Some<number>).value).toThrow(
         new AnyError(
           "`Option.value` - accessed on `None`",
-          OptionErrorKind.NoneValueAccessed,
+          OptionErrorKind.ValueAccessedOnNone,
         ),
       );
     });
@@ -226,7 +227,7 @@ describe("Option", () => {
         expect(() => option.expect(msg)).toThrow(
           new AnyError(
             msg ?? "`Option.expect` - called on `None`",
-            OptionErrorKind.NoneExpected,
+            OptionErrorKind.ExpectCalledOnNone,
           ),
         );
       },
@@ -1286,7 +1287,7 @@ describe("Option", () => {
       expect(() => option.unwrap()).toThrow(
         new AnyError(
           "`Option.unwrap` - called on `None`",
-          OptionErrorKind.NoneUnwrapped,
+          OptionErrorKind.UnwrapCalledOnNone,
         ),
       );
     });
