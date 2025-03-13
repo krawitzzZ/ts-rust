@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AnyError } from "../error";
 import type { Cloneable, Recoverable } from "../types";
-import type { Result, Ok, Err } from "../result";
+import type { Result, Ok, Err, PendingResult } from "../result";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**
@@ -1068,10 +1068,11 @@ export interface PendingOption<T>
   match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>>;
 
   /**
-   * Converts to a {@link Promise} of a {@link Result}, using `y` as the error value if
-   * this {@link PendingOption} resolves to {@link None}.
+   * Converts to a {@link PendingResult}, using `y` as the error value if this
+   * {@link PendingOption} resolves to {@link None}.
    *
-   * This is the asynchronous version of the {@link Option.okOr}, check it for more details.
+   * This is the asynchronous version of the {@link Option.okOr},
+   * check it for more details.
    *
    * ### Example
    * ```ts
@@ -1082,11 +1083,10 @@ export interface PendingOption<T>
    * expect(await y.okOr("error")).toStrictEqual(err("error"));
    * ```
    */
-  // TODO(nikita.demin): will be PendingResult as soon as it's implemented
-  okOr<E>(y: Awaited<E>): Promise<Result<T, E>>;
+  okOr<E>(y: Awaited<E>): PendingResult<T, E>;
 
   /**
-   * Converts to a {@link Promise} of a {@link Result}, using the result of `mkErr`
+   * Converts to a {@link PendingResult}, using the result of `mkErr`
    * as the error value if this resolves to {@link None}.
    *
    * This is the asynchronous version of {@link Option.okOrElse}.
@@ -1100,8 +1100,7 @@ export interface PendingOption<T>
    * expect(await y.okOrElse(() => Promise.resolve("error"))).toStrictEqual(err("error"));
    * ```
    */
-  // TODO(nikita.demin): will be PendingResult as soon as it's implemented
-  okOrElse<E>(mkErr: () => E | Promise<E>): Promise<Result<T, E>>;
+  okOrElse<E>(mkErr: () => E | Promise<E>): PendingResult<T, E>;
 
   /**
    * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
@@ -1168,8 +1167,8 @@ export interface PendingOption<T>
   tap(f: (opt: Option<T>) => void | Promise<void>): PendingOption<T>;
 
   /**
-   * Transposes a {@link PendingOption} of a {@link Result} into a {@link Promise} of a
-   * {@link Result} containing a {@link PendingOption}. Resolves to {@link Ok}({@link None})
+   * Transposes a {@link PendingOption} of a {@link Result} into a {@link PendingResult}
+   * containing an {@link Option}. Resolves to {@link Ok}({@link None})
    * if this option is {@link None}, or propagates the error if the result is {@link Err}.
    *
    * This is the asynchronous version of the {@link Option.transpose}.
@@ -1185,10 +1184,9 @@ export interface PendingOption<T>
    * expect(await z.transpose()).toStrictEqual(ok(none()));
    * ```
    */
-  // TODO(nikita.demin): will pending result as soon as it's implemented
   transpose<U, E>(
     this: PendingOption<Result<U, E>>,
-  ): Promise<Result<Option<U>, E>>;
+  ): PendingResult<Option<U>, E>;
 
   /**
    * Returns a {@link PendingOption} with {@link Some} if exactly one of this option or

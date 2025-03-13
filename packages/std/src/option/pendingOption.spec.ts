@@ -1,6 +1,6 @@
 import { createMock } from "@golevelup/ts-jest";
 import * as shared from "@ts-rust/shared";
-import { err, ok, Result } from "../result";
+import { err, isPendingResult, ok, Result } from "../result";
 import { Option } from "./interface";
 import { isPendingOption, none, pendingOption, some } from "./option";
 
@@ -527,7 +527,11 @@ describe("PendingOption", () => {
       const res = createMock<Result<number, Error>>();
       const spy = jest.spyOn(inner, "okOr").mockReturnValueOnce(res);
       const self = pendingOption(inner);
-      const awaited = await self.okOr(error);
+      const result = self.okOr(error);
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
 
       expect(awaited).toBe(res);
       expect(spy).toHaveBeenCalledTimes(1);
@@ -543,6 +547,7 @@ describe("PendingOption", () => {
       const result = self.okOrElse(callback);
 
       expect(result).not.toBe(self);
+      expect(isPendingResult(result)).toBe(true);
 
       const awaited = await result;
 
@@ -560,6 +565,7 @@ describe("PendingOption", () => {
         const result = self.okOrElse(callback);
 
         expect(result).not.toBe(self);
+        expect(isPendingResult(result)).toBe(true);
 
         const awaited = await result;
 
@@ -754,47 +760,63 @@ describe("PendingOption", () => {
   });
 
   describe("transpose", () => {
-    it("returns a Promise of `Result<Option<V>, E>` with `Ok(None)` if self resolves to `None`", async () => {
+    it("returns a `PendingResult<Option<V>, E>` with `Ok(None)` if self resolves to `None`", async () => {
       const inner = none<Result<number, string>>();
       const self = pendingOption(inner);
       const spy = jest.spyOn(inner, "transpose");
-      const result = await self.transpose();
+      const result = self.transpose();
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
 
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(result.isOk()).toBe(true);
-      expect(result.unwrap().isNone()).toBe(true);
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap().isNone()).toBe(true);
     });
 
-    it("returns a Promise of `Result<Option<V>, E>` with `Ok(Some(v))` if self resolves to `Some(Ok(v))`", async () => {
+    it("returns a `PendingResult<Option<V>, E>` with `Ok(Some(v))` if self resolves to `Some(Ok(v))`", async () => {
       const inner = some(ok(one));
       const self = pendingOption(inner);
       const spy = jest.spyOn(inner, "transpose");
-      const result = await self.transpose();
+      const result = self.transpose();
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
 
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(result.isOk()).toBe(true);
-      expect(result.unwrap().isSome()).toBe(true);
-      expect(result.unwrap().unwrap()).toBe(one);
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap().isSome()).toBe(true);
+      expect(awaited.unwrap().unwrap()).toBe(one);
     });
 
-    it("returns a Promise of Result<Option<V>, E> with Err(e) if self resolves to Some(Err(e))", async () => {
+    it("returns a `PendingResult<Option<V>`, E> with Err(e) if self resolves to Some(Err(e))", async () => {
       const error = "error";
       const inner = some(err<number, string>(error));
       const self = pendingOption(inner);
-      const result = await self.transpose();
+      const result = self.transpose();
 
-      expect(result.isErr()).toBe(true);
-      expect(result.unwrapErr()).toBe(error);
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toBe(error);
     });
 
-    it("returns a Promise of Result<Option<V>, E> with Ok(None) if self rejects", async () => {
+    it("returns a `PendingResult<Option<V>, E>` with Ok(None) if self rejects", async () => {
       const self = pendingOption<Result<number, string>>(
         Promise.reject(new Error("result error")),
       );
-      const result = await self.transpose();
+      const result = self.transpose();
 
-      expect(result.isOk()).toBe(true);
-      expect(result.unwrap().isNone()).toBe(true);
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap().isNone()).toBe(true);
     });
   });
 

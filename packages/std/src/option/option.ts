@@ -1,6 +1,13 @@
 import { isPromise, stringify, toPromise, cnst } from "@ts-rust/shared";
 import { AnyError } from "../error";
-import { Result, err, ok, isResult } from "../result";
+import {
+  Result,
+  err,
+  ok,
+  isResult,
+  PendingResult,
+  pendingResult,
+} from "../result";
 import { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
 import {
@@ -776,18 +783,20 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  okOr<E>(y: Awaited<E>): Promise<Result<T, E>> {
-    return this.#promise.then((option) => option.okOr(y));
+  okOr<E>(y: Awaited<E>): PendingResult<T, E> {
+    return pendingResult(this.#promise.then((option) => option.okOr(y)));
   }
 
-  okOrElse<E>(mkErr: () => MaybePromise<E>): Promise<Result<T, E>> {
-    return this.#promise.then(async (option) => {
-      if (option.isNone()) {
-        return err(await mkErr());
-      }
+  okOrElse<E>(mkErr: () => MaybePromise<E>): PendingResult<T, E> {
+    return pendingResult(
+      this.#promise.then(async (option) => {
+        if (option.isNone()) {
+          return err(await mkErr());
+        }
 
-      return ok(option.value);
-    });
+        return ok(option.value);
+      }),
+    );
   }
 
   or(x: MaybePromise<Option<T>>): PendingSettledOption<T> {
@@ -830,8 +839,8 @@ class _PendingOption<T> implements PendingOption<T> {
 
   transpose<V, E>(
     this: PendingOption<Result<V, E>>,
-  ): Promise<Result<Option<V>, E>> {
-    return toPromise(this.then((option) => option.transpose()));
+  ): PendingResult<Option<V>, E> {
+    return pendingResult(toPromise(this.then((option) => option.transpose())));
   }
 
   xor(y: MaybePromise<Option<T>>): PendingSettledOption<T> {

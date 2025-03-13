@@ -16,12 +16,18 @@ export {
   isPendingOption,
 } from "./option";
 export {
+  ResultError,
   ResultErrorKind,
   PendingResult,
+  PendingSettledResult,
+  pendingResult,
+  Resultant,
   Result,
+  SettledResult,
   Ok,
   Err,
   ok,
   err,
   isResult,
+  isPendingResult,
 } from "./result";
