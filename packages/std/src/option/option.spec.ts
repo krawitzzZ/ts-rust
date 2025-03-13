@@ -1,5 +1,5 @@
 import { AnyError } from "../error";
-import { err, ok, Result } from "../result";
+import { err, ok, Result, ResultError, ResultErrorKind } from "../result";
 import { Clone } from "../types";
 import { OptionErrorKind } from "./error";
 import { Option, Some } from "./interface";
@@ -863,14 +863,20 @@ describe("Option", () => {
       expect(result.unwrapErr()).toBe(error);
     });
 
-    it("rethrows original error if self is `None` and provided callback throws", () => {
+    it("rethrows `ResultError` if self is `None` and provided callback throws", () => {
       const option = none();
       const error = new Error("error");
       const callback = jest.fn(() => {
         throw error;
       });
 
-      expect(() => option.okOrElse(callback)).toThrow(error);
+      expect(() => option.okOrElse(callback)).toThrow(
+        new ResultError(
+          "`Option.okOrElse` - callback `mkErr` threw an exception",
+          ResultErrorKind.FromOptionException,
+          error,
+        ),
+      );
       expect(callback).toHaveBeenCalledTimes(1);
     });
   });

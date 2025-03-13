@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Cloneable, Recoverable } from "../types";
-import type { Result, Ok, Err, PendingResult } from "../result";
+import type { Result, Ok, Err, PendingResult, ResultError } from "../result";
 import type { OptionError } from "./error";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
@@ -513,6 +513,9 @@ export interface Optional<T> {
    * {@link Some | Some(v)} is mapped to {@link Ok | Ok(v)} and {@link None}
    * to {@link Err | Err(mkErr())}.
    *
+   * ## Throws
+   * - {@link ResultError} if `mkErr` throws
+   *
    * ### Example
    * ```ts
    * const x = some(2);
@@ -522,7 +525,6 @@ export interface Optional<T> {
    * expect(y.okOrElse(() => "error")).toStrictEqual(err("error"));
    * ```
    */
-  // TODO(nikita.demin): check if error handling needed
   okOrElse<E>(mkErr: () => Awaited<E>): Result<T, E>;
 
   /**

@@ -6,6 +6,8 @@ import {
   isResult,
   PendingResult,
   pendingResult,
+  ResultError,
+  ResultErrorKind,
 } from "../result";
 import { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
@@ -450,7 +452,15 @@ class _Option<T> implements Optional<T> {
   }
 
   okOrElse<E>(mkErr: () => Awaited<E>): Result<T, E> {
-    return isSomething(this.#value) ? ok(this.#value) : err(mkErr());
+    try {
+      return isSomething(this.#value) ? ok(this.#value) : err(mkErr());
+    } catch (e) {
+      throw new ResultError(
+        "`Option.okOrElse` - callback `mkErr` threw an exception",
+        ResultErrorKind.FromOptionException,
+        e,
+      );
+    }
   }
 
   or(x: Option<T>): Option<T> {
