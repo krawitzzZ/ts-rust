@@ -58,7 +58,7 @@ export type Cloneable<T> = T extends Primitive
  * Similar to Rust's `Clone` trait, this interface is intended for types that
  * need explicit duplication logic (e.g., objects or complex structures),
  * as opposed to {@link Primitive} types, which are implicitly copied by value.
- * Unlike reference types that might share state, a {@link Copy.clone | clone}
+ * Unlike reference types that might share state, a {@link Clone.clone | clone}
  * implementation should produce a distinct instance, though the depth of the copy
  * (shallow or deep) is left to the implementor.
  *
