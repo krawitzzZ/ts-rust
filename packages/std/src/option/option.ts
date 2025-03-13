@@ -223,7 +223,7 @@ class _Option<T> implements Optional<T> {
     if (isNothing(this.#value)) {
       throw new OptionError(
         "`Option.value` - accessed on `None`",
-        OptionErrorKind.NoneValueAccessed,
+        OptionErrorKind.ValueAccessedOnNone,
       );
     }
 
@@ -279,7 +279,7 @@ class _Option<T> implements Optional<T> {
 
     throw new OptionError(
       msg ?? "`Option.expect` - called on `None`",
-      OptionErrorKind.NoneExpected,
+      OptionErrorKind.ExpectCalledOnNone,
     );
   }
 
@@ -588,7 +588,7 @@ class _Option<T> implements Optional<T> {
 
     throw new OptionError(
       "`Option.unwrap` - called on `None`",
-      OptionErrorKind.NoneUnwrapped,
+      OptionErrorKind.UnwrapCalledOnNone,
     );
   }
 

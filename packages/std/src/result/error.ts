@@ -1,19 +1,44 @@
 import { AnyError } from "../error";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { Result, Ok, Err } from "./interface";
 
 /**
  * Enumerates error codes specific to {@link Result} operations.
  *
  * These codes are used in {@link AnyError} instances thrown by methods like
- * {@link Result.unwrap} or {@link Result.expect} when operations fail due to
- * the state of the result.
+ * {@link Result.unwrap | unwrap} or {@link Result.expect | expect} when operations
+ * fail due to the state of the result.
  */
 export enum ResultErrorKind {
-  OkErrorAccessed = "OkErrorAccessed", // error accessed on Ok
-  ErrValueAccessed = "ErrValueAccessed", // ok accessed on Err
-  ErrExpected = "ErrExpected",
-  ErrUnwrappedAsOk = "ErrUnwrappedAsOk",
-  OkUnwrappedAsErr = "OkUnwrappedAsErr",
+  ErrorAccessedOnOk = "ErrorAccessedOnOk",
+  ValueAccessedOnErr = "ValueAccessedOnErr",
+  ExpectCalledOnErr = "ExpectCalledOnErr",
+  UnwrapCalledOnErr = "UnwrapCalledOnErr",
+  UnwrapErrCalledOnOk = "UnwrapErrCalledOnOk",
   PredicateException = "PredicateException",
 }
 
+/**
+ * An error thrown by {@link Result} methods when operations fail due to the result's state
+ * or unexpected conditions.
+ *
+ * This class extends {@link AnyError} with error kinds specific to {@link Result} operations,
+ * as defined in {@link ResultErrorKind}. It is typically thrown by methods like
+ * {@link Result.unwrap | unwrap}, {@link Result.unwrapErr | unwrapErr}, or
+ * {@link Result.expect | expect} when attempting to access values or errors inconsistent
+ * with the result’s {@link Ok} or {@link Err} state. Use it to handle failures in a type-safe
+ * manner, inspecting the {@link ResultErrorKind} to determine the cause of the error.
+ *
+ * @example
+ * ```ts
+ * const res = err<number, string>("failure");
+ * try {
+ *   res.unwrap();
+ * } catch (e) {
+ *   expect(e).toBeInstanceOf(ResultError);
+ *   expect(e.kind).toBe(ResultErrorKind.ErrUnwrappedAsOk);
+ *   expect(e.message).toBe("`Result.unwrap` - called on `Err`");
+ * }
+ * ```
+ */
 export class ResultError extends AnyError<ResultErrorKind> {}

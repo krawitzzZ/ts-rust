@@ -1,18 +1,18 @@
 import { AnyError } from "../error";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { Option } from "./interface";
+import type { Option, Some, None } from "./interface";
 
 /**
  * Enumerates error codes specific to {@link Option} operations.
  *
  * These codes are used in {@link OptionError} instances thrown by methods like
- * {@link Option.unwrap} or {@link Option.expect} when operations fail due to
- * the state of the option.
+ * {@link Option.unwrap | unwrap} or {@link Option.expect | expect} when operations
+ * fail due to the state of the option.
  */
 export enum OptionErrorKind {
-  NoneValueAccessed = "NoneValueAccessed",
-  NoneExpected = "NoneExpected",
-  NoneUnwrapped = "NoneUnwrapped",
+  ValueAccessedOnNone = "ValueAccessedOnNone",
+  ExpectCalledOnNone = "ExpectCalledOnNone",
+  UnwrapCalledOnNone = "UnwrapCalledOnNone",
   PredicateException = "PredicateException",
 }
 

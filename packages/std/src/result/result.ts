@@ -103,7 +103,7 @@ class _Result<T, E> implements Resultant<T, E> {
     if (isErr(this.#state)) {
       throw new ResultError(
         "`Result.value` - accessed on `Err`",
-        ResultErrorKind.ErrValueAccessed,
+        ResultErrorKind.ValueAccessedOnErr,
       );
     }
 
@@ -114,7 +114,7 @@ class _Result<T, E> implements Resultant<T, E> {
     if (isOk(this.#state)) {
       throw new ResultError(
         "`Result.error` - accessed on `Ok`",
-        ResultErrorKind.OkErrorAccessed,
+        ResultErrorKind.ErrorAccessedOnOk,
       );
     }
 
@@ -192,7 +192,7 @@ class _Result<T, E> implements Resultant<T, E> {
 
     throw new ResultError(
       msg ?? "`Result.expect` - called on `Err`",
-      ResultErrorKind.ErrExpected,
+      ResultErrorKind.ExpectCalledOnErr,
     );
   }
 
@@ -216,7 +216,7 @@ class _Result<T, E> implements Resultant<T, E> {
     if (isErr(this.#state)) {
       throw new ResultError(
         "`Result.unwrap` - called on `Err`",
-        ResultErrorKind.ErrUnwrappedAsOk,
+        ResultErrorKind.UnwrapCalledOnErr,
       );
     }
 
@@ -227,7 +227,7 @@ class _Result<T, E> implements Resultant<T, E> {
     if (isOk(this.#state)) {
       throw new ResultError(
         "`Result.unwrapErr` - called on `Ok`",
-        ResultErrorKind.OkUnwrappedAsErr,
+        ResultErrorKind.UnwrapErrCalledOnOk,
       );
     }
 
