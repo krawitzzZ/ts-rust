@@ -201,7 +201,7 @@ class _Option<T> implements Optional<T> {
   get value(): T {
     if (isNothing(this.#value)) {
       throw new OptionError(
-        "`Option.value` - accessed on `None`",
+        "`value`: accessed on `None`",
         OptionErrorKind.ValueAccessedOnNone,
       );
     }
@@ -251,7 +251,7 @@ class _Option<T> implements Optional<T> {
     }
 
     throw new OptionError(
-      msg ?? "`Option.expect` - called on `None`",
+      msg ?? "`expect`: called on `None`",
       OptionErrorKind.ExpectCalledOnNone,
     );
   }
@@ -296,7 +296,7 @@ class _Option<T> implements Optional<T> {
       return this.#value;
     } catch (e) {
       throw new OptionError(
-        "`Option.getOrInsertWith` - callback `f` threw an exception",
+        "`getOrInsertWith`: callback `f` threw an exception",
         OptionErrorKind.PredicateException,
         e,
       );
@@ -413,7 +413,7 @@ class _Option<T> implements Optional<T> {
         return mkDef();
       } catch (e) {
         throw new OptionError(
-          "`Option.mapOrElse` - callback `mkDef` threw an exception",
+          "`mapOrElse`: callback `mkDef` threw an exception",
           OptionErrorKind.PredicateException,
           e,
         );
@@ -440,7 +440,7 @@ class _Option<T> implements Optional<T> {
       return this.isNone() ? g() : f(this.value);
     } catch (e) {
       throw new OptionError(
-        "`Option.match` - one of the predicates threw an exception",
+        "`match`: one of the predicates threw an exception",
         OptionErrorKind.PredicateException,
         e,
       );
@@ -456,7 +456,7 @@ class _Option<T> implements Optional<T> {
       return isSomething(this.#value) ? ok(this.#value) : err(mkErr());
     } catch (e) {
       throw new ResultError(
-        "`Option.okOrElse` - callback `mkErr` threw an exception",
+        "`Option.okOrElse`: callback `mkErr` threw an exception",
         ResultErrorKind.FromOptionException,
         e,
       );
@@ -561,7 +561,7 @@ class _Option<T> implements Optional<T> {
     }
 
     throw new OptionError(
-      "`Option.unwrap` - called on `None`",
+      "`unwrap`: called on `None`",
       OptionErrorKind.UnwrapCalledOnNone,
     );
   }
@@ -575,7 +575,7 @@ class _Option<T> implements Optional<T> {
       return this.isNone() ? mkDef() : this.value;
     } catch (e) {
       throw new OptionError(
-        "`Option.unwrapOrElse` - callback `mkDef` threw an exception",
+        "`unwrapOrElse`: callback `mkDef` threw an exception",
         OptionErrorKind.PredicateException,
         e,
       );

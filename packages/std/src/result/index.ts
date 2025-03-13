@@ -1,7 +1,6 @@
 export { ResultError, ResultErrorKind } from "./error";
 export {
   PendingResult,
-  PendingSettledResult,
   Resultant,
   Result,
   SettledResult,

@@ -8,12 +8,10 @@ export class AnyError<T> extends Error {
   constructor(message: string, kind: T, reason?: unknown) {
     super(message);
 
-    Object.setPrototypeOf(this, AnyError.prototype);
-
     this.name = this.constructor.name;
-    this.kind = kind;
     this.reason = makeReason(reason);
-    this.message = `[${stringify(kind)}] ${message}. Reason: ${stringify(reason)}.`;
+    this.kind = kind;
+    this.message = `[${stringify(kind)}] ${message}. Reason: ${stringify(reason)}`;
   }
 }
 

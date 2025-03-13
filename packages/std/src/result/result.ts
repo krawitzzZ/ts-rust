@@ -1,15 +1,14 @@
-import { isPromise, stringify, toPromise } from "@ts-rust/shared";
+import { stringify, toPromise } from "@ts-rust/shared";
 import { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
 import { ResultError, ResultErrorKind } from "./error";
 import {
-  Err,
-  Resultant,
-  Ok,
-  Result,
   PendingResult,
-  PendingSettledResult,
   SettledResult,
+  Resultant,
+  Result,
+  Err,
+  Ok,
 } from "./interface";
 
 export function ok<E>(value: void): Result<void, E>;
@@ -53,35 +52,6 @@ export function isResult(x: unknown): x is Result<unknown, unknown> {
   return x instanceof _Result;
 }
 
-type ResultState<T, E> = { type: "ok"; value: T } | { type: "error"; error: E };
-
-const isOk = <T, E>(x: ResultState<T, E>): x is { type: "ok"; value: T } =>
-  x.type === "ok";
-
-const isErr = <T, E>(x: ResultState<T, E>): x is { type: "error"; error: E } =>
-  x.type === "error";
-
-const settleResult = async <T, E>(
-  resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
-): Promise<SettledResult<T, E>> =>
-  toPromise(resultOrPromise).then(async (r) =>
-    r.isOk() ? ok(await r.value) : err(await r.error),
-  );
-
-const _settleOk = async <T, E>(
-  resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
-): Promise<Result<Awaited<T>, E>> =>
-  toPromise(resultOrPromise).then(async (r) =>
-    r.isOk() ? ok(await r.value) : err(r.error),
-  );
-
-const _settleErr = async <T, E>(
-  resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
-): Promise<Result<T, Awaited<E>>> =>
-  toPromise(resultOrPromise).then(async (r) =>
-    r.isOk() ? ok(r.value) : err(await r.error),
-  );
-
 class _Result<T, E> implements Resultant<T, E> {
   /**
    * Creates {@link Ok} invariant of {@link Result} with provided value.
@@ -97,12 +67,12 @@ class _Result<T, E> implements Resultant<T, E> {
     return new _Result({ type: "error", error });
   }
 
-  #state: ResultState<T, E>;
+  #state: State<T, E>;
 
   get value(): T {
     if (isErr(this.#state)) {
       throw new ResultError(
-        "`Result.value` - accessed on `Err`",
+        "`value`: accessed on `Err`",
         ResultErrorKind.ValueAccessedOnErr,
       );
     }
@@ -113,7 +83,7 @@ class _Result<T, E> implements Resultant<T, E> {
   get error(): E {
     if (isOk(this.#state)) {
       throw new ResultError(
-        "`Result.error` - accessed on `Ok`",
+        "`error`: accessed on `Ok`",
         ResultErrorKind.ErrorAccessedOnOk,
       );
     }
@@ -121,28 +91,20 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.#state.error;
   }
 
-  private constructor(state: ResultState<T, E>) {
+  private constructor(state: State<T, E>) {
     this.#state = state;
   }
 
-  and<U>(x: Result<U, E>): Result<U, E>;
-  and<U>(x: Promise<Result<U, E>>): PendingSettledResult<U, E>;
-  and<U>(
-    x: MaybePromise<Result<U, E>>,
-  ): Result<U, E> | PendingSettledResult<U, E> {
-    if (isPromise(x)) {
-      return pendingResult(async () => (await _settleOk(this.copy())).and(x));
-    }
-
+  and<U>(x: Result<U, E>): Result<U, E> {
     return isOk(this.#state) ? x.copy() : err(this.#state.error);
   }
 
-  andThen<U>(f: (x: T) => Result<U, E>): Result<U, E | ResultError>;
+  andThen<U>(f: (x: T) => Result<U, E>): SafeResult<U, E>;
   andThen<U>(f: (x: T) => Result<U, E>, h: (e: unknown) => E): Result<U, E>;
   andThen<U>(
     f: (x: T) => Result<U, E>,
     h?: (e: unknown) => E,
-  ): Result<U, E | ResultError> | Result<U, E> {
+  ): SafeResult<U, E> | Result<U, E> {
     if (isErr(this.#state)) {
       return err(this.#state.error);
     }
@@ -150,14 +112,7 @@ class _Result<T, E> implements Resultant<T, E> {
     try {
       return f(this.#state.value);
     } catch (e) {
-      const error = h
-        ? h(e)
-        : new ResultError(
-            "`Result.andThen` - callback `f` threw an exception",
-            ResultErrorKind.PredicateException,
-            e,
-          );
-      return err(error);
+      return safeErr("`andThen`: callback `f` threw an exception", e, h);
     }
   }
 
@@ -191,18 +146,18 @@ class _Result<T, E> implements Resultant<T, E> {
     }
 
     throw new ResultError(
-      msg ?? "`Result.expect` - called on `Err`",
+      msg ?? "`expect`: called on `Err`",
       ResultErrorKind.ExpectCalledOnErr,
     );
   }
 
-  toPending(): PendingSettledResult<T, E> {
+  toPending(): PendingSettledRes<T, E> {
     return pendingResult(settleResult(this.copy()));
   }
 
   toPendingCloned(
     this: Result<Cloneable<T>, Cloneable<E>>,
-  ): PendingSettledResult<T, E> {
+  ): PendingSettledRes<T, E> {
     return pendingResult(settleResult(this.clone()));
   }
 
@@ -215,7 +170,7 @@ class _Result<T, E> implements Resultant<T, E> {
   unwrap(): T {
     if (isErr(this.#state)) {
       throw new ResultError(
-        "`Result.unwrap` - called on `Err`",
+        "`unwrap`: called on `Err`",
         ResultErrorKind.UnwrapCalledOnErr,
       );
     }
@@ -226,7 +181,7 @@ class _Result<T, E> implements Resultant<T, E> {
   unwrapErr(): E {
     if (isOk(this.#state)) {
       throw new ResultError(
-        "`Result.unwrapErr` - called on `Ok`",
+        "`unwrapErr`: called on `Ok`",
         ResultErrorKind.UnwrapErrCalledOnOk,
       );
     }
@@ -263,12 +218,86 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
     return this.#promise.catch(onrejected);
   }
 
-  and<U>(x: MaybePromise<Result<U, E>>): PendingSettledResult<U, E> {
+  and<U>(x: Result<U, E> | Promise<Result<U, E>>): PendingSettledSafeRes<U, E>;
+  and<U>(
+    x: Result<U, E> | Promise<Result<U, E>>,
+    h: (e: unknown) => E,
+  ): PendingSettledRes<U, E>;
+  and<U>(
+    x: MaybePromise<Result<U, E>>,
+    h?: (e: unknown) => E,
+  ): PendingSettledSafeRes<U, E> | PendingSettledRes<U, E> {
     return pendingResult(
-      this.#promise.then(async (result) => {
-        const r = result.and(await x);
-        return r.isOk() ? ok(await r.value) : err(await r.error);
-      }),
+      this.#promise.then(
+        async (result) => settleResult(result.and(await x)),
+        mkCatch("`and`: the inner or other result rejected", h),
+      ),
+    );
+  }
+
+  andUnchecked<U>(
+    x: Result<U, E> | Promise<Result<U, E>>,
+  ): PendingResult<Awaited<U>, Awaited<E>> {
+    return pendingResult(
+      this.#promise.then(async (result) => settleResult(result.and(await x))),
     );
   }
 }
+
+type State<T, E> = { type: "ok"; value: T } | { type: "error"; error: E };
+
+type SafeResult<T, E> = Result<T, E | ResultError>;
+
+type PendingSettledRes<T, E> = PendingResult<Awaited<T>, Awaited<E>>;
+
+type PendingSettledSafeRes<T, E> = PendingResult<
+  Awaited<T>,
+  Awaited<E> | ResultError
+>;
+
+const isOk = <T, E>(x: State<T, E>): x is { type: "ok"; value: T } =>
+  x.type === "ok";
+
+const isErr = <T, E>(x: State<T, E>): x is { type: "error"; error: E } =>
+  x.type === "error";
+
+const safeErr = <T, E>(
+  message: string,
+  error: unknown,
+  mkErr?: (e: unknown) => E,
+): SafeResult<T, E> => {
+  const e = mkErr
+    ? mkErr(error)
+    : new ResultError(message, ResultErrorKind.PredicateException, error);
+  return err(e);
+};
+
+const mkCatch =
+  <T, E>(message: string, mkErr?: (e: unknown) => E) =>
+  async (error: unknown): Promise<Result<T, Awaited<E> | ResultError>> => {
+    const e = mkErr
+      ? await mkErr(error)
+      : new ResultError(message, ResultErrorKind.ResultRejection, error);
+    return err(e);
+  };
+
+const settleResult = async <T, E>(
+  resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
+): Promise<SettledResult<T, E>> =>
+  toPromise(resultOrPromise).then(async (r) =>
+    r.isOk() ? ok(await r.value) : err(await r.error),
+  );
+
+const _settleOk = async <T, E>(
+  resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
+): Promise<Result<Awaited<T>, E>> =>
+  toPromise(resultOrPromise).then(async (r) =>
+    r.isOk() ? ok(await r.value) : err(r.error),
+  );
+
+const _settleErr = async <T, E>(
+  resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
+): Promise<Result<T, Awaited<E>>> =>
+  toPromise(resultOrPromise).then(async (r) =>
+    r.isOk() ? ok(r.value) : err(await r.error),
+  );

@@ -20,8 +20,8 @@ export enum OptionErrorKind {
  * An error thrown by {@link Option} methods when operations fail due to the option's state
  * or unexpected conditions.
  *
- * This class extends {@link AnyError} with error kinds specific to {@link Option} operations,
- * as defined in {@link OptionErrorKind}. It is typically thrown by methods like
+ * This class extends {@link AnyError} with error kinds specific to {@link Option}
+ * operations, as defined in {@link OptionErrorKind}. It is typically thrown by methods like
  * {@link Optional.unwrap | unwrap}, {@link Optional.expect | expect}, or others that enforce
  * strict access or behavior on {@link Some} or {@link None} variants. Use it to handle
  * failures gracefully in a type-safe manner, inspecting the {@link OptionErrorKind} to
@@ -34,8 +34,8 @@ export enum OptionErrorKind {
  *   opt.unwrap();
  * } catch (e) {
  *   expect(e).toBeInstanceOf(OptionError);
- *   expect(e.kind).toBe(OptionErrorKind.NoneUnwrapped);
- *   expect(e.message).toBe("`Option.unwrap` - called on `None`");
+ *   expect(e.kind).toBe(OptionErrorKind.UnwrapCalledOnNone);
+ *   expect(e.message).toBe("`unwrap`: called on `None`");
  * }
  * ```
  */

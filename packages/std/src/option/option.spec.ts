@@ -1,7 +1,6 @@
-import { AnyError } from "../error";
 import { err, ok, Result, ResultError, ResultErrorKind } from "../result";
 import { Clone } from "../types";
-import { OptionErrorKind } from "./error";
+import { OptionError, OptionErrorKind } from "./error";
 import { Option, Some } from "./interface";
 import { some, none, isPendingOption } from "./option";
 
@@ -17,12 +16,12 @@ describe("Option", () => {
       expect((option as Some<number>).value).toBe(one);
     });
 
-    it("throws `AnyError` if self is `None` (wrongly casted)", () => {
+    it("throws `OptionError` if self is `None` (wrongly casted)", () => {
       const option = none();
 
       expect(() => (option as Some<number>).value).toThrow(
-        new AnyError(
-          "`Option.value` - accessed on `None`",
+        new OptionError(
+          "`value`: accessed on `None`",
           OptionErrorKind.ValueAccessedOnNone,
         ),
       );
@@ -38,7 +37,7 @@ describe("Option", () => {
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
       expect(result).not.toBe(other);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
     });
 
     it("returns copy of provided `Option` if self is `Some`", () => {
@@ -60,7 +59,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).not.toHaveBeenCalled();
     });
 
@@ -85,7 +84,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(option.unwrap());
     });
@@ -105,7 +104,7 @@ describe("Option", () => {
 
       expect(cloned.isNone()).toBe(true);
       expect(cloned).not.toBe(self);
-      expect(() => cloned.unwrap()).toThrow(AnyError);
+      expect(() => cloned.unwrap()).toThrow(OptionError);
     });
 
     it("returns `Some` with the same value", () => {
@@ -178,13 +177,13 @@ describe("Option", () => {
     });
 
     it.each(["oi oi oi", undefined])(
-      "throws `AnyError` if self is `None`",
+      "throws `OptionError` if self is `None`",
       (msg) => {
         const option = none();
 
         expect(() => option.expect(msg)).toThrow(
-          new AnyError(
-            msg ?? "`Option.expect` - called on `None`",
+          new OptionError(
+            msg ?? "`expect`: called on `None`",
             OptionErrorKind.ExpectCalledOnNone,
           ),
         );
@@ -200,7 +199,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).not.toHaveBeenCalled();
     });
 
@@ -211,7 +210,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
     });
@@ -236,7 +235,7 @@ describe("Option", () => {
       const result = option.filter(callback);
 
       expect(result.isNone()).toBe(true);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
     });
@@ -249,7 +248,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
     });
 
     it("returns `None` if self is `Some`, but value is not `Option`", () => {
@@ -259,7 +258,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
     });
 
     it("returns inner `Option` if self is `Some<Option<T>>`", () => {
@@ -321,7 +320,7 @@ describe("Option", () => {
       },
     );
 
-    it("rethrows `AnyError` with original error as reason if provided callback throws", () => {
+    it("rethrows `OptionError` with original error as reason if provided callback throws", () => {
       const option = none();
       const error = new Error("error");
       const callback = jest.fn(() => {
@@ -329,8 +328,8 @@ describe("Option", () => {
       });
 
       expect(() => option.getOrInsertWith(callback)).toThrow(
-        new AnyError(
-          "`Option.getOrInsertWith` - callback `f` threw an exception",
+        new OptionError(
+          "`getOrInsertWith`: callback `f` threw an exception",
           OptionErrorKind.PredicateException,
           error,
         ),
@@ -416,7 +415,7 @@ describe("Option", () => {
 
       expect(result).not.toBe(option);
       expect(result.isNone()).toBe(true);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).not.toHaveBeenCalled();
       expect(spy).toHaveBeenCalledTimes(1);
     });
@@ -562,7 +561,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).not.toHaveBeenCalled();
     });
 
@@ -585,7 +584,7 @@ describe("Option", () => {
       const result = option.map(callback);
 
       expect(result.isNone()).toBe(true);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
     });
@@ -634,7 +633,7 @@ describe("Option", () => {
       const result = option.mapAll(callback);
 
       expect(result.isNone()).toBe(true);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(option);
     });
@@ -700,7 +699,7 @@ describe("Option", () => {
       expect(mkDef).toHaveBeenCalledTimes(1);
     });
 
-    it("rethrows `AnyError` with original error set as reason if self is `None` and `mkDef` callback throws", () => {
+    it("rethrows `OptionError` with original error set as reason if self is `None` and `mkDef` callback throws", () => {
       const error = new Error("error");
       const option: Option<number> = none();
       const map = jest.fn(() => zero);
@@ -709,8 +708,8 @@ describe("Option", () => {
       });
 
       expect(() => option.mapOrElse(mkDef, map)).toThrow(
-        new AnyError(
-          "`Option.mapOrElse` - callback `mkDef` threw an exception",
+        new OptionError(
+          "`mapOrElse`: callback `mkDef` threw an exception",
           OptionErrorKind.PredicateException,
           error,
         ),
@@ -746,7 +745,7 @@ describe("Option", () => {
       expect(mkDef).toHaveBeenCalledTimes(1);
     });
 
-    it("rethrows `AnyError` with original error set as reason if self is `Some` and provided `mkDef` callback throws", () => {
+    it("rethrows `OptionError` with original error set as reason if self is `Some` and provided `mkDef` callback throws", () => {
       const mapError = new Error("map");
       const mkDefError = new Error("make default error");
       const option = some(one);
@@ -758,8 +757,8 @@ describe("Option", () => {
       });
 
       expect(() => option.mapOrElse(mkDef, map)).toThrow(
-        new AnyError(
-          "`Option.mapOrElse` - callback `mkDef` threw an exception",
+        new OptionError(
+          "`mapOrElse`: callback `mkDef` threw an exception",
           OptionErrorKind.PredicateException,
           mkDefError,
         ),
@@ -800,27 +799,27 @@ describe("Option", () => {
       },
     );
 
-    it("rethrows `AnyError` with original error set as reason if self is `Some` and provided `some` callback throws", () => {
+    it("rethrows `OptionError` with original error set as reason if self is `Some` and provided `some` callback throws", () => {
       const option = some(one);
       const some_ = jest.fn(() => {
         throw new Error();
       });
       const none_ = jest.fn(() => zero);
 
-      expect(() => option.match(some_, none_)).toThrow(AnyError);
+      expect(() => option.match(some_, none_)).toThrow(OptionError);
       expect(some_).toHaveBeenCalledTimes(1);
       expect(some_).toHaveBeenCalledWith(one);
       expect(none_).not.toHaveBeenCalled();
     });
 
-    it("rethrows `AnyError` with original error set as reason if self is `None` and provided `none` callback throws", () => {
+    it("rethrows `OptionError` with original error set as reason if self is `None` and provided `none` callback throws", () => {
       const option = none();
       const some_ = jest.fn(() => two);
       const none_ = jest.fn(() => {
         throw new Error();
       });
 
-      expect(() => option.match(some_, none_)).toThrow(AnyError);
+      expect(() => option.match(some_, none_)).toThrow(OptionError);
       expect(some_).not.toHaveBeenCalled();
       expect(none_).toHaveBeenCalledTimes(1);
     });
@@ -872,7 +871,7 @@ describe("Option", () => {
 
       expect(() => option.okOrElse(callback)).toThrow(
         new ResultError(
-          "`Option.okOrElse` - callback `mkErr` threw an exception",
+          "`Option.okOrElse`: callback `mkErr` threw an exception",
           ResultErrorKind.FromOptionException,
           error,
         ),
@@ -938,7 +937,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).toHaveBeenCalledTimes(1);
     });
   });
@@ -961,7 +960,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(two);
     });
@@ -974,7 +973,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
     });
 
     it("returns `Some` and makes self `None` if self was originally `Some`", () => {
@@ -985,7 +984,7 @@ describe("Option", () => {
       expect(result.unwrap()).toBe(one);
       expect(result).not.toBe(option);
       expect(option.isNone()).toBe(true);
-      expect(() => option.unwrap()).toThrow(AnyError);
+      expect(() => option.unwrap()).toThrow(OptionError);
     });
   });
 
@@ -997,7 +996,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(callback).not.toHaveBeenCalled();
     });
 
@@ -1010,7 +1009,7 @@ describe("Option", () => {
       expect(result.unwrap()).toBe(one);
       expect(result).not.toBe(option);
       expect(option.isNone()).toBe(true);
-      expect(() => option.unwrap()).toThrow(AnyError);
+      expect(() => option.unwrap()).toThrow(OptionError);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
     });
@@ -1022,7 +1021,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(one);
       expect(callback).toHaveBeenCalledTimes(1);
@@ -1038,7 +1037,7 @@ describe("Option", () => {
 
       expect(result.isNone()).toBe(true);
       expect(result).not.toBe(option);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(one);
       expect(callback).toHaveBeenCalledTimes(1);
@@ -1254,12 +1253,12 @@ describe("Option", () => {
       expect(result).toBe(one);
     });
 
-    it("throws `AnyError` if self is `None`", () => {
+    it("throws `OptionError` if self is `None`", () => {
       const option = none();
 
       expect(() => option.unwrap()).toThrow(
-        new AnyError(
-          "`Option.unwrap` - called on `None`",
+        new OptionError(
+          "`unwrap`: called on `None`",
           OptionErrorKind.UnwrapCalledOnNone,
         ),
       );
@@ -1301,7 +1300,7 @@ describe("Option", () => {
       expect(callback).toHaveBeenCalledTimes(1);
     });
 
-    it("rethrows `AnyError` if self is `None` and provided callback throws", () => {
+    it("rethrows `OptionError` if self is `None` and provided callback throws", () => {
       const error = new Error("unwrapped");
       const option = none();
       const callback = jest.fn(() => {
@@ -1309,8 +1308,8 @@ describe("Option", () => {
       });
 
       expect(() => option.unwrapOrElse(callback)).toThrow(
-        new AnyError(
-          "`Option.unwrapOrElse` - callback `mkDef` threw an exception",
+        new OptionError(
+          "`unwrapOrElse`: callback `mkDef` threw an exception",
           OptionErrorKind.PredicateException,
           error,
         ),
@@ -1360,7 +1359,7 @@ describe("Option", () => {
       const result = self.xor(other);
 
       expect(result.isNone()).toBe(true);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
     });
 
     it("returns `None` if provided option is `Some` and self is `Some`", () => {
@@ -1369,7 +1368,7 @@ describe("Option", () => {
       const result = self.xor(other);
 
       expect(result.isNone()).toBe(true);
-      expect(() => result.unwrap()).toThrow(AnyError);
+      expect(() => result.unwrap()).toThrow(OptionError);
     });
   });
 });

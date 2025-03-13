@@ -15,7 +15,9 @@ export enum ResultErrorKind {
   ExpectCalledOnErr = "ExpectCalledOnErr",
   UnwrapCalledOnErr = "UnwrapCalledOnErr",
   UnwrapErrCalledOnOk = "UnwrapErrCalledOnOk",
+  ResultRejection = "ResultRejection",
   PredicateException = "PredicateException",
+  FromOptionException = "FromOptionException",
 }
 
 /**
@@ -37,8 +39,8 @@ export enum ResultErrorKind {
  *   res.unwrap();
  * } catch (e) {
  *   expect(e).toBeInstanceOf(ResultError);
- *   expect(e.kind).toBe(ResultErrorKind.ErrUnwrappedAsOk);
- *   expect(e.message).toBe("`Result.unwrap` - called on `Err`");
+ *   expect(e.kind).toBe(ResultErrorKind.UnwrapCalledOnErr);
+ *   expect(e.message).toBe("`unwrap`: called on `Err`");
  * }
  * ```
  */

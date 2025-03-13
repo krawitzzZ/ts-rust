@@ -9,7 +9,7 @@ describe("AnyError", () => {
 
     expect(error).toBeInstanceOf(AnyError);
     expect(error.message).toBe(
-      `[${stringify(kind)}] ${message}. Reason: undefined.`,
+      `[${stringify(kind)}] ${message}. Reason: undefined`,
     );
     expect(error.kind).toBe(kind);
     expect(error.reason).toBeUndefined();

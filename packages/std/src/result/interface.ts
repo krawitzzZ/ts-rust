@@ -11,8 +11,6 @@ export type SettledResult<T, E> =
   | Ok<Awaited<T>, Awaited<E>>
   | Err<Awaited<T>, Awaited<E>>;
 
-export type PendingSettledResult<T, E> = PendingResult<Awaited<T>, Awaited<E>>;
-
 /**
  * Interface representing the resultant state of an operation, either a success
  * ({@link Ok | Ok\<T>}) or an error ({@link Err | Err\<E>}).
@@ -22,10 +20,10 @@ export type PendingSettledResult<T, E> = PendingResult<Awaited<T>, Awaited<E>>;
  */
 export interface Resultant<T, E> {
   and<U>(x: Result<U, E>): Result<U, E>;
-  // TODO(nikita.demin): handle the case when promise rejects
-  and<U>(x: Promise<Result<U, E>>): PendingResult<Awaited<U>, Awaited<E>>;
+
   andThen<U>(f: (x: T) => Result<U, E>): Result<U, E | ResultError>;
   andThen<U>(f: (x: T) => Result<U, E>, h: (e: unknown) => E): Result<U, E>;
+
   andThenUnchecked<U>(f: (x: T) => Result<U, E>): Result<U, E>;
 
   /**
@@ -130,6 +128,14 @@ export interface PendingResult<T, E>
   extends PromiseLike<Result<T, E>>,
     Recoverable<Result<T, E>> {
   and<U>(
+    x: Result<U, E> | Promise<Result<U, E>>,
+  ): PendingResult<Awaited<U>, Awaited<E> | ResultError>;
+  and<U>(
+    x: Result<U, E> | Promise<Result<U, E>>,
+    h: (e: unknown) => E,
+  ): PendingResult<Awaited<U>, Awaited<E>>;
+
+  andUnchecked<U>(
     x: Result<U, E> | Promise<Result<U, E>>,
   ): PendingResult<Awaited<U>, Awaited<E>>;
 }

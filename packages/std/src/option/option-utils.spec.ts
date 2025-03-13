@@ -1,4 +1,4 @@
-import { AnyError } from "../error";
+import { OptionError } from "./error";
 import { isOption, isPendingOption, none, pendingOption, some } from "./option";
 
 describe("Option utils", () => {
@@ -34,7 +34,7 @@ describe("Option utils", () => {
       const option = none();
 
       expect(option.isNone()).toBe(true);
-      expect(() => option.unwrap()).toThrow(AnyError);
+      expect(() => option.unwrap()).toThrow(OptionError);
     });
   });
 
@@ -63,7 +63,7 @@ describe("Option utils", () => {
 
       expect(isPendingOption(option)).toBe(true);
       expect(awaited.isNone()).toBe(true);
-      expect(() => awaited.unwrap()).toThrow(AnyError);
+      expect(() => awaited.unwrap()).toThrow(OptionError);
     });
   });
 
