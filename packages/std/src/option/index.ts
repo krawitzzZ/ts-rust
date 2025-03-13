@@ -1,7 +1,6 @@
 export { OptionError, OptionErrorKind } from "./error";
 export {
   PendingOption,
-  PendingSettledOption,
   Optional,
   Option,
   SettledOption,

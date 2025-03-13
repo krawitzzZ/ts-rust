@@ -38,18 +38,6 @@ export type Option<T> = Some<T> | None<T>;
 export type SettledOption<T> = Option<Awaited<T>>;
 
 /**
- * An asynchronous {@link PendingOption} where the contained value `T` is guaranteed to be
- * resolved (non-`PromiseLike`), ensuring the inner type is immediately available
- * once the outer promise settles.
- *
- * This type extends {@link PendingOption} with a settled `T` (i.e., `Awaited<T>`),
- * making it suitable for async operations that return fully resolved values. Use it when
- * you need an {@link Option} whose value, if present, requires no further awaiting after
- * the initial promise resolution.
- */
-export type PendingSettledOption<T> = PendingOption<Awaited<T>>;
-
-/**
  * Interface defining the core functionality of an {@link Option}, inspired by Rust's
  * {@link https://doc.rust-lang.org/std/option/enum.Option.html | Option} type, with
  * additional methods tailored for TypeScript.
@@ -83,23 +71,6 @@ export interface Optional<T> {
    * ```
    */
   and<U>(x: Option<U>): Option<U>;
-  /**
-   * Returns a {@link PendingOption} with {@link None} if this option is {@link None},
-   * otherwise with the resolved value of `x`.
-   *
-   * ### Example
-   * ```ts
-   * const x = some(2);
-   * const y = none();
-   *
-   * expect(isPendingOption(x.and(Promise.resolve(some(3))))).toBe(true);
-   * expect(await x.and(Promise.resolve(some(3)))).toStrictEqual(some(3));
-   * expect(await x.and(Promise.resolve(none()))).toStrictEqual(none());
-   * expect(await y.and(Promise.resolve(some(3)))).toStrictEqual(none());
-   * expect(await y.and(Promise.resolve(none()))).toStrictEqual(none());
-   * ```
-   */
-  and<U>(x: Promise<Option<U>>): PendingOption<Awaited<U>>;
 
   /**
    * Applies `f` to the value if {@link Some}, returning its result; otherwise,
@@ -551,6 +522,7 @@ export interface Optional<T> {
    * expect(y.okOrElse(() => "error")).toStrictEqual(err("error"));
    * ```
    */
+  // TODO(nikita.demin): check if error handling needed
   okOrElse<E>(mkErr: () => Awaited<E>): Result<T, E>;
 
   /**
@@ -568,22 +540,6 @@ export interface Optional<T> {
    * ```
    */
   or(x: Option<T>): Option<T>;
-  /**
-   * Returns a {@link PendingOption} with the current value if this option is
-   * {@link Some}, otherwise with `x`.
-   *
-   * ### Example
-   * ```ts
-   * const x = some(2);
-   * const y = none<number>();
-   *
-   * expect(isPendingOption(x.or(Promise.resolve(some(3))))).toBe(true);
-   * expect(await x.or(Promise.resolve(some(3)))).toStrictEqual(some(2));
-   * expect(await y.or(Promise.resolve(some(3)))).toStrictEqual(some(3));
-   * expect(await y.or(Promise.resolve(none()))).toStrictEqual(none());
-   * ```
-   */
-  or(x: Promise<Option<T>>): PendingOption<Awaited<T>>;
 
   /**
    * Returns the current option if {@link Some}, otherwise returns the result of `f`.

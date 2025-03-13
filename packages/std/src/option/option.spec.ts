@@ -41,7 +41,7 @@ describe("Option", () => {
       expect(() => result.unwrap()).toThrow(AnyError);
     });
 
-    it("returns provided `Option` if self is `Some`", () => {
+    it("returns copy of provided `Option` if self is `Some`", () => {
       const option = some(one);
       const other = some(two);
       const result = option.and(other);
@@ -49,48 +49,6 @@ describe("Option", () => {
       expect(result.isSome()).toBe(true);
       expect(result).not.toBe(other);
       expect(result).toStrictEqual(other);
-    });
-
-    it("returns `PendingOption` if self is `None` and provided `Option` is `Promise<Option>`", () => {
-      const option = none();
-      const other = Promise.resolve(some(one));
-      const spy = jest.spyOn(option, "toPending");
-      const result = option.and(other);
-
-      expect(isPendingOption(result)).toBe(true);
-      expect(spy).toHaveBeenCalledTimes(1);
-    });
-
-    it("returns `PendingOption` if self is `Some` and provided `Option` is `Promise<Option>`", () => {
-      const option = some(one);
-      const some_ = Promise.resolve(some(two));
-      const spy = jest.spyOn(option, "toPending");
-      const result = option.and(some_);
-
-      expect(isPendingOption(result)).toBe(true);
-      expect(spy).toHaveBeenCalledTimes(1);
-    });
-
-    it("returns `PendingOption` with `None` if self is `None` and provided `Option` is `Promise<Option>`", async () => {
-      const option = none();
-      const some_ = Promise.resolve(some(one));
-      const spy = jest.spyOn(option, "toPending");
-      const result = await option.and(some_);
-
-      expect(result.isNone()).toBe(true);
-      expect(() => result.unwrap()).toThrow(AnyError);
-      expect(spy).toHaveBeenCalledTimes(1);
-    });
-
-    it("returns `PendingOption` with provided `Option` if self is `Some` and provided `Option` is `Promise<Option>`", async () => {
-      const option = some(one);
-      const some_ = Promise.resolve(some(two));
-      const spy = jest.spyOn(option, "toPending");
-      const result = await option.and(some_);
-
-      expect(result.isSome()).toBe(true);
-      expect(result.unwrap()).toBe((await some_).unwrap());
-      expect(spy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -287,6 +245,16 @@ describe("Option", () => {
   describe("flatten", () => {
     it("returns `None` if self is `None`", () => {
       const option = none<Option<Option<number>>>();
+      const result = option.flatten();
+
+      expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
+      expect(() => result.unwrap()).toThrow(AnyError);
+    });
+
+    it("returns `None` if self is `Some`, but value is not `Option`", () => {
+      // @ts-expect-error -- for testing
+      const option: Option<Option<number>> = some(1);
       const result = option.flatten();
 
       expect(result.isNone()).toBe(true);
@@ -908,23 +876,7 @@ describe("Option", () => {
   });
 
   describe("or", () => {
-    it("converts to `PendingOption` if provided option is `Promise` by calling `or` on self after provided promise is awaited", async () => {
-      const option: Option<number> = none();
-      const orSpy = jest.spyOn(option, "or");
-      const other: Option<number> = some(one);
-      const result = option.or(Promise.resolve(other));
-
-      expect(isPendingOption(result)).toBe(true);
-      expect(orSpy).toHaveBeenCalledTimes(1);
-
-      const awaited = await result;
-
-      expect(awaited).not.toBe(other);
-      expect(awaited).toStrictEqual(other);
-      expect(orSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it("returns provided `Option` if self is `None`", () => {
+    it("returns copy of provided `Option` if self is `None`", () => {
       const option = none<number>();
       const other = some(one);
       const result = option.or(other);
@@ -943,6 +895,7 @@ describe("Option", () => {
       const result = option.or(other);
 
       expect(result.isSome()).toBe(true);
+      expect(result).not.toBe(option);
       expect(result).toStrictEqual(option);
       expect(result.unwrap()).toBe(one_);
     });
@@ -1141,7 +1094,7 @@ describe("Option", () => {
   });
 
   describe("toPending", () => {
-    it("returns `PendingOption` with self", async () => {
+    it("returns `PendingOption` with self `Some`", async () => {
       const value = { number: one };
       const option = some(value);
       const spy = jest.spyOn(option, "copy");
@@ -1155,6 +1108,19 @@ describe("Option", () => {
       expect(awaited.unwrap()).toBe(value);
     });
 
+    it("returns `PendingOption` with self `None`", async () => {
+      const option = none();
+      const spy = jest.spyOn(option, "copy");
+      const result = option.toPending();
+
+      expect(isPendingOption(result)).toBe(true);
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      const awaited = await result;
+
+      expect(awaited.isNone()).toBe(true);
+    });
+
     it("returns `PendingOption` with awaited self", async () => {
       const value = Promise.resolve({ number: one });
       const option = some(value);
@@ -1166,6 +1132,7 @@ describe("Option", () => {
 
       const awaited = await result;
 
+      expect(awaited.unwrap()).not.toBe(value);
       expect(awaited.unwrap()).toBe(await value);
     });
   });
