@@ -28,20 +28,21 @@ export type Option<T> = Some<T> | None<T>;
 
 /**
  * A synchronous {@link Option} where the contained value `T` is guaranteed to be
- * non-{@link PromiseLike}, ensuring immediate availability without awaiting.
+ * non-`PromiseLike`, ensuring immediate availability without awaiting.
  *
  * This restricted {@link Option} variant enforces synchronous values for methods
- * like {@link insert}, {@link getOrInsert}, and {@link getOrInsertWith}, which
- * mutate the option. Use it when you need a type-safe, synchronous option.
+ * like {@link Optional.insert | insert}, {@link Optional.getOrInsert | getOrInsert},
+ * and {@link Optional.getOrInsertWith | getOrInsertWith}, which mutate the option.
+ * Use it when you need a type-safe, synchronous option.
  */
 export type SettledOption<T> = Option<Awaited<T>>;
 
 /**
  * An asynchronous {@link PendingOption} where the contained value `T` is guaranteed to be
- * resolved (non-{@link PromiseLike}), ensuring the inner type is immediately available
+ * resolved (non-`PromiseLike`), ensuring the inner type is immediately available
  * once the outer promise settles.
  *
- * This type extends {@link PendingOption} with a settled `T` (i.e., {@link Awaited | Awaited\<T>}),
+ * This type extends {@link PendingOption} with a settled `T` (i.e., `Awaited<T>`),
  * making it suitable for async operations that return fully resolved values. Use it when
  * you need an {@link Option} whose value, if present, requires no further awaiting after
  * the initial promise resolution.
@@ -56,7 +57,7 @@ export type PendingSettledOption<T> = PendingOption<Awaited<T>>;
  * Represents a value that may or may not be present, offering a robust alternative to
  * `null` or `undefined`. It includes most Rust `Option` methods (e.g., `map`, `andThen`,
  * `unwrap`) for safe value handling, plus TypeScript-specific extensions like
- * {@link toPending} and async variants of {@link and} with {@link Promise} support.
+ * {@link toPending} and async variants of {@link and} with `Promise` support.
  *
  * For methods accepting predicates (e.g., {@link orElse}, {@link filter}, {@link map},
  * {@link andThen}), exceptions in the provided function result in {@link None}, ensuring
@@ -286,7 +287,7 @@ export interface Optional<T> {
   /**
    * Calls `f` with the value if {@link Some}, then returns a copy of this option.
    *
-   * If `f` throws or returns a {@link Promise} that rejects, the error is ignored.
+   * If `f` throws or returns a `Promise` that rejects, the error is ignored.
    *
    * ### Notes
    * - Returns a new {@link Option} instance, not the original reference.
@@ -422,7 +423,7 @@ export interface Optional<T> {
    * this method always calls `f`, passing the entire {@link Option} as its argument.
    *
    * ### Notes
-   * - *Default*: If `f` returns a {@link Promise} that rejects, the resulting
+   * - *Default*: If `f` returns a `Promise` that rejects, the resulting
    *   {@link PendingOption} resolves to {@link None}.
    *
    * ### Example
@@ -446,7 +447,6 @@ export interface Optional<T> {
    *
    * ### Notes
    * - *Default*: If `f` throws, returns `def`.
-   * - For async values, use {@link PendingOption.mapOr} via {@link toPending}.
    *
    * ### Example
    * ```ts
@@ -471,8 +471,6 @@ export interface Optional<T> {
    * ### Notes
    * - *Default*: If `f` throws, the error is silently ignored and result of
    *   `mkDef` is returned.
-   * - For asynchronous values, convert to {@link PendingOption} with {@link toPending}
-   *   and use {@link PendingOption.mapOrElse}.
    *
    * ### Example
    * ```ts
@@ -500,7 +498,7 @@ export interface Optional<T> {
    *   set as {@link OptionError.reason}.
    *
    * ### Notes
-   * - If `f` or `g` return a {@link Promise} that rejects, the caller is responsible
+   * - If `f` or `g` return a `Promise` that rejects, the caller is responsible
    *   for handling the rejection.
    *
    * ### Example
@@ -695,8 +693,8 @@ export interface Optional<T> {
    * Maps this option to a {@link PendingOption} by supplying a shallow
    * {@link Optional.copy | copy} of this option to {@link PendingOption} factory.
    *
-   * Useful for transposing an option with {@link PromiseLike} value to a
-   * {@link PendingOption} with {@link Awaited} value.
+   * Useful for transposing an option with `PromiseLike` value to a
+   * {@link PendingOption} with `Awaited` value.
    *
    * ### Notes
    * - *Default*: If inner `T` is a promise-like that rejects, maps to a
@@ -722,8 +720,8 @@ export interface Optional<T> {
    * Maps this option to a {@link PendingOption} by supplying a
    * {@link Optional.clone | clone} of this option to {@link PendingOption} factory.
    *
-   * Useful for transposing an option with {@link PromiseLike} value to a
-   * {@link PendingOption} with {@link Awaited} value.
+   * Useful for transposing an option with `PromiseLike` value to a
+   * {@link PendingOption} with `Awaited` value.
    *
    * ### Notes
    * - *Default*: If inner `T` is a promise-like that rejects, maps to a
@@ -863,11 +861,11 @@ export interface Optional<T> {
 }
 
 /**
- * Interface defining an asynchronous {@link Option} that wraps a {@link Promise}
+ * Interface defining an asynchronous {@link Option} that wraps a `Promise`
  * resolving to an {@link Option}.
  *
  * Extends {@link Option} functionality for pending states, with methods mirroring
- * their synchronous counterparts but returning {@link PendingOption} or {@link Promise}
+ * their synchronous counterparts but returning {@link PendingOption} or `Promise`
  * for async operations. Rejections typically resolve to {@link None} unless otherwise
  * specified.
  */
@@ -878,10 +876,10 @@ export interface PendingOption<T>
    * Returns a {@link PendingOption} with {@link None} if this option resolves to
    * {@link None}, otherwise returns a {@link PendingOption} with `x`.
    *
-   * This is the asynchronous version of the {@link Option.and}.
+   * This is the asynchronous version of the {@link Optional.and | and}.
    *
    * ### Notes
-   * - *Default*: If `x` is a {@link Promise} and rejects, {@link None} is returned.
+   * - *Default*: If `x` is a `Promise` and rejects, {@link None} is returned.
    *
    * ### Example
    * ```ts
@@ -902,7 +900,7 @@ export interface PendingOption<T>
    * Returns a {@link PendingOption} with {@link None} if this {@link Option} resolves
    * to {@link None}, otherwise applies `f` to the resolved value and returns the result.
    *
-   * This is the asynchronous version of the {@link Option.andThen}.
+   * This is the asynchronous version of the {@link Optional.andThen | andThen}.
    *
    * ### Notes
    * - *Default*: If `f` rejects or throws, {@link None} is returned.
@@ -927,7 +925,7 @@ export interface PendingOption<T>
    * otherwise calls `f` with the resolved value and returns a {@link PendingOption} with
    * the original value if `f` resolves to `true`, or {@link None} otherwise.
    *
-   * This is the asynchronous version of the {@link Option.filter}.
+   * This is the asynchronous version of the {@link Optional.filter | filter}.
    *
    * ### Notes
    * - *Default*: If `f` rejects or throws, {@link None} is returned.
@@ -948,10 +946,10 @@ export interface PendingOption<T>
    * Flattens a {@link PendingOption} of a {@link PendingOption} or {@link Option},
    * resolving nested pending states.
    *
-   * This is the asynchronous version of the {@link Option.flatten}.
+   * This is the asynchronous version of the {@link Optional.flatten | flatten}.
    *
    * ### Notes
-   * - *Default*: If inner {@link Option} is wrapped in a {@link Promise} and rejects,
+   * - *Default*: If inner {@link Option} is wrapped in a `Promise` and rejects,
    * flattened {@link PendingOption} with {@link None} is returned.
    *
    * ### Example
@@ -977,7 +975,7 @@ export interface PendingOption<T>
    * Calls `f` with the resolved value if this option is {@link Some}, then returns this
    * {@link PendingOption} unchanged. Useful for side effects.
    *
-   * This is the asynchronous version of the {@link Option.inspect}.
+   * This is the asynchronous version of the {@link Optional.inspect | inspect}.
    *
    * ### Notes
    * - Returns a new {@link PendingOption} instance with the same value as the original,
@@ -1002,7 +1000,7 @@ export interface PendingOption<T>
    * Maps the resolved value with `f`, returning a {@link PendingOption} with the
    * result if {@link Some}, or {@link None} if {@link None}.
    *
-   * This is the async version of {@link Option.map}.
+   * This is the async version of {@link Optional.map | map}.
    *
    * ### Notes
    * - If `f` throws or rejects, returns {@link None}.
@@ -1027,7 +1025,7 @@ export interface PendingOption<T>
    * this method always calls `f`, passing the entire {@link Option} as its argument.
    *
    * ### Notes
-   * - *Default*: If `f` throws or returns a {@link Promise} that rejects, newly
+   * - *Default*: If `f` throws or returns a `Promise` that rejects, newly
    *   created {@link PendingOption} will resolve to a {@link None}.
    *
    * ### Example
@@ -1048,9 +1046,9 @@ export interface PendingOption<T>
 
   /**
    * Matches the resolved option, returning `f` applied to the value if {@link Some},
-   * or `g` if {@link None}. Returns a {@link Promise} with the result.
+   * or `g` if {@link None}. Returns a `Promise` with the result.
    *
-   * This is the asynchronous version of the {@link Option.match}.
+   * This is the asynchronous version of the {@link Optional.match | match}.
    *
    * ## Rejects
    * - With {@link OptionError} if `f` or `g` throws an exception, original error
@@ -1072,7 +1070,7 @@ export interface PendingOption<T>
    * Converts to a {@link PendingResult}, using `y` as the error value if this
    * {@link PendingOption} resolves to {@link None}.
    *
-   * This is the asynchronous version of the {@link Option.okOr},
+   * This is the asynchronous version of the {@link Optional.okOr | okOr},
    * check it for more details.
    *
    * ### Example
@@ -1090,7 +1088,7 @@ export interface PendingOption<T>
    * Converts to a {@link PendingResult}, using the result of `mkErr`
    * as the error value if this resolves to {@link None}.
    *
-   * This is the asynchronous version of {@link Option.okOrElse}.
+   * This is the asynchronous version of {@link Optional.okOrElse | okOrElse}.
    *
    * ### Example
    * ```ts
@@ -1107,10 +1105,10 @@ export interface PendingOption<T>
    * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
    * returns a {@link PendingOption} with `x`.
    *
-   * This is the asynchronous version of the {@link Option.or}.
+   * This is the asynchronous version of the {@link Optional.or | or}.
    *
    * ### Notes
-   * - *Default*: If `x` is a {@link Promise} that rejects, {@link None} is returned.
+   * - *Default*: If `x` is a `Promise` that rejects, {@link None} is returned.
    *
    * ### Example
    * ```ts
@@ -1129,7 +1127,7 @@ export interface PendingOption<T>
    * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
    * returns a {@link PendingOption} with the result of `f`.
    *
-   * This is the asynchronous version of the {@link Option.orElse}.
+   * This is the asynchronous version of the {@link Optional.orElse | orElse}.
    *
    * ### Notes
    * - *Default*: If `f` is throws or rejects, {@link None} is returned.
@@ -1172,7 +1170,7 @@ export interface PendingOption<T>
    * containing an {@link Option}. Resolves to {@link Ok}({@link None})
    * if this option is {@link None}, or propagates the error if the result is {@link Err}.
    *
-   * This is the asynchronous version of the {@link Option.transpose}.
+   * This is the asynchronous version of the {@link Optional.transpose | transpose}.
    *
    * ### Example
    * ```ts
@@ -1194,10 +1192,10 @@ export interface PendingOption<T>
    * `y` resolves to {@link Some}, otherwise returns a {@link PendingOption} with
    * {@link None}.
    *
-   * This is the asynchronous version of the {@link Option.xor}.
+   * This is the asynchronous version of the {@link Optional.xor | xor}.
    *
    * ### Notes
-   * - *Default*: If `y` is a {@link Promise} that rejects, {@link None} is returned.
+   * - *Default*: If `y` is a `Promise` that rejects, {@link None} is returned.
    *
    * ### Example
    * ```ts

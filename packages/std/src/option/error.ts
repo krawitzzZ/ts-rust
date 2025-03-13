@@ -1,12 +1,12 @@
 import { AnyError } from "../error";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { Option, Some, None } from "./interface";
+import type { Optional, Option, Some, None } from "./interface";
 
 /**
  * Enumerates error codes specific to {@link Option} operations.
  *
  * These codes are used in {@link OptionError} instances thrown by methods like
- * {@link Option.unwrap | unwrap} or {@link Option.expect | expect} when operations
+ * {@link Optional.unwrap | unwrap} or {@link Optional.expect | expect} when operations
  * fail due to the state of the option.
  */
 export enum OptionErrorKind {
@@ -22,7 +22,7 @@ export enum OptionErrorKind {
  *
  * This class extends {@link AnyError} with error kinds specific to {@link Option} operations,
  * as defined in {@link OptionErrorKind}. It is typically thrown by methods like
- * {@link Option.unwrap | unwrap}, {@link Option.expect | expect}, or others that enforce
+ * {@link Optional.unwrap | unwrap}, {@link Optional.expect | expect}, or others that enforce
  * strict access or behavior on {@link Some} or {@link None} variants. Use it to handle
  * failures gracefully in a type-safe manner, inspecting the {@link OptionErrorKind} to
  * determine the cause.

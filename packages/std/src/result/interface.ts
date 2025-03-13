@@ -68,8 +68,8 @@ export interface Resultant<T, E> {
    * Maps this result to a {@link PendingResult} by supplying a shallow
    * {@link Resultant.copy | copy} of this option to {@link PendingResult} factory.
    *
-   * Useful for transposing a result with {@link PromiseLike} value to a
-   * {@link PendingResult} with {@link Awaited} value.
+   * Useful for transposing a result with `PromiseLike` value to a
+   * {@link PendingResult} with `Awaited` value.
    *
    * ### Example
    * ```ts
@@ -90,8 +90,8 @@ export interface Resultant<T, E> {
    * {@link Resultant.clone | clone} of this option to {@link PendingResult}
    * factory.
    *
-   * Useful for transposing a result with {@link PromiseLike} value to a
-   * {@link PendingResult} with {@link Awaited} value.
+   * Useful for transposing a result with `PromiseLike` value to a
+   * {@link PendingResult} with `Awaited` value.
    *
    * ### Example
    * ```ts

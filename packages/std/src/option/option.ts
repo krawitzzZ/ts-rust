@@ -50,9 +50,9 @@ export function none<T>(): Option<T> {
 }
 
 /**
- * Creates a {@link PendingOption} from an {@link Option}, a
- * {@link Promise | Promise\<Option>} or from a factory function that returns
- * either {@link Option} or {@link Promise | Promise\<Option>}.
+ * Creates a {@link PendingOption | PendingOption\<T>} from an
+ * {@link Option | Option\<T>}, a `Promise<Option<T>>` or from a factory function
+ * that returns either an {@link Option | Option\<T>} or a `Promise<Option<T>>`.
  */
 export function pendingOption<T>(
   optionOrFactory:
@@ -73,7 +73,7 @@ export function pendingOption<T>(
  *
  * This type guard determines whether the input is an instance of the
  * {@link PendingOption} class, indicating it is a pending option that wraps a
- * {@link Promise} resolving to an {@link Option}.
+ * `Promise` resolving to an {@link Option}.
  *
  * ### Example
  * ```ts
@@ -650,7 +650,7 @@ class _Option<T> implements Optional<T> {
 /**
  * Represents an {@link Option} in a pending state that will be resolved in the future.
  *
- * Internally, it wraps a {@link Promise} that resolves to an {@link Option} on success
+ * Internally, it wraps a `Promise` that resolves to an {@link Option} on success
  * or to its {@link None} invariant on failure. Methods mirror those of {@link Option},
  * adapted for asynchronous resolution.
  */

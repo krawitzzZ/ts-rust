@@ -16,9 +16,9 @@
  *   invoked to produce a new instance.
  *
  * This type is broader than {@link Clone} alone, as it includes both implicitly
- * copyable {@link Primitives} and explicitly cloneable types. For non-primitive types,
- * the `clone()` method should return a distinct instance, though the depth of the
- * copy (shallow or deep) depends on the implementation.
+ * copyable {@link Primitive | primitives} and explicitly cloneable types. For
+ * non-primitive types, the `clone()` method should return a distinct instance,
+ * though the depth of the copy (shallow or deep) depends on the implementation.
  *
  *
  * ### Example
@@ -163,7 +163,7 @@ export type Primitive =
   | undefined;
 
 /**
- * Represents either a value of type `T` or a {@link Promise} resolving to `T`.
+ * Represents either a value of type `T` or a `Promise` resolving to `T`.
  *
  * The {@link MaybePromise} type provides flexibility when working with both synchronous
  * and asynchronous values in a unified way. It allows functions and interfaces to

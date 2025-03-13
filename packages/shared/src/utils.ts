@@ -1,10 +1,10 @@
 import { LazyPromise } from "./lazyPromise";
 
 /**
- * Checks if a value is a {@link Promise}, narrowing its type to {@link Promise<unknown>}.
+ * Checks if a value is a `Promise`, narrowing its type to `Promise<unknown>`.
  *
  * This type guard determines whether the input is an instance of the native
- * {@link Promise} class, indicating it is a standard JavaScript promise.
+ * `Promise` class, indicating it is a standard JavaScript promise.
  *
  * ### Example
  * ```ts
@@ -52,11 +52,11 @@ export function isLazyPromise(x: unknown): x is LazyPromise<unknown> {
 }
 
 /**
- * Converts {@link Promise}, {@link PromiseLike} or an actual value into a {@link Promise}.
+ * Converts `Promise`, `PromiseLike` or an actual value into a `Promise`.
  *
  * This utility function normalizes its input by returning the input directly if it is
- * already a {@link Promise}, or wrapping it in a resolved {@link Promise} if it is not.
- * It ensures that the result is always a {@link Promise}, regardless of whether the
+ * already a `Promise`, or wrapping it in a resolved `Promise` if it is not.
+ * It ensures that the result is always a `Promise`, regardless of whether the
  * input is synchronous or asynchronous.
  *
  * ### Example
@@ -78,12 +78,13 @@ export const toPromise = <T>(x: T | Promise<T> | PromiseLike<T>): Promise<T> =>
   isPromise(x) ? x : Promise.resolve(x);
 
 /**
- * Converts a value, {@link Promise}, or {@link PromiseLike} into a {@link LazyPromise}.
+ * Converts a value, `Promise`, or `PromiseLike` into a {@link LazyPromise}.
  *
  * This utility function normalizes its input by returning the input directly if it is
  * already a {@link LazyPromise}, or wrapping it in a lazily evaluated {@link LazyPromise}
- * if it is not. Unlike {@link Promise.resolve}, this does **not** immediately execute
- * the promise executor, deferring evaluation until explicitly awaited or `.then()` is called.
+ * if it is not. Unlike {@link Promise.resolve | Promise.resolve}, this does **not**
+ * immediately execute the promise executor, deferring evaluation until explicitly
+ * `await`ed or `.then()` is called.
  *
  * This ensures that the result is always a {@link LazyPromise}, regardless of whether the
  * input is synchronous or asynchronous.

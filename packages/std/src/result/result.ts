@@ -26,9 +26,9 @@ export function err<T, E>(error: E): Result<T, E> {
 
 /**
  * Creates a {@link PendingResult | PendingResult\<T, E>} from a
- * {@link Result | Result\<T, E>}, a {@link Promise | Promise\<Result<T, E>>}
- * or from a factory function that returns either {@link Result | Result\<T, E>}
- * or {@link Promise | Promise\<Result<T, E>>}.
+ * {@link Result | Result\<T, E>}, a `Promise<Result<T, E>>`
+ * or from a factory function that returns either a {@link Result | Result\<T, E>}
+ * or a `Promise<Result<T, E>>`.
  */
 export function pendingResult<T, E>(
   resultOrFactory:

@@ -1,7 +1,7 @@
 import { id } from "./fp";
 
 /**
- * A {@link Promise} implementation that delays execution of the provided
+ * A `Promise` implementation that delays execution of the provided
  * {@link Executor} until the promise is `await`ed or one of its methods
  * ({@link LazyPromise.then | then}, {@link LazyPromise.catch | catch}, or
  * {@link LazyPromise.finally | finally}) is called.
@@ -33,7 +33,7 @@ import { id } from "./fp";
  */
 export class LazyPromise<T> extends Promise<T> {
   /**
-   * Creates a new resolved {@link LazyPromise | LazyPromise\<void> }.
+   * Creates a new {@link LazyPromise | LazyPromise\<void> }.
    *
    * Overrides {@link Promise.resolve | Promise.resolve} to return a {@link LazyPromise}
    * that resolves once `await`ed, maintaining the lazy behavior of the class.
@@ -42,8 +42,7 @@ export class LazyPromise<T> extends Promise<T> {
    */
   static override resolve(): LazyPromise<void>;
   /**
-   * Creates a resolved {@link LazyPromise | LazyPromise\<T>} with the provided
-   * value.
+   * Creates a {@link LazyPromise | LazyPromise\<T>} with the provided value.
    *
    * Overrides {@link Promise.resolve | Promise.resolve} to return a lazy promise
    * that resolves once `await`ed, maintaining the lazy behavior of the class.
@@ -129,7 +128,7 @@ export class LazyPromise<T> extends Promise<T> {
   }
 
   /**
-   * Internal property that holds and caches the native {@link Promise} once this
+   * Internal property that holds and caches the native `Promise` once this
    * {@link LazyPromise}’s execution is initiated.
    *
    * ## IMPORTANT
@@ -168,7 +167,7 @@ export class LazyPromise<T> extends Promise<T> {
   #recover: RecoveryPipe<T> | undefined;
 
   /**
-   * Internal getter that lazily initializes and caches the native {@link Promise},
+   * Internal getter that lazily initializes and caches the native `Promise`,
    * triggering the executor and applying the transformation chain from
    * {@link LazyPromise.pipe | pipe} and recovery from {@link LazyPromise.recover | recover}.
    *
@@ -217,7 +216,7 @@ export class LazyPromise<T> extends Promise<T> {
    *
    * @param onfulfilled - Optional callback to transform the resolved value from `T` to `R1`.
    * @param onrejected - Optional callback to handle rejection, transforming `unknown` to `R2`.
-   * @returns A native {@link Promise} with type `R1 | R2`.
+   * @returns A native `Promise` with type `R1 | R2`.
    */
   override then<R1 = T, R2 = never>(
     onfulfilled?: ((value: T) => R1 | PromiseLike<R1>) | null,
@@ -236,7 +235,7 @@ export class LazyPromise<T> extends Promise<T> {
    * the first call.
    *
    * @param onrejected - Optional callback to handle rejection, transforming `unknown` to `R`.
-   * @returns A native {@link Promise} with type `T | R`.
+   * @returns A native `Promise` with type `T | R`.
    */
   override catch<R = never>(
     onrejected?: ((reason: unknown) => R | PromiseLike<R>) | null,
@@ -254,7 +253,7 @@ export class LazyPromise<T> extends Promise<T> {
    * the first call.
    *
    * @param onfinally - Optional callback to run after settlement.
-   * @returns A native {@link Promise} with type `T`.
+   * @returns A native `Promise` with type `T`.
    */
   override finally(onfinally?: (() => void) | null): Promise<T> {
     return this.#promise.finally(onfinally);
