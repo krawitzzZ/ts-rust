@@ -68,33 +68,6 @@ export function pendingOption<T>(
 }
 
 /**
- * Checks if a value is a {@link PendingOption}, narrowing its type to
- * `PendingOption<unknown>`.
- *
- * This type guard determines whether the input is an instance of the
- * {@link PendingOption} class, indicating it is a pending option that wraps a
- * `Promise` resolving to an {@link Option}.
- *
- * ### Example
- * ```ts
- * const x = pendingOption(some(42));
- * const y = pendingOption(none<number>());
- * const z = some(42); // Not a PendingOption
- *
- * expect(isPendingOption(x)).toBe(true);
- * expect(isPendingOption(y)).toBe(true);
- * expect(isPendingOption(z)).toBe(false);
- *
- * if (isPendingOption(x)) {
- *   expect(await x).toStrictEqual(some(42)); // Type narrowed to PendingOption<unknown>
- * }
- * ```
- */
-export function isPendingOption(x: unknown): x is PendingOption<unknown> {
-  return x instanceof _PendingOption;
-}
-
-/**
  * Checks if a value is an {@link Option}, narrowing its type to `Option<unknown>`.
  *
  * This type guard determines whether the input is an instance conforms
@@ -120,26 +93,31 @@ export function isOption(x: unknown): x is Option<unknown> {
 }
 
 /**
- * Type that represents the absence of a value.
+ * Checks if a value is a {@link PendingOption}, narrowing its type to
+ * `PendingOption<unknown>`.
  *
- * This allows {@link Option | Options} to also contain values of type `null`
- * or `undefined`, e.g. `Option<null>` or `Option<undefined>`.
+ * This type guard determines whether the input is an instance of the
+ * {@link PendingOption} class, indicating it is a pending option that wraps a
+ * `Promise` resolving to an {@link Option}.
+ *
+ * ### Example
+ * ```ts
+ * const x = pendingOption(some(42));
+ * const y = pendingOption(none<number>());
+ * const z = some(42); // Not a PendingOption
+ *
+ * expect(isPendingOption(x)).toBe(true);
+ * expect(isPendingOption(y)).toBe(true);
+ * expect(isPendingOption(z)).toBe(false);
+ *
+ * if (isPendingOption(x)) {
+ *   expect(await x).toStrictEqual(some(42)); // Type narrowed to PendingOption<unknown>
+ * }
+ * ```
  */
-type Nothing = typeof nothing;
-
-const nothing: unique symbol = Symbol("Nothing");
-const isNothing = (x: unknown): x is Nothing => x === nothing;
-const isSomething = <T>(x: T | Nothing): x is T => !isNothing(x);
-const settleOption = async <T>(
-  optionOrPromise: Option<T> | PromiseLike<Option<T>>,
-): Promise<SettledOption<T>> =>
-  toPromise(optionOrPromise).then(async (option) => {
-    if (option.isNone()) {
-      return none();
-    }
-
-    return some(await option.value);
-  });
+export function isPendingOption(x: unknown): x is PendingOption<unknown> {
+  return x instanceof _PendingOption;
+}
 
 /**
  * Internal implementation class for {@link Option}.
@@ -834,3 +812,28 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 }
+
+/**
+ * Type that represents the absence of a value.
+ *
+ * This allows {@link Option | Options} to also contain values of type `null`
+ * or `undefined`, e.g. `Option<null>` or `Option<undefined>`.
+ */
+type Nothing = typeof nothing;
+
+const nothing: unique symbol = Symbol("Nothing");
+
+const isNothing = (x: unknown): x is Nothing => x === nothing;
+
+const isSomething = <T>(x: T | Nothing): x is T => !isNothing(x);
+
+const settleOption = async <T>(
+  optionOrPromise: Option<T> | PromiseLike<Option<T>>,
+): Promise<SettledOption<T>> =>
+  toPromise(optionOrPromise).then(async (option) => {
+    if (option.isNone()) {
+      return none();
+    }
+
+    return some(await option.value);
+  });
