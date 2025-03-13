@@ -370,10 +370,10 @@ class _Option<T> implements Optional<T> {
   }
 
   mapAll<U>(f: (x: Option<T>) => Option<U>): Option<U>;
-  mapAll<U>(f: (x: Option<T>) => Promise<Option<U>>): PendingOpt<U>;
+  mapAll<U>(f: (x: Option<T>) => Promise<Option<U>>): PendingSettledOpt<U>;
   mapAll<U>(
     f: (x: Option<T>) => MaybePromise<Option<U>>,
-  ): Option<U> | PendingOpt<U> {
+  ): Option<U> | PendingSettledOpt<U> {
     try {
       const mapped = f(this.copy());
 
@@ -517,7 +517,7 @@ class _Option<T> implements Optional<T> {
     return this.copy();
   }
 
-  toPending(): PendingOpt<T> {
+  toPending(): PendingSettledOpt<T> {
     return pendingOption(async () => {
       const copy = this.copy();
 
@@ -529,7 +529,7 @@ class _Option<T> implements Optional<T> {
     });
   }
 
-  toPendingCloned(this: Option<Cloneable<T>>): PendingOpt<T> {
+  toPendingCloned(this: Option<Cloneable<T>>): PendingSettledOpt<T> {
     return pendingOption(async () => {
       const clone = this.clone();
 
@@ -583,8 +583,8 @@ class _Option<T> implements Optional<T> {
   }
 
   xor(y: Option<T>): Option<T>;
-  xor(y: Promise<Option<T>>): PendingOpt<T>;
-  xor(y: MaybePromise<Option<T>>): Option<T> | PendingOpt<T> {
+  xor(y: Promise<Option<T>>): PendingSettledOpt<T>;
+  xor(y: MaybePromise<Option<T>>): Option<T> | PendingSettledOpt<T> {
     if (isPromise(y)) {
       return pendingOption(async () => settleOption(this.xor(await y)));
     }
@@ -656,7 +656,7 @@ class _PendingOption<T> implements PendingOption<T> {
     return this.#promise.catch(onrejected);
   }
 
-  and<U>(x: MaybePromise<Option<U>>): PendingOpt<U> {
+  and<U>(x: MaybePromise<Option<U>>): PendingSettledOpt<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
         const r = option.and(await x);
@@ -665,7 +665,7 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingOpt<U> {
+  andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingSettledOpt<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
         if (option.isNone()) {
@@ -695,7 +695,7 @@ class _PendingOption<T> implements PendingOption<T> {
       | PendingOption<Option<U>>
       | PendingOption<PendingOption<U>>
       | PendingOption<PromiseLike<Option<U>>>,
-  ): PendingOpt<U> {
+  ): PendingSettledOpt<U> {
     return pendingOption(async () =>
       this.then(async (option) => {
         if (option.isNone()) {
@@ -712,7 +712,7 @@ class _PendingOption<T> implements PendingOption<T> {
     return pendingOption(this.#promise.then((option) => option.inspect(f)));
   }
 
-  map<U>(f: (x: T) => U): PendingOpt<U> {
+  map<U>(f: (x: T) => U): PendingSettledOpt<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
         if (option.isNone()) {
@@ -724,7 +724,9 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  mapAll<U>(f: (x: Option<T>) => MaybePromise<Option<U>>): PendingOpt<U> {
+  mapAll<U>(
+    f: (x: Option<T>) => MaybePromise<Option<U>>,
+  ): PendingSettledOpt<U> {
     return pendingOption(settleOption(this.#promise.then(f)));
   }
 
@@ -756,13 +758,13 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  or(x: MaybePromise<Option<T>>): PendingOpt<T> {
+  or(x: MaybePromise<Option<T>>): PendingSettledOpt<T> {
     return pendingOption(() =>
       settleOption(this.#promise.then(async (option) => option.or(await x))),
     );
   }
 
-  orElse(f: () => MaybePromise<Option<T>>): PendingOpt<T> {
+  orElse(f: () => MaybePromise<Option<T>>): PendingSettledOpt<T> {
     return pendingOption(
       settleOption(
         this.#promise.then((option) => (option.isSome() ? option.copy() : f())),
@@ -800,7 +802,7 @@ class _PendingOption<T> implements PendingOption<T> {
     return pendingResult(toPromise(this.then((option) => option.transpose())));
   }
 
-  xor(y: MaybePromise<Option<T>>): PendingOpt<T> {
+  xor(y: MaybePromise<Option<T>>): PendingSettledOpt<T> {
     return pendingOption(
       settleOption(this.#promise.then(async (option) => option.xor(await y))),
     );
@@ -817,7 +819,7 @@ class _PendingOption<T> implements PendingOption<T> {
  * you need an {@link Option} whose value, if present, requires no further awaiting after
  * the initial promise resolution.
  */
-type PendingOpt<T> = PendingOption<Awaited<T>>;
+type PendingSettledOpt<T> = PendingOption<Awaited<T>>;
 
 /**
  * Type that represents the absence of a value.
