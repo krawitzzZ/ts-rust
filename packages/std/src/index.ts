@@ -1,6 +1,7 @@
 export { AnyError } from "./error";
 export { Clone, Cloneable, Primitive } from "./types";
 export {
+  OptionError,
   OptionErrorKind,
   PendingOption,
   PendingSettledOption,

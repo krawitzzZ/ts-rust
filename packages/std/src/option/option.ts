@@ -1,5 +1,4 @@
 import { isPromise, stringify, toPromise, cnst } from "@ts-rust/shared";
-import { AnyError } from "../error";
 import {
   Result,
   err,
@@ -10,6 +9,7 @@ import {
 } from "../result";
 import { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
+import { OptionError, OptionErrorKind } from "./error";
 import {
   Optional,
   Option,
@@ -120,21 +120,6 @@ export function isOption(x: unknown): x is Option<unknown> {
 }
 
 /**
- * Enumerates error codes specific to {@link Option} operations.
- *
- * These codes are used in {@link AnyError} instances thrown by methods like
- * {@link Option.unwrap} or {@link Option.expect} when operations fail due to
- * the state of the option.
- */
-// TODO(nikita.demin): create AnyOptionError and AnyPendingOptionError
-export enum OptionErrorKind {
-  NoneValueAccessed = "NoneValueAccessed",
-  NoneExpected = "NoneExpected",
-  NoneUnwrapped = "NoneUnwrapped",
-  PredicateException = "PredicateException",
-}
-
-/**
  * Type that represents the absence of a value.
  *
  * This allows {@link Option | Options} to also contain values of type `null`
@@ -229,14 +214,14 @@ class _Option<T> implements Optional<T> {
    * Property that is used to access the value of the {@link Option}.
    *
    * Only {@link Some} instances have a value, so accessing this property on
-   * {@link None} will throw an {@link AnyError}.
+   * {@link None} will throw an {@link OptionError}.
    *
    * ## Throws
-   * - {@link AnyError} if {@link value} is accessed on {@link None}.
+   * - {@link OptionError} if {@link value} is accessed on {@link None}.
    */
   get value(): T {
     if (isNothing(this.#value)) {
-      throw new AnyError(
+      throw new OptionError(
         "`Option.value` - accessed on `None`",
         OptionErrorKind.NoneValueAccessed,
       );
@@ -292,7 +277,7 @@ class _Option<T> implements Optional<T> {
       return this.value;
     }
 
-    throw new AnyError(
+    throw new OptionError(
       msg ?? "`Option.expect` - called on `None`",
       OptionErrorKind.NoneExpected,
     );
@@ -337,7 +322,7 @@ class _Option<T> implements Optional<T> {
       this.#value = f();
       return this.#value;
     } catch (e) {
-      throw new AnyError(
+      throw new OptionError(
         "`Option.getOrInsertWith` - callback `f` threw an exception",
         OptionErrorKind.PredicateException,
         e,
@@ -454,7 +439,7 @@ class _Option<T> implements Optional<T> {
       try {
         return mkDef();
       } catch (e) {
-        throw new AnyError(
+        throw new OptionError(
           "`Option.mapOrElse` - callback `mkDef` threw an exception",
           OptionErrorKind.PredicateException,
           e,
@@ -481,7 +466,7 @@ class _Option<T> implements Optional<T> {
     try {
       return this.isNone() ? g() : f(this.value);
     } catch (e) {
-      throw new AnyError(
+      throw new OptionError(
         "`Option.match` - one of the predicates threw an exception",
         OptionErrorKind.PredicateException,
         e,
@@ -601,7 +586,7 @@ class _Option<T> implements Optional<T> {
       return this.value;
     }
 
-    throw new AnyError(
+    throw new OptionError(
       "`Option.unwrap` - called on `None`",
       OptionErrorKind.NoneUnwrapped,
     );
@@ -615,7 +600,7 @@ class _Option<T> implements Optional<T> {
     try {
       return this.isNone() ? mkDef() : this.value;
     } catch (e) {
-      throw new AnyError(
+      throw new OptionError(
         "`Option.unwrapOrElse` - callback `mkDef` threw an exception",
         OptionErrorKind.PredicateException,
         e,

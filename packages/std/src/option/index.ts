@@ -1,3 +1,4 @@
+export { OptionError, OptionErrorKind } from "./error";
 export {
   PendingOption,
   PendingSettledOption,
@@ -7,11 +8,4 @@ export {
   Some,
   None,
 } from "./interface";
-export {
-  isPendingOption,
-  isOption,
-  pendingOption,
-  some,
-  none,
-  OptionErrorKind,
-} from "./option";
+export { isPendingOption, isOption, pendingOption, some, none } from "./option";

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { AnyError } from "../error";
 import type { Cloneable, Recoverable } from "../types";
 import type { Result, Ok, Err, PendingResult } from "../result";
+import type { OptionError } from "./error";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**
@@ -156,11 +156,11 @@ export interface Optional<T> {
   copy(): Option<T>;
 
   /**
-   * Returns the value if {@link Some}, or throws an {@link AnyError} with `msg`
+   * Returns the value if {@link Some}, or throws an {@link OptionError} with `msg`
    * (or a default message) if {@link None}.
    *
    * ## Throws
-   * - {@link AnyError} if this is {@link None}
+   * - {@link OptionError} if this is {@link None}
    *
    * ### Example
    * ```ts
@@ -239,7 +239,8 @@ export interface Optional<T> {
    * if {@link None}.
    *
    * ## Throws
-   * - {@link AnyError} if `f` throws, with the original error as {@link AnyError.reason}
+   * - {@link OptionError} if `f` throws, with the original error as
+   *   {@link OptionError.reason}
    *
    * ### Notes
    * - *Mutation*: Mutates this option to {@link Some} with `f`’s result if {@link None}.
@@ -254,7 +255,7 @@ export interface Optional<T> {
    * expect(x.getOrInsertWith(() => 5)).toBe(2);
    * expect(y.getOrInsertWith(() => 5)).toBe(5);
    * expect(y).toStrictEqual(some(5)); // Mutated
-   * expect(() => z.getOrInsertWith(() => { throw new Error() })).toThrow(AnyError);
+   * expect(() => z.getOrInsertWith(() => { throw new Error() })).toThrow(OptionError);
    * expect(z).toStrictEqual(none()); // Unchanged
    * ```
    */
@@ -464,8 +465,8 @@ export interface Optional<T> {
    * returns the result of `mkDef`.
    *
    * ## Throws
-   * - {@link AnyError} if `mkDef` is called and throws an exception. Original
-   * error will be set as {@link AnyError.reason}.
+   * - {@link OptionError} if `mkDef` is called and throws an exception. Original
+   * error will be set as {@link OptionError.reason}.
    *
    * ### Notes
    * - *Default*: If `f` throws, the error is silently ignored and result of
@@ -480,7 +481,7 @@ export interface Optional<T> {
    *
    * expect(x.mapOrElse(() => 0, n => n * 2)).toBe(4);
    * expect(x.mapOrElse(() => 1, _ => { throw new Error() })).toBe(1);
-   * expect(() => x.mapOrElse(() => { throw new Error() }, _ => { throw new Error() })).toThrow(AnyError);
+   * expect(() => x.mapOrElse(() => { throw new Error() }, _ => { throw new Error() })).toThrow(OptionError);
    * expect(y.mapOrElse(() => 0, n => n * 2)).toBe(0);
    * ```
    */
@@ -495,8 +496,8 @@ export interface Optional<T> {
    * or `g` if {@link None}.
    *
    * ## Throws
-   * - {@link AnyError} if `f` or `g` throws an exception, original error will be
-   *   set as {@link AnyError.reason}.
+   * - {@link OptionError} if `f` or `g` throws an exception, original error will be
+   *   set as {@link OptionError.reason}.
    *
    * ### Notes
    * - If `f` or `g` return a {@link Promise} that rejects, the caller is responsible
@@ -508,9 +509,9 @@ export interface Optional<T> {
    * const y = none<number>();
    *
    * expect(x.match(n => n * 2, () => 0)).toBe(4);
-   * expect(() => x.match(_ => { throw new Error() }, () => 0)).toThrow(AnyError);
+   * expect(() => x.match(_ => { throw new Error() }, () => 0)).toThrow(OptionError);
    * expect(y.match(n => n * 2, () => 0)).toBe(0);
-   * expect(() => y.match(n => n * 2, () => { throw new Error() })).toThrow(AnyError);
+   * expect(() => y.match(n => n * 2, () => { throw new Error() })).toThrow(OptionError);
    * ```
    */
   match<U, F = U>(
@@ -779,10 +780,10 @@ export interface Optional<T> {
   transpose<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E>;
 
   /**
-   * Returns the value if {@link Some}, or throws an {@link AnyError} if {@link None}.
+   * Returns the value if {@link Some}, or throws an {@link OptionError} if {@link None}.
    *
    * ## Throws
-   * - {@link AnyError} if this is {@link None}
+   * - {@link OptionError} if this is {@link None}
    *
    * ### Example
    * ```ts
@@ -813,8 +814,8 @@ export interface Optional<T> {
    * Returns the contained value if {@link Some}, or the result of `mkDef` if {@link None}.
    *
    * ## Throws
-   * - {@link AnyError} if `mkDef` throws, original error will be set as
-   *   {@link AnyError.reason}.
+   * - {@link OptionError} if `mkDef` throws, original error will be set as
+   *   {@link OptionError.reason}.
    *
    * ### Example
    * ```ts
@@ -823,7 +824,7 @@ export interface Optional<T> {
    *
    * expect(x.unwrapOrElse(() => 0)).toBe(2);
    * expect(y.unwrapOrElse(() => 0)).toBe(0);
-   * expect(() => y.unwrapOrElse(() => { throw new Error() })).toThrow(AnyError);
+   * expect(() => y.unwrapOrElse(() => { throw new Error() })).toThrow(OptionError);
    * ```
    */
   unwrapOrElse(this: SettledOption<T>, mkDef: () => Awaited<T>): T;
@@ -1052,8 +1053,8 @@ export interface PendingOption<T>
    * This is the asynchronous version of the {@link Option.match}.
    *
    * ## Rejects
-   * - With {@link AnyError} if `f` or `g` throws an exception, original error
-   *   will be set as {@link AnyError.reason}.
+   * - With {@link OptionError} if `f` or `g` throws an exception, original error
+   *   will be set as {@link OptionError.reason}.
    *
    * ### Example
    * ```ts
@@ -1062,7 +1063,7 @@ export interface PendingOption<T>
    *
    * expect(await x.match(n => n * 2, () => 0)).toBe(4);
    * expect(await y.match(n => n * 2, () => 0)).toBe(0);
-   * await expect(y.match(n => n * 2, () => { throw new Error() })).rejects.toThrow(AnyError);
+   * await expect(y.match(n => n * 2, () => { throw new Error() })).rejects.toThrow(OptionError);
    * ```
    */
   match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>>;
