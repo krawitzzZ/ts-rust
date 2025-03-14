@@ -53,6 +53,32 @@ describe("Option utils", () => {
       },
     );
 
+    it.each(options)(
+      "returns `PendingOption` with `Some { %p }` value if called with synchronous factory function",
+      async (opt) => {
+        const option = pendingOption(() => opt);
+
+        expect(isPendingOption(option)).toBe(true);
+
+        const awaited = await option;
+
+        expect(awaited.isSome()).toBe(opt.isSome());
+      },
+    );
+
+    it.each(options)(
+      "returns `PendingOption` with `Some { %p }` value if called with asynchronous factory function",
+      async (opt) => {
+        const option = pendingOption(async () => opt);
+
+        expect(isPendingOption(option)).toBe(true);
+
+        const awaited = await option;
+
+        expect(awaited.isSome()).toBe(opt.isSome());
+      },
+    );
+
     it("returns `PendingOption` with `None` value", async () => {
       const option = pendingOption(none());
 
