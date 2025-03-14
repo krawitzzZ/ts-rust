@@ -1,4 +1,4 @@
 export { isPromise, isLazyPromise, toPromise, toLazyPromise } from "./utils";
-export { noop, id, cnst } from "./fp";
+export { Either, Left, Right, left, right, noop, id, cnst } from "./fp";
 export { stringify } from "./stringify";
 export { LazyPromise } from "./lazyPromise";

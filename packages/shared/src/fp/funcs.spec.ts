@@ -1,4 +1,4 @@
-import { id, noop, cnst } from "./fp";
+import { id, noop, cnst } from "./funcs";
 
 describe("fp", () => {
   describe("noop", () => {

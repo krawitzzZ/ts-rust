@@ -82,7 +82,7 @@ export const toPromise = <T>(x: T | Promise<T> | PromiseLike<T>): Promise<T> =>
  *
  * This utility function normalizes its input by returning the input directly if it is
  * already a {@link LazyPromise}, or wrapping it in a lazily evaluated {@link LazyPromise}
- * if it is not. Unlike {@link Promise.resolve | Promise.resolve}, this does **not**
+ * if it is not. Unlike `Promise.resolve`, this does **not**
  * immediately execute the promise executor, deferring evaluation until explicitly
  * `await`ed or `.then()` is called.
  *
