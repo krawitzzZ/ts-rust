@@ -22,6 +22,8 @@ export interface Resultant<T, E> {
   and<U>(x: Result<U, E>): Result<U, E>;
 
   andThen<U>(f: (x: T) => Result<U, E>): Result<U, E | ResultError>;
+  // TODO(nikita.demin): idea - do not provide a callback, e.g. () => E, but instead always
+  // return custom error with original error set to one of its properties
   andThen<U>(f: (x: T) => Result<U, E>, h: (e: unknown) => E): Result<U, E>;
 
   andThenUnchecked<U>(f: (x: T) => Result<U, E>): Result<U, E>;
