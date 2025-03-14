@@ -221,16 +221,16 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
   and<U>(x: Result<U, E> | Promise<Result<U, E>>): PendingSettledSafeRes<U, E>;
   and<U>(
     x: Result<U, E> | Promise<Result<U, E>>,
-    h: (e: unknown) => E,
+    h: (e: unknown) => Awaited<E>,
   ): PendingSettledRes<U, E>;
   and<U>(
     x: MaybePromise<Result<U, E>>,
-    h?: (e: unknown) => E,
+    h?: (e: unknown) => Awaited<E>,
   ): PendingSettledSafeRes<U, E> | PendingSettledRes<U, E> {
     return pendingResult(
       this.#promise.then(
         async (result) => settleResult(result.and(await x)),
-        mkCatch("`and`: the inner or other result rejected", h),
+        safeCatch("`and`: the inner or other result rejected", h),
       ),
     );
   }
@@ -272,11 +272,11 @@ const safeErr = <T, E>(
   return err(e);
 };
 
-const mkCatch =
-  <T, E>(message: string, mkErr?: (e: unknown) => E) =>
-  async (error: unknown): Promise<Result<T, Awaited<E> | ResultError>> => {
+const safeCatch =
+  <T, E>(message: string, mkErr?: (e: unknown) => Awaited<E>) =>
+  (error: unknown): Result<T, Awaited<E> | ResultError> => {
     const e = mkErr
-      ? await mkErr(error)
+      ? mkErr(error)
       : new ResultError(message, ResultErrorKind.ResultRejection, error);
     return err(e);
   };

@@ -132,7 +132,7 @@ export interface PendingResult<T, E>
   ): PendingResult<Awaited<U>, Awaited<E> | ResultError>;
   and<U>(
     x: Result<U, E> | Promise<Result<U, E>>,
-    h: (e: unknown) => E,
+    h: (e: unknown) => Awaited<E>,
   ): PendingResult<Awaited<U>, Awaited<E>>;
 
   andUnchecked<U>(
