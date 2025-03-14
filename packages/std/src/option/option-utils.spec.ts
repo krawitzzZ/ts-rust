@@ -67,7 +67,7 @@ describe("Option utils", () => {
   });
 
   describe("isOption", () => {
-    it.each(options)("returns true if called with %p", (option) => {
+    it.each(options)("returns true if called with %s", (option) => {
       expect(isOption(option)).toBe(true);
     });
 
@@ -81,7 +81,7 @@ describe("Option utils", () => {
 
   describe("isPendingOption", () => {
     it.each(options)(
-      "returns true if called with `PendingOption { %p }`",
+      "returns true if called with `PendingOption { %s }`",
       (option) => {
         expect(isPendingOption(pendingOption(option))).toBe(true);
       },
