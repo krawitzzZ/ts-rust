@@ -19,7 +19,7 @@ describe("Option utils", () => {
 
   describe("some", () => {
     it.each(someValues)(
-      "returns `Option` with `Some { %s }` value",
+      "returns `Option` with `Some { %p }` value",
       (value) => {
         const option = some(value);
 
@@ -30,7 +30,7 @@ describe("Option utils", () => {
   });
 
   describe("none", () => {
-    it("returns Option with `None` value", () => {
+    it("returns `Option` with `None` value", () => {
       const option = none();
 
       expect(option.isNone()).toBe(true);
@@ -40,7 +40,7 @@ describe("Option utils", () => {
 
   describe("pendingOption", () => {
     it.each(someValues)(
-      "returns PendingOption with `Some { %s }` value",
+      "returns `PendingOption` with `Some { %p }` value",
       async (value) => {
         const option = pendingOption(some(value));
 
@@ -48,13 +48,12 @@ describe("Option utils", () => {
 
         const awaited = await option;
 
-        expect(isPendingOption(option)).toBe(true);
         expect(awaited.isSome()).toBe(true);
         expect(awaited.unwrap()).toBe(value);
       },
     );
 
-    it("returns PendingOption with `None` value", async () => {
+    it("returns `PendingOption` with `None` value", async () => {
       const option = pendingOption(none());
 
       expect(isPendingOption(option)).toBe(true);
@@ -67,21 +66,8 @@ describe("Option utils", () => {
     });
   });
 
-  describe("isPendingOption", () => {
-    it.each(options)(
-      "returns true if called with `PendingOption { %s }`",
-      (option) => {
-        expect(isPendingOption(pendingOption(option))).toBe(true);
-      },
-    );
-
-    it.each(options)("returns false if called with %s", (option) => {
-      expect(isPendingOption(option)).toBe(false);
-    });
-  });
-
   describe("isOption", () => {
-    it.each(options)("returns true if called with %s", (option) => {
+    it.each(options)("returns true if called with %p", (option) => {
       expect(isOption(option)).toBe(true);
     });
 
@@ -91,5 +77,18 @@ describe("Option utils", () => {
         expect(isOption(value)).toBe(false);
       },
     );
+  });
+
+  describe("isPendingOption", () => {
+    it.each(options)(
+      "returns true if called with `PendingOption { %p }`",
+      (option) => {
+        expect(isPendingOption(pendingOption(option))).toBe(true);
+      },
+    );
+
+    it.each(options)("returns false if called with %s", (option) => {
+      expect(isPendingOption(option)).toBe(false);
+    });
   });
 });
