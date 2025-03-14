@@ -52,6 +52,34 @@ describe("Result utils", () => {
       },
     );
 
+    it.each(oks)(
+      "returns `PendingResult` with `Ok { %p }` value if called with synchronous factory",
+      async (value) => {
+        const result = pendingResult(() => ok(value));
+
+        expect(isPendingResult(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited.isOk()).toBe(true);
+        expect(awaited.unwrap()).toBe(value);
+      },
+    );
+
+    it.each(oks)(
+      "returns `PendingResult` with `Ok { %p }` value if called with asynchronous factory",
+      async (value) => {
+        const result = pendingResult(async () => ok(value));
+
+        expect(isPendingResult(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited.isOk()).toBe(true);
+        expect(awaited.unwrap()).toBe(value);
+      },
+    );
+
     it.each(values)(
       "returns `PendingResult` with `Err { %p }` value",
       async (value) => {
