@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Cloneable, Recoverable } from "../types";
-import type { Result, Ok, Err, PendingResult, ResultError } from "../result";
+import type { Result, Ok, Err, PendingResult } from "../result";
 import type { OptionError } from "./error";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
