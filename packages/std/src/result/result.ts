@@ -274,6 +274,13 @@ const isErr = <T, E>(
 
 const defCatchMsg = "Pending result rejected unexpectedly";
 
+const catchUnexpected =
+  <T, E>(msg: string) =>
+  (e: unknown): SettledResult<T, E> =>
+    err<Awaited<T>, Awaited<E>>(
+      unexpected<Awaited<E>>(msg, ResultErrorKind.ResultRejection, e),
+    );
+
 const settleResult = async <T, E>(
   resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
 ): Promise<SettledResult<T, E>> =>
@@ -302,9 +309,7 @@ const awaitOk = <T, E>(
   v: T,
   errMsg = "Pending result's `Ok` value rejected unexpectedly",
 ): Promise<Result<Awaited<T>, E>> =>
-  toPromise(v)
-    .then((x) => ok<Awaited<T>, E>(x))
-    .catch(catchUnexpected<T, E>(errMsg));
+  toPromise(v).then((x) => ok<Awaited<T>, E>(x), catchUnexpected<T, E>(errMsg));
 
 const awaitErr = <T, E>(
   error: CheckedError<E>,
@@ -314,14 +319,8 @@ const awaitErr = <T, E>(
     return err<T, Awaited<E>>(error.unexpected);
   }
 
-  return toPromise(error.expected)
-    .then((e) => err<T, Awaited<E>>(e))
-    .catch(catchUnexpected<T, Awaited<E>>(errMsg));
+  return toPromise(error.expected).then(
+    (e) => err<T, Awaited<E>>(e),
+    catchUnexpected<T, Awaited<E>>(errMsg),
+  );
 };
-
-const catchUnexpected =
-  <T, E>(msg: string) =>
-  (e: unknown): SettledResult<T, E> =>
-    err<Awaited<T>, Awaited<E>>(
-      unexpected<Awaited<E>>(msg, ResultErrorKind.ResultRejection, e),
-    );
