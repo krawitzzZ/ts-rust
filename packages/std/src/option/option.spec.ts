@@ -1,4 +1,11 @@
-import { err, ok, Result, ResultError, ResultErrorKind } from "../result";
+import {
+  err,
+  isCheckedError,
+  ok,
+  Result,
+  ResultError,
+  ResultErrorKind,
+} from "../result";
 import { Clone } from "../types";
 import { OptionError, OptionErrorKind } from "./error";
 import { Option, Some } from "./interface";
@@ -8,6 +15,13 @@ describe("Option", () => {
   const one = 11;
   const two = 222;
   const zero = 0;
+
+  class Counter implements Clone<Counter> {
+    constructor(public data: { count: number }) {}
+    clone(this: Clone<Counter>): Counter {
+      return new Counter({ count: 0 });
+    }
+  }
 
   describe("value", () => {
     it("returns inner value if self is `Some`", () => {
@@ -91,13 +105,6 @@ describe("Option", () => {
   });
 
   describe("clone", () => {
-    class Counter implements Clone<Counter> {
-      constructor(public data: { count: number }) {}
-      clone(this: Clone<Counter>): Counter {
-        return new Counter({ count: 0 });
-      }
-    }
-
     it("returns `None` if self is `None`", () => {
       const self = none<number>();
       const cloned = self.clone();
@@ -119,7 +126,7 @@ describe("Option", () => {
     });
 
     it.each([null, undefined, 0, 1, "string", Symbol("symbol"), true, false])(
-      "creates a deep copy if the option holds a primitive",
+      "creates a deep copy if the option holds a primitive '%p'",
       (v) => {
         const self = some(v);
         const cloned = self.clone();
@@ -149,7 +156,7 @@ describe("Option", () => {
   });
 
   describe("copy", () => {
-    it("returns a new Option with the same value but different reference if self is `Some`", () => {
+    it("returns a new `Option` with the same value but different reference if self is `Some`", () => {
       const value = { number: one };
       const option = some(value);
       const result = option.copy();
@@ -159,7 +166,7 @@ describe("Option", () => {
       expect(result.unwrap()).toBe(value); // Same value reference
     });
 
-    it("returns a new None if self is `None`", () => {
+    it("returns a new `None` if self is `None`", () => {
       const option = none();
       const result = option.copy();
 
@@ -451,9 +458,9 @@ describe("Option", () => {
 
   describe("isNone", () => {
     it.each([
-      [none(), true],
-      [some(one), false],
-    ])("returns %p if self is %p", (option, expected) => {
+      [true, none()],
+      [false, some(one)],
+    ])("returns '%p' if self is %s", (expected, option) => {
       expect(option.isNone()).toBe(expected);
     });
   });
@@ -503,9 +510,9 @@ describe("Option", () => {
 
   describe("isSome", () => {
     it.each([
-      [none(), false],
-      [some(one), true],
-    ])("returns %p if self is %p", (option, expected) => {
+      [false, none()],
+      [true, some(one)],
+    ])("returns '%p' if self is '%s'", (expected, option) => {
       expect(option.isSome()).toBe(expected);
     });
   });
@@ -840,7 +847,8 @@ describe("Option", () => {
       const result = option.okOr(error);
 
       expect(result.isErr()).toBe(true);
-      expect(result.unwrapErr()).toBe(error);
+      expect(result.unwrapErr().expected).toBe(error);
+      expect(result.unwrapErr().unexpected).toBeUndefined();
     });
   });
 
@@ -859,17 +867,23 @@ describe("Option", () => {
       const result = option.okOrElse(() => error);
 
       expect(result.isErr()).toBe(true);
-      expect(result.unwrapErr()).toBe(error);
+      expect(result.unwrapErr().expected).toBe(error);
+      expect(result.unwrapErr().unexpected).toBeUndefined();
     });
 
-    it("rethrows `ResultError` if self is `None` and provided callback throws", () => {
+    it("returns `Err` with unexpected `ResultError` if self is `None` and provided callback throws", () => {
       const option = none();
       const error = new Error("error");
       const callback = jest.fn(() => {
         throw error;
       });
+      const result = option.okOrElse(callback);
 
-      expect(() => option.okOrElse(callback)).toThrow(
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr().expected).toBeUndefined();
+      expect(result.unwrapErr().unexpected).not.toBeUndefined();
+      expect(result.unwrapErr().unexpected?.reason).toBe(error);
+      expect(result.unwrapErr().unexpected).toStrictEqual(
         new ResultError(
           "`Option.okOrElse`: callback `mkErr` threw an exception",
           ResultErrorKind.FromOptionException,
@@ -1143,14 +1157,7 @@ describe("Option", () => {
   });
 
   describe("toPendingCloned", () => {
-    class Counter implements Clone<Counter> {
-      constructor(public data: { count: number }) {}
-      clone(this: Clone<Counter>): Counter {
-        return new Counter({ count: 0 });
-      }
-    }
-
-    it("returns a PendingOption that resolves to a clone of self if self is `Some`", async () => {
+    it("returns a `PendingOption` that resolves to a clone of self if self is `Some`", async () => {
       const counter = new Counter({ count: 42 });
       const option = some(counter);
       const result = option.toPendingCloned();
@@ -1166,7 +1173,7 @@ describe("Option", () => {
       expect(awaited.unwrap().data.count).toBe(0);
     });
 
-    it("returns a PendingOption that resolves to None if self is `None`", async () => {
+    it("returns a `PendingOption` that resolves to `None` if self is `None`", async () => {
       const option = none<Counter>();
       const result = option.toPendingCloned();
 
@@ -1241,7 +1248,9 @@ describe("Option", () => {
       const result = option.transpose();
 
       expect(result.isErr()).toBe(true);
-      expect(result.unwrapErr()).toBe(error);
+      expect(isCheckedError(result.unwrapErr())).toBe(true);
+      expect(result.unwrapErr().expected).toBe(error);
+      expect(result.unwrapErr().unexpected).toBeUndefined();
     });
   });
 

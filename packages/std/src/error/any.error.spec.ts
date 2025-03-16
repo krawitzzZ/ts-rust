@@ -2,15 +2,13 @@ import { stringify } from "@ts-rust/shared";
 import { AnyError } from "./any.error";
 
 describe("AnyError", () => {
-  it("creates an instance with provided message and kind (kind is used for reason)", () => {
+  it("creates an instance with provided message and kind", () => {
     const message = "oops";
     const kind = "UnexpectedException";
     const error = new AnyError(message, kind);
 
     expect(error).toBeInstanceOf(AnyError);
-    expect(error.message).toBe(
-      `[${stringify(kind)}] ${message}. Reason: undefined`,
-    );
+    expect(error.message).toBe(`[${stringify(kind)}] ${message}.`);
     expect(error.kind).toBe(kind);
     expect(error.reason).toStrictEqual(new Error(kind));
   });

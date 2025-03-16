@@ -163,14 +163,6 @@ class _Result<T, E> implements Resultant<T, E> {
     return isOk(this.#state) ? ok(this.#state.value) : err(this.#state.error);
   }
 
-  isOk(): this is Ok<T, E> {
-    return isOk(this.#state);
-  }
-
-  isErr(): this is Err<T, E> {
-    return isErr(this.#state);
-  }
-
   expect(msg?: string): T {
     if (isOk(this.#state)) {
       return this.#state.value;
@@ -180,6 +172,14 @@ class _Result<T, E> implements Resultant<T, E> {
       msg ?? "`expect`: called on `Err`",
       ResultErrorKind.ExpectCalledOnErr,
     );
+  }
+
+  isErr(): this is Err<T, E> {
+    return isErr(this.#state);
+  }
+
+  isOk(): this is Ok<T, E> {
+    return isOk(this.#state);
   }
 
   toPending(): PendingSettledRes<T, E> {

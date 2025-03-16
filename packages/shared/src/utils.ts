@@ -118,3 +118,49 @@ export const toPromise = <T>(
 export const toLazyPromise = <T>(
   x: T | LazyPromise<T> | Promise<T> | PromiseLike<T>,
 ): LazyPromise<T> => (isLazyPromise(x) ? x : LazyPromise.resolve(x));
+
+/**
+ * Creates a deep clone of an {@link Error}, duplicating its message, nested
+ * causes and reasons.
+ *
+ * This function constructs a new {@link Error} instance with the same message as the
+ * provided error, and recursively clones any nested `reason` or `cause` if they are
+ * errors. Non-error `cause` values are cloned if possible, preserving the error’s
+ * structure without shared references.
+ */
+export const cloneError = (err: Error): Error => {
+  const clone = new Error(err.message);
+
+  if (err.stack) {
+    Object.defineProperty(clone, "stack", {
+      value: err.stack,
+      writable: true,
+      configurable: true,
+    });
+  }
+
+  if ("reason" in err && err.reason instanceof Error) {
+    Object.defineProperty(clone, "cause", {
+      value: cloneError(err.reason),
+      writable: true,
+      configurable: true,
+    });
+  }
+
+  if ("cause" in err) {
+    try {
+      Object.defineProperty(clone, "cause", {
+        value:
+          err.cause instanceof Error
+            ? cloneError(err.cause)
+            : structuredClone(err.cause),
+        writable: true,
+        configurable: true,
+      });
+    } catch {
+      // do not care about the error
+    }
+  }
+
+  return clone;
+};

@@ -53,14 +53,7 @@ export interface EitherError<E> extends Error {
    * {@link UnexpectedError.unexpected | unexpected} for type-safe retrieval.
    */
   get(): E | ResultError;
-  /**
-   * Checks if this is an expected error, narrowing to {@link ExpectedError}.
-   */
-  isExpected(): this is ExpectedError<E>;
-  /**
-   * Checks if this is an unexpected error, narrowing to {@link UnexpectedError}.
-   */
-  isUnexpected(): this is UnexpectedError<E>;
+
   /**
    * Applies one of two functions to the contained error based on its type.
    *
@@ -70,6 +63,16 @@ export interface EitherError<E> extends Error {
    * @returns The result of applying `f` or `g`.
    */
   handle<T>(f: (e: ResultError) => T, g: (e: E) => T): T;
+
+  /**
+   * Checks if this is an expected error, narrowing to {@link ExpectedError}.
+   */
+  isExpected(): this is ExpectedError<E>;
+
+  /**
+   * Checks if this is an unexpected error, narrowing to {@link UnexpectedError}.
+   */
+  isUnexpected(): this is UnexpectedError<E>;
 }
 
 /**
@@ -99,6 +102,7 @@ export interface Resultant<T, E> {
    * expect(y.clone()).toStrictEqual(ok({ a: 1 }));
    * ```
    */
+  // TODO(nikita.demin): check if Result<void, void> can be cloned
   clone<U, V>(this: Result<Cloneable<U>, Cloneable<V>>): Result<U, V>;
 
   /**
@@ -115,9 +119,9 @@ export interface Resultant<T, E> {
    * ```
    */
   copy(): Result<T, E>;
-  isOk(): this is Ok<T, E>;
-  isErr(): this is Err<T, E>;
   expect(this: SettledResult<T, E>, msg?: string): T;
+  isErr(): this is Err<T, E>;
+  isOk(): this is Ok<T, E>;
 
   /**
    * Maps this result to a {@link PendingResult} by supplying a shallow

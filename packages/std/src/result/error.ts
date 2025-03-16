@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Either, left, right } from "@ts-rust/shared";
+import { Either, left, right, cloneError, stringify } from "@ts-rust/shared";
 import { AnyError } from "../error";
+import { Clone } from "../types";
 import type {
   Resultant,
   Result,
@@ -50,13 +51,43 @@ export enum ResultErrorKind {
  * } catch (e) {
  *   if (e instanceof ResultError) {
  *     console.log(e.kind); // "UnwrapCalledOnErr"
- *     console.log(e.message); // "[UnwrapCalledOnErr] `unwrap`: called on `Err`. Reason: undefined"
+ *     console.log(e.message); // "[UnwrapCalledOnErr] `unwrap`: called on `Err`."
  *   }
  * }
  * ```
  */
-// TODO(nikita.demin): check if message is correct here in example
-export class ResultError extends AnyError<ResultErrorKind> {}
+export class ResultError
+  extends AnyError<ResultErrorKind>
+  implements Clone<ResultError>
+{
+  /**
+   * Creates a deep clone of this {@link ResultError}, duplicating all properties
+   * and ensuring no shared references.
+   *
+   * This method constructs a new {@link ResultError} instance with the same `kind`
+   * and a cloned `reason`. Since `kind` is a {@link Primitive}, it is copied as-is,
+   * while `reason` (an `Error`) is recreated with its `message` and, if available,
+   * its `stack` or `cause`. The `message` and `name` are regenerated to match the
+   * original formatting, and the `stack` trace is set to the new instance’s call
+   * context (though it may be copied if supported).
+   *
+   * @returns A new {@link ResultError} instance with deeply cloned state.
+   *
+   * ### Example
+   * ```ts
+   * const original = new ResultError("Test error", "TestKind", new Error("Nested"));
+   * const cloned = original.clone();
+   * console.log(cloned.message); // "[TestKind] Test error. Reason: [Error: Nested]"
+   * console.log(cloned !== original); // true
+   * console.log(cloned.reason !== original.reason); // true
+   * ```
+   */
+  clone(this: ResultError): ResultError {
+    const c = new ResultError(this.message, this.kind, cloneError(this.reason));
+    c.message = this.message;
+    return c;
+  }
+}
 
 /**
  * Creates a {@link CheckedError} representing an expected error of type `E`.
@@ -69,7 +100,7 @@ export class ResultError extends AnyError<ResultErrorKind> {}
  * @returns A {@link CheckedError} containing the expected error.
  */
 export function expected<E>(error: E): CheckedError<E> {
-  return _CheckedError.expected(error);
+  return CheckedFailure.expected(error);
 }
 
 /**
@@ -99,7 +130,7 @@ export function unexpected<E>(error: ResultError): CheckedError<E>;
 export function unexpected<E>(
   message: string,
   kind: ResultErrorKind,
-  reason: unknown,
+  reason?: unknown,
 ): CheckedError<E>;
 export function unexpected<E>(
   error: ResultError | string,
@@ -108,10 +139,10 @@ export function unexpected<E>(
 ): CheckedError<E> {
   if (typeof error === "string") {
     const errorKind = kind ?? ResultErrorKind.Unexpected;
-    return _CheckedError.unexpectedFromArgs(error, errorKind, reason);
+    return CheckedFailure.unexpectedFromArgs(error, errorKind, reason);
   }
 
-  return _CheckedError.unexpected(error);
+  return CheckedFailure.unexpected(error);
 }
 
 /**
@@ -130,7 +161,7 @@ export function unexpected<E>(
  * ```
  */
 export function isCheckedError(e: unknown): e is CheckedError<unknown> {
-  return e instanceof _CheckedError;
+  return e instanceof CheckedFailure;
 }
 
 /**
@@ -141,13 +172,13 @@ export function isCheckedError(e: unknown): e is CheckedError<unknown> {
  * intended for direct use; prefer the {@link expected} and {@link unexpected}
  * factory functions.
  */
-class _CheckedError<E> extends Error implements EitherError<E> {
+class CheckedFailure<E> extends Error implements EitherError<E> {
   static expected<E>(error: E): CheckedError<E> {
-    return new _CheckedError(right(error)) as CheckedError<E>;
+    return new CheckedFailure(right(error)) as CheckedError<E>;
   }
 
   static unexpected<E>(error: ResultError): CheckedError<E> {
-    return new _CheckedError(left(error)) as CheckedError<E>;
+    return new CheckedFailure(left(error)) as CheckedError<E>;
   }
 
   static unexpectedFromArgs<E>(
@@ -155,7 +186,7 @@ class _CheckedError<E> extends Error implements EitherError<E> {
     kind: ResultErrorKind,
     reason?: unknown,
   ): CheckedError<E> {
-    return new _CheckedError(
+    return new CheckedFailure(
       left(new ResultError(error, kind, reason)),
     ) as CheckedError<E>;
   }
@@ -191,5 +222,9 @@ class _CheckedError<E> extends Error implements EitherError<E> {
 
   isUnexpected(): this is UnexpectedError<E> {
     return this.#error.isLeft();
+  }
+
+  override toString(): string {
+    return this.handle(stringify, stringify);
   }
 }

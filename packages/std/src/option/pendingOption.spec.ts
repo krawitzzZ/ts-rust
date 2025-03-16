@@ -570,7 +570,8 @@ describe("PendingOption", () => {
         const awaited = await result;
 
         expect(awaited.isErr()).toBe(true);
-        expect(awaited.unwrapErr()).toBe(await error);
+        expect(awaited.unwrapErr().expected).toBe(await error);
+        expect(awaited.unwrapErr().unexpected).toBeUndefined();
         expect(callback).toHaveBeenCalledTimes(1);
       },
     );
@@ -802,7 +803,8 @@ describe("PendingOption", () => {
       const awaited = await result;
 
       expect(awaited.isErr()).toBe(true);
-      expect(awaited.unwrapErr()).toBe(error);
+      expect(awaited.unwrapErr().expected).toBe(error);
+      expect(awaited.unwrapErr().unexpected).toBeUndefined();
     });
 
     it("returns a `PendingResult<Option<V>, E>` with Ok(None) if self rejects", async () => {

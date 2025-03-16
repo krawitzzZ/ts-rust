@@ -32,7 +32,8 @@ describe("Result utils", () => {
       const result = err(value);
 
       expect(result.isErr()).toBe(true);
-      expect(result.unwrapErr()).toBe(value);
+      expect(result.unwrapErr().expected).toBe(value);
+      expect(result.unwrapErr().unexpected).toBeUndefined();
       expect(() => result.unwrap()).toThrow(ResultError);
     });
   });
@@ -90,7 +91,8 @@ describe("Result utils", () => {
         const awaited = await result;
 
         expect(awaited.isErr()).toBe(true);
-        expect(awaited.unwrapErr()).toBe(value);
+        expect(awaited.unwrapErr().expected).toBe(value);
+        expect(awaited.unwrapErr().unexpected).toBeUndefined();
         expect(() => awaited.unwrap()).toThrow(ResultError);
       },
     );
