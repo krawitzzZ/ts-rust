@@ -5,7 +5,7 @@
  * error or alternative outcome. It provides access to the value via the
  * {@link IEither.get | get} method or {@link Left.left | left} property.
  */
-export type Left<T, U> = IEither<T, U> & { readonly left: T };
+export type Left<T, U> = IEither<T, U> & { get(): T; readonly left: T };
 
 /**
  * Represents the right variant of an {@link Either} type, holding a value of type `T`.
@@ -14,7 +14,7 @@ export type Left<T, U> = IEither<T, U> & { readonly left: T };
  * successful or primary outcome. It provides access to the value via the
  * {@link IEither.get | get} method or {@link Right.right | right} property.
  */
-export type Right<T, U> = IEither<T, U> & { readonly right: U };
+export type Right<T, U> = IEither<T, U> & { get(): U; readonly right: U };
 
 /**
  * A type representing a disjoint union of two possible outcomes: a "left" value of type `T`
@@ -77,10 +77,6 @@ export function right<T, U>(value: U): Either<T, U> {
 }
 
 export type IEither<T, U> = {
-  /**
-   * Retrieves the contained value of type `T` or `U`.
-   */
-  get(): T | U;
   /**
    * Returns `true` if this is a {@link Left} variant, narrowing the type accordingly.
    */
