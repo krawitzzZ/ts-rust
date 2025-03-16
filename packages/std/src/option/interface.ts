@@ -513,9 +513,6 @@ export interface Optional<T> {
    * {@link Some | Some(v)} is mapped to {@link Ok | Ok(v)} and {@link None}
    * to {@link Err | Err(mkErr())}.
    *
-   * ## Throws
-   * - {@link ResultError} if `mkErr` throws
-   *
    * ### Example
    * ```ts
    * const x = some(2);

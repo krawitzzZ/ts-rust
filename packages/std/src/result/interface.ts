@@ -3,13 +3,74 @@ import type { ResultError } from "./error";
 
 export type Ok<T, E> = Resultant<T, E> & { readonly value: T };
 
-export type Err<T, E> = Resultant<T, E> & { readonly error: E };
+export type Err<T, E> = Resultant<T, E> & { readonly error: CheckedError<E> };
 
 export type Result<T, E> = Ok<T, E> | Err<T, E>;
 
 export type SettledResult<T, E> =
   | Ok<Awaited<T>, Awaited<E>>
   | Err<Awaited<T>, Awaited<E>>;
+
+/**
+ * Represents an expected error of type `E` within a {@link CheckedError}.
+ */
+export type ExpectedError<E> = EitherError<E> & {
+  readonly expected: E;
+  readonly unexpected: undefined;
+};
+
+/**
+ * Represents an unexpected error of type {@link ResultError} within a
+ * {@link CheckedError}.
+ */
+export type UnexpectedError<E> = EitherError<E> & {
+  readonly expected: undefined;
+  readonly unexpected: ResultError;
+};
+
+/**
+ * A type representing the error state of a {@link Result}, containing either an
+ * expected error of type `E` or an unexpected {@link ResultError}.
+ *
+ * This type ensures exactly one error is present: either an expected error (an
+ * anticipated failure of type `E`) or an unexpected error (a runtime or exceptional
+ * failure). Use {@link EitherError.isExpected | isExpected} or
+ * {@link EitherError.isUnexpected | isUnexpected} to narrow the type if needed.
+ */
+export type CheckedError<E> = ExpectedError<E> | UnexpectedError<E>;
+
+/**
+ * Base interface for {@link CheckedError} instances, providing methods to inspect
+ * and handle the contained error.
+ */
+export interface EitherError<E> extends Error {
+  /**
+   * Retrieves the contained error value, either an expected error of type `E` or
+   * an unexpected {@link ResultError}.
+   *
+   * Use this method for raw access to the error, or prefer
+   * {@link ExpectedError.expected | expected} and
+   * {@link UnexpectedError.unexpected | unexpected} for type-safe retrieval.
+   */
+  get(): E | ResultError;
+  /**
+   * Checks if this is an expected error, narrowing to {@link ExpectedError}.
+   */
+  isExpected(): this is ExpectedError<E>;
+  /**
+   * Checks if this is an unexpected error, narrowing to {@link UnexpectedError}.
+   */
+  isUnexpected(): this is UnexpectedError<E>;
+  /**
+   * Applies one of two functions to the contained error based on its type.
+   *
+   * @template T - The return type of the handler functions.
+   * @param f - Function to handle an unexpected {@link ResultError}.
+   * @param g - Function to handle an expected error of type `E`.
+   * @returns The result of applying `f` or `g`.
+   */
+  handle<T>(f: (e: ResultError) => T, g: (e: E) => T): T;
+}
 
 /**
  * Interface representing the resultant state of an operation, either a success
@@ -20,13 +81,7 @@ export type SettledResult<T, E> =
  */
 export interface Resultant<T, E> {
   and<U>(x: Result<U, E>): Result<U, E>;
-
-  andThen<U>(f: (x: T) => Result<U, E>): Result<U, E | ResultError>;
-  // TODO(nikita.demin): idea - do not provide a callback, e.g. () => E, but instead always
-  // return custom error with original error set to one of its properties
-  andThen<U>(f: (x: T) => Result<U, E>, h: (e: unknown) => E): Result<U, E>;
-
-  andThenUnchecked<U>(f: (x: T) => Result<U, E>): Result<U, E>;
+  andThen<U>(f: (x: T) => Result<U, E>): Result<U, E>;
 
   /**
    * Returns a clone of the {@link Result}.
@@ -44,7 +99,7 @@ export interface Resultant<T, E> {
    * expect(y.clone()).toStrictEqual(ok({ a: 1 }));
    * ```
    */
-  clone<U, F>(this: Result<Cloneable<U>, Cloneable<F>>): Result<U, F>;
+  clone<U, V>(this: Result<Cloneable<U>, Cloneable<V>>): Result<U, V>;
 
   /**
    * Returns a **shallow** copy of the {@link Result}.
@@ -123,21 +178,13 @@ export interface Resultant<T, E> {
    */
   toString(): string;
   unwrap(this: SettledResult<T, E>): T;
-  unwrapErr(this: SettledResult<T, E>): E;
+  unwrapErr(this: SettledResult<T, E>): CheckedError<E>;
 }
 
 export interface PendingResult<T, E>
   extends PromiseLike<Result<T, E>>,
     Recoverable<Result<T, E>> {
   and<U>(
-    x: Result<U, E> | Promise<Result<U, E>>,
-  ): PendingResult<Awaited<U>, Awaited<E> | ResultError>;
-  and<U>(
-    x: Result<U, E> | Promise<Result<U, E>>,
-    h: (e: unknown) => Awaited<E>,
-  ): PendingResult<Awaited<U>, Awaited<E>>;
-
-  andUnchecked<U>(
     x: Result<U, E> | Promise<Result<U, E>>,
   ): PendingResult<Awaited<U>, Awaited<E>>;
 }

@@ -1,5 +1,5 @@
 export { AnyError } from "./error";
-export { Clone, Cloneable, Primitive } from "./types";
+export { Primitive, Clone, Cloneable, Recoverable } from "./types";
 export {
   OptionError,
   OptionErrorKind,
@@ -16,6 +16,13 @@ export {
   isPendingOption,
 } from "./option";
 export {
+  EitherError,
+  CheckedError,
+  ExpectedError,
+  UnexpectedError,
+  expected,
+  unexpected,
+  isCheckedError,
   ResultError,
   ResultErrorKind,
   PendingResult,

@@ -86,7 +86,7 @@ describe("Result", () => {
       expect(callback).not.toHaveBeenCalled();
     });
 
-    it("calls provided callback and returns `Option` if callback returns `Option` and self is `Some`", () => {
+    it("calls provided callback and returns `Result` from its result if self is `Ok`", () => {
       const self = ok(one);
       const other = ok(two);
       const callback = jest.fn(() => other);
@@ -98,7 +98,7 @@ describe("Result", () => {
       expect(callback).toHaveBeenCalledWith(self.unwrap());
     });
 
-    it("does not throw, returns `ResultError` if self is `Ok`, provided callback throws and `onError` callback is not provided", () => {
+    it("does not throw, returns `ResultError` if self is `Ok`, provided callback throws and `defaultError` is not provided", () => {
       const self = ok(one);
       const callback = jest.fn(() => {
         throw syncError;
@@ -118,38 +118,19 @@ describe("Result", () => {
       expect(callback).toHaveBeenCalledWith(self.unwrap());
     });
 
-    it("does not throw, returns `Err` if self is `Ok`, provided callback throws and `onError` callback is provided", () => {
+    it("does not throw, returns `Err` with `defaultError` if self is `Ok`, provided callback throws and `defaultError` is provided", () => {
       const self = ok(one);
-      const onErr = jest.fn(() => recoveredMsg);
+      const defErr = recoveredMsg;
       const callback = jest.fn(() => {
         throw syncError;
       });
-      const result = self.andThen(callback, onErr);
+      const result = self.andThen(callback, defErr);
 
       expect(result).not.toBe(self);
       expect(result.isErr()).toBe(true);
       expect(result.unwrapErr()).toBe(recoveredMsg);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(self.unwrap());
-      expect(onErr).toHaveBeenCalledTimes(1);
-      expect(onErr).toHaveBeenCalledWith(syncError);
-    });
-
-    it("rethrows the error thrown by `onError` callback if self is `Ok`, provided callback throws and `onError` also throws", () => {
-      const anotherError = new Error("another error");
-      const self = ok(one);
-      const onErr = jest.fn(() => {
-        throw anotherError;
-      });
-      const callback = jest.fn(() => {
-        throw syncError;
-      });
-      expect(() => self.andThen(callback, onErr)).toThrow(anotherError);
-
-      expect(callback).toHaveBeenCalledTimes(1);
-      expect(callback).toHaveBeenCalledWith(self.unwrap());
-      expect(onErr).toHaveBeenCalledTimes(1);
-      expect(onErr).toHaveBeenCalledWith(syncError);
     });
   });
 });

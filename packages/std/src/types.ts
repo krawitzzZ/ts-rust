@@ -83,6 +83,7 @@ export type Cloneable<T> = T extends Primitive
  * ```
  */
 export interface Clone<T> {
+  clone(this: T): T;
   clone(this: Clone<T>): T;
 }
 

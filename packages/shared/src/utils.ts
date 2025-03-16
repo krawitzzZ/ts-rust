@@ -74,8 +74,9 @@ export function isLazyPromise(x: unknown): x is LazyPromise<unknown> {
  * expect(await asyncPromise).toBe("hello");
  * ```
  */
-export const toPromise = <T>(x: T | Promise<T> | PromiseLike<T>): Promise<T> =>
-  isPromise(x) ? x : Promise.resolve(x);
+export const toPromise = <T>(
+  x: T | Promise<T> | PromiseLike<T>,
+): Promise<Awaited<T>> => Promise.resolve(x);
 
 /**
  * Converts a value, `Promise`, or `PromiseLike` into a {@link LazyPromise}.

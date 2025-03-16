@@ -6,8 +6,8 @@ import {
   isResult,
   PendingResult,
   pendingResult,
-  ResultError,
   ResultErrorKind,
+  unexpected,
 } from "../result";
 import { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
@@ -455,10 +455,12 @@ class _Option<T> implements Optional<T> {
     try {
       return isSomething(this.#value) ? ok(this.#value) : err(mkErr());
     } catch (e) {
-      throw new ResultError(
-        "`Option.okOrElse`: callback `mkErr` threw an exception",
-        ResultErrorKind.FromOptionException,
-        e,
+      return err(
+        unexpected<E>(
+          "`Option.okOrElse`: callback `mkErr` threw an exception",
+          ResultErrorKind.FromOptionException,
+          e,
+        ),
       );
     }
   }
@@ -545,9 +547,9 @@ class _Option<T> implements Optional<T> {
     return this.isNone() ? "None" : `Some { ${stringify(this.#value, true)} }`;
   }
 
-  transpose<V, E>(this: Option<Result<V, E>>): Result<Option<V>, E> {
+  transpose<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E> {
     if (this.isNone() || !isResult(this.value)) {
-      return ok(none<V>());
+      return ok(none<U>());
     }
 
     return this.value.isOk()

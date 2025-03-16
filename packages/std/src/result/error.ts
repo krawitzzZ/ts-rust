@@ -1,13 +1,25 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Either, left, right } from "@ts-rust/shared";
 import { AnyError } from "../error";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { Resultant, Result, Ok, Err } from "./interface";
+import type {
+  Resultant,
+  Result,
+  Ok,
+  Err,
+  CheckedError,
+  EitherError,
+  ExpectedError,
+  UnexpectedError,
+} from "./interface";
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**
  * Enumerates error codes specific to {@link Result} operations.
  *
- * These codes are used in {@link AnyError} instances thrown by methods like
- * {@link Resultant.unwrap | unwrap} or {@link Resultant.expect | expect} when
- * operations fail due to the state of the result.
+ * These codes categorize failures in {@link ResultError} instances thrown by methods
+ * such as {@link Resultant.unwrap | unwrap} or {@link Resultant.expect | expect}
+ * when the result’s state (e.g., {@link Ok} or {@link Err}) doesn’t match the
+ * operation’s expectations.
  */
 export enum ResultErrorKind {
   ErrorAccessedOnOk = "ErrorAccessedOnOk",
@@ -18,19 +30,17 @@ export enum ResultErrorKind {
   ResultRejection = "ResultRejection",
   PredicateException = "PredicateException",
   FromOptionException = "FromOptionException",
+  Unexpected = "Unexpected",
 }
 
 /**
- * An error thrown by {@link Result} methods when operations fail due to the
- * result's state or unexpected conditions.
+ * An error class for {@link Result} operations, extending {@link AnyError} with
+ * specific {@link ResultErrorKind} codes.
  *
- * This class extends {@link AnyError} with error kinds specific to {@link Result}
- * operations, as defined in {@link ResultErrorKind}. It is typically thrown by
- * methods like {@link Resultant.unwrap | unwrap}, {@link Resultant.unwrapErr | unwrapErr},
- * or {@link Resultant.expect | expect} when attempting to access values or errors
- * inconsistent with the result’s {@link Ok} or {@link Err} state. Use it to handle
- * failures in a type-safe manner, inspecting the {@link ResultErrorKind} to
- * determine the cause of the error.
+ * This class represents failures tied to {@link Result} methods, such as accessing
+ * a value from an {@link Err} or an error from an {@link Ok}. It provides a structured
+ * way to handle such failures by embedding a {@link ResultErrorKind} and an optional
+ * `reason` for additional context.
  *
  * ### Example
  * ```ts
@@ -38,10 +48,148 @@ export enum ResultErrorKind {
  * try {
  *   res.unwrap();
  * } catch (e) {
- *   expect(e).toBeInstanceOf(ResultError);
- *   expect(e.kind).toBe(ResultErrorKind.UnwrapCalledOnErr);
- *   expect(e.message).toBe("`unwrap`: called on `Err`");
+ *   if (e instanceof ResultError) {
+ *     console.log(e.kind); // "UnwrapCalledOnErr"
+ *     console.log(e.message); // "[UnwrapCalledOnErr] `unwrap`: called on `Err`. Reason: undefined"
+ *   }
  * }
  * ```
  */
+// TODO(nikita.demin): check if message is correct here in example
 export class ResultError extends AnyError<ResultErrorKind> {}
+
+/**
+ * Creates a {@link CheckedError} representing an expected error of type `E`.
+ *
+ * Use this function to construct an error for anticipated failures, such as
+ * validation errors or known conditions.
+ *
+ * @template E - The type of the expected error.
+ * @param error - The expected error value to encapsulate.
+ * @returns A {@link CheckedError} containing the expected error.
+ */
+export function expected<E>(error: E): CheckedError<E> {
+  return _CheckedError.expected(error);
+}
+
+/**
+ * Creates a {@link CheckedError} representing an unexpected error.
+ *
+ * Use this function to construct an error for unforeseen failures, such as runtime
+ * exceptions or unhandled conditions, using an existing {@link ResultError}.
+ *
+ * @template E - The type of a potential expected error (not used here).
+ * @param error - The {@link ResultError} representing the unexpected failure.
+ * @returns A {@link CheckedError} containing the unexpected error.
+ */
+export function unexpected<E>(error: ResultError): CheckedError<E>;
+/**
+ * Creates a {@link CheckedError} representing an unexpected {@link ResultError}
+ * from arguments.
+ *
+ * Use this overload to construct an error for unforeseen failures by specifying a
+ * message, {@link ResultErrorKind}, and optional reason.
+ *
+ * @template E - The type of a potential expected error (not used here).
+ * @param message - A description of the unexpected failure.
+ * @param kind - The {@link ResultErrorKind} categorizing the failure.
+ * @param reason - An optional underlying cause of the failure.
+ * @returns A {@link CheckedError} containing the unexpected error.
+ */
+export function unexpected<E>(
+  message: string,
+  kind: ResultErrorKind,
+  reason: unknown,
+): CheckedError<E>;
+export function unexpected<E>(
+  error: ResultError | string,
+  kind?: ResultErrorKind,
+  reason?: unknown,
+): CheckedError<E> {
+  if (typeof error === "string") {
+    const errorKind = kind ?? ResultErrorKind.Unexpected;
+    return _CheckedError.unexpectedFromArgs(error, errorKind, reason);
+  }
+
+  return _CheckedError.unexpected(error);
+}
+
+/**
+ * Checks if a value is a {@link CheckedError}, narrowing its type if true.
+ *
+ * @param e - The value to check.
+ * @returns `true` if the value is a {@link CheckedError}, narrowing to
+ *          `CheckedError<unknown>`.
+ *
+ * ### Example
+ * ```ts
+ * const err = expected<string>("failure");
+ * if (isCheckedError(err)) {
+ *   console.log(err.isExpected()); // true
+ * }
+ * ```
+ */
+export function isCheckedError(e: unknown): e is CheckedError<unknown> {
+  return e instanceof _CheckedError;
+}
+
+/**
+ * Internal implementation of {@link CheckedError}.
+ *
+ * This class encapsulates the error state of a {@link Result}, holding either an
+ * expected error of type `E` or an unexpected {@link ResultError}. It is not
+ * intended for direct use; prefer the {@link expected} and {@link unexpected}
+ * factory functions.
+ */
+class _CheckedError<E> extends Error implements EitherError<E> {
+  static expected<E>(error: E): CheckedError<E> {
+    return new _CheckedError(right(error)) as CheckedError<E>;
+  }
+
+  static unexpected<E>(error: ResultError): CheckedError<E> {
+    return new _CheckedError(left(error)) as CheckedError<E>;
+  }
+
+  static unexpectedFromArgs<E>(
+    error: string,
+    kind: ResultErrorKind,
+    reason?: unknown,
+  ): CheckedError<E> {
+    return new _CheckedError(
+      left(new ResultError(error, kind, reason)),
+    ) as CheckedError<E>;
+  }
+
+  readonly #error: Either<ResultError, E>;
+
+  get expected(): E | undefined {
+    return this.#error.isRight() ? this.#error.right : undefined;
+  }
+
+  get unexpected(): ResultError | undefined {
+    return this.#error.isLeft() ? this.#error.left : undefined;
+  }
+
+  private constructor(error: Either<ResultError, E>) {
+    super(`${error.isRight() ? "Expected" : "Unexpected"} error occurred.`);
+
+    this.name = this.constructor.name;
+    this.#error = error;
+  }
+
+  get(): E | ResultError {
+    return this.#error.get();
+  }
+
+  handle<T>(f: (e: ResultError) => T, g: (e: E) => T): T {
+    return this.#error.either(f, g);
+  }
+
+  isExpected(): this is ExpectedError<E> {
+    return this.#error.isRight();
+  }
+
+  isUnexpected(): this is UnexpectedError<E> {
+    return this.#error.isLeft();
+  }
+}

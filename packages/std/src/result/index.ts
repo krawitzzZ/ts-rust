@@ -1,5 +1,15 @@
-export { ResultError, ResultErrorKind } from "./error";
 export {
+  ResultErrorKind,
+  ResultError,
+  expected,
+  unexpected,
+  isCheckedError,
+} from "./error";
+export {
+  EitherError,
+  CheckedError,
+  ExpectedError,
+  UnexpectedError,
   PendingResult,
   Resultant,
   Result,
