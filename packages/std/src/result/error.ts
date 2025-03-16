@@ -72,15 +72,6 @@ export class ResultError
    * context (though it may be copied if supported).
    *
    * @returns A new {@link ResultError} instance with deeply cloned state.
-   *
-   * ### Example
-   * ```ts
-   * const original = new ResultError("Test error", "TestKind", new Error("Nested"));
-   * const cloned = original.clone();
-   * console.log(cloned.message); // "[TestKind] Test error. Reason: [Error: Nested]"
-   * console.log(cloned !== original); // true
-   * console.log(cloned.reason !== original.reason); // true
-   * ```
    */
   clone(this: ResultError): ResultError {
     const c = new ResultError(this.message, this.kind, cloneError(this.reason));
@@ -151,14 +142,6 @@ export function unexpected<E>(
  * @param e - The value to check.
  * @returns `true` if the value is a {@link CheckedError}, narrowing to
  *          `CheckedError<unknown>`.
- *
- * ### Example
- * ```ts
- * const err = expected<string>("failure");
- * if (isCheckedError(err)) {
- *   console.log(err.isExpected()); // true
- * }
- * ```
  */
 export function isCheckedError(e: unknown): e is CheckedError<unknown> {
   return e instanceof CheckedFailure;
