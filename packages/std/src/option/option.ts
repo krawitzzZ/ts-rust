@@ -69,7 +69,7 @@ export function none<T>(): Option<T> {
  * {@link Some} containing the awaited value.
  *
  * Takes a value or promise and wraps its resolved result in a {@link Some},
- * ensuring the value type is {@link Awaited} to handle any `PromiseLike` input.
+ * ensuring the value type is `Awaited` to handle any `PromiseLike` input.
  *
  * @template T - The type of the input value or promise.
  * @param value - The value or promise to wrap in {@link Some}.
@@ -94,7 +94,7 @@ export function pendingSome<T>(
  * Creates a {@link PendingOption | PendingOption\<T>} that resolves to {@link None}.
  *
  * Produces a pending option representing the absence of a value, with the type
- * resolved to {@link Awaited} for consistency with asynchronous operations.
+ * resolved to `Awaited` for consistency with asynchronous operations.
  *
  * @template T - The type of the absent value.
  * @returns A {@link PendingOption} resolving to {@link None}.

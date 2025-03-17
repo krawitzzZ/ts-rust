@@ -2,26 +2,51 @@ import type { Cloneable, Recoverable } from "../types";
 import type { ResultError } from "./error";
 
 /**
- * Represents a successful outcome of a {@link Result}, holding a value
- * of type `T`.
+ * Represents a successful outcome of a {@link Result} or {@link UnsafeResult},
+ * holding a value of type `T`.
  */
 export type Ok<T, E> = Resultant<T, E> & { readonly value: T };
 
 /**
- * Represents a failed outcome of a {@link Result}, holding a
- * {@link CheckedError} of type `E`.
+ * Represents a failed outcome of a {@link Result}, holding a {@link CheckedError}
+ * of type `E`.
+ *
+ * This type ensures errors are checked, distinguishing between expected errors
+ * of type `E` and unexpected runtime failures wrapped in {@link ResultError}.
  */
 export type Err<T, E> = Resultant<T, E> & { readonly error: CheckedError<E> };
 
 /**
  * A type representing the outcome of an operation, either a success
- * ({@link Ok}) or a failure ({@link Err}).
+ * ({@link Ok}) or a checked failure ({@link Err}).
  *
- * Inspired by Rust’s {@link https://doc.rust-lang.org/std/result/enum.Result.html | Result},
- * this type provides a type-safe way to handle computations that may succeed
- * with a value of type `T` or fail with an error of type `E`.
+ * Inspired by Rust’s
+ * {@link https://doc.rust-lang.org/std/result/enum.Result.html | Result}, this
+ * type provides a type-safe way to handle computations that may succeed with
+ * a value of type `T` or fail with a checked error of type `E`, distinguishing
+ * expected and unexpected failures via {@link CheckedError}.
  */
 export type Result<T, E> = Ok<T, E> | Err<T, E>;
+
+/**
+ * Represents an unchecked failed outcome of an {@link UnsafeResult}, holding
+ * a raw error of type `E`.
+ *
+ * Unlike {@link Err}, this type does not wrap the error in {@link CheckedError},
+ * leaving runtime or unexpected errors unhandled, making it less safe but simpler
+ * for cases where such distinction is unnecessary.
+ */
+export type UnsafeErr<T, E> = Resultant<T, E> & { readonly error: E };
+
+/**
+ * A type representing the outcome of an operation, either a success
+ * ({@link Ok}) or an unchecked failure ({@link UnsafeErr}).
+ *
+ * Similar to {@link Result}, but uses a raw error type `E` without wrapping it
+ * in {@link CheckedError}, omitting runtime error handling for simplicity at
+ * the cost of safety.
+ */
+export type UnsafeResult<T, E> = Ok<T, E> | UnsafeErr<T, E>;
 
 /**
  * A {@link Result} type where both the value (`T`) and error (`E`) types have
@@ -30,6 +55,15 @@ export type Result<T, E> = Ok<T, E> | Err<T, E>;
 export type SettledResult<T, E> =
   | Ok<Awaited<T>, Awaited<E>>
   | Err<Awaited<T>, Awaited<E>>;
+
+/**
+ * An {@link UnsafeResult} type where both the value (`T`) and error (`E`)
+ * types have been resolved from potential `PromiseLike` types to their
+ * awaited forms.
+ */
+export type SettledUnsafeResult<T, E> =
+  | Ok<Awaited<T>, Awaited<E>>
+  | UnsafeErr<Awaited<T>, Awaited<E>>;
 
 /**
  * Represents an expected error of type `E` within a {@link CheckedError}.
@@ -77,10 +111,10 @@ export interface EitherError<E> extends Error {
   /**
    * Applies one of two functions to the contained error based on its type.
    *
-   * @template T - The return type of the handler functions.
-   * @param f - Function to handle an unexpected {@link ResultError}.
-   * @param g - Function to handle an expected error of type `E`.
-   * @returns The result of applying `f` or `g`.
+   *
+   * Applies the first function in case the inner error is unexpected
+   * {@link ResultError}, or the second function if the inner error is
+   * expected `E`.
    */
   handle<T>(f: (e: ResultError) => T, g: (e: E) => T): T;
 
@@ -198,7 +232,20 @@ export interface Resultant<T, E> {
    * expect(y.isErr()).toBe(true);
    * ```
    */
-  isErr(): this is Err<T, E>;
+  isErr(this: Result<T, E>): this is Err<T, E>;
+  /**
+   * Checks if this is an {@link UnsafeErr}, narrowing the type accordingly.
+   *
+   * ### Example
+   * ```ts
+   * const x = unsafeOk<number, string>(2);
+   * const y = unsafeErr<number, string>("failure");
+   *
+   * expect(x.isErr()).toBe(false);
+   * expect(y.isErr()).toBe(true);
+   * ```
+   */
+  isErr(this: UnsafeResult<T, E>): this is UnsafeErr<T, E>;
 
   /**
    * Checks if this is an {@link Ok}, narrowing the type accordingly.
@@ -274,6 +321,31 @@ export interface Resultant<T, E> {
   toString(): string;
 
   /**
+   * Converts this {@link Result} to an {@link UnsafeResult}, stripping
+   * {@link CheckedError} to expose the raw error type `E`.
+   *
+   * If this is an {@link Ok}, the value is preserved. If it’s an expected
+   * {@link Err}, the {@link CheckedError} is unwrapped to its expected error
+   * (`E`), throwing if the error is unexpected {@link ResultError}.
+   *
+   * ## Throws
+   * - {@link ResultError} if this is an {@link Err} with an unexpected error
+   *   (see {@link UnexpectedError})
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(42);
+   * const y = err<number, string>("failure");
+   * const z = err(unexpected("Crash", ResultErrorKind.Unexpected));
+   *
+   * expect(x.toUnsafe()).toStrictEqual(ok(42));
+   * expect(y.toUnsafe()).toStrictEqual(unsafeErr("failure"));
+   * expect(() => z.toUnsafe()).toThrow(ResultError);
+   * ```
+   */
+  toUnsafe(): UnsafeResult<T, E>;
+
+  /**
    * Retrieves the value if this is an {@link Ok}, or throws a {@link ResultError}
    * if it’s an {@link Err}.
    *
@@ -289,7 +361,7 @@ export interface Resultant<T, E> {
    * expect(() => y.unwrap()).toThrow(ResultError);
    * ```
    */
-  unwrap(this: SettledResult<T, E>): T;
+  unwrap(this: SettledResult<T, E> | SettledUnsafeResult<T, E>): T;
 
   /**
    * Retrieves the error if this is an {@link Err}, or throws
@@ -308,6 +380,23 @@ export interface Resultant<T, E> {
    * ```
    */
   unwrapErr(this: SettledResult<T, E>): CheckedError<E>;
+  /**
+   * Retrieves the error if this is an {@link Err}, or throws
+   * a {@link ResultError} if it’s an {@link Ok}.
+   *
+   * ## Throws
+   * - {@link ResultError} if this is {@link Ok}
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(42);
+   * const y = err<number, string>("failure");
+   *
+   * expect(() => x.unwrapErr()).toThrow(ResultError);
+   * expect(y.unwrapErr().expected).toBe("failure");
+   * ```
+   */
+  unwrapErr(this: SettledUnsafeResult<T, E>): E;
 }
 
 /**

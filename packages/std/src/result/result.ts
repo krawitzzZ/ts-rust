@@ -1,4 +1,4 @@
-import { stringify, toPromise } from "@ts-rust/shared";
+import { id, stringify, toPromise } from "@ts-rust/shared";
 import type { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
 import {
@@ -16,15 +16,93 @@ import type {
   Result,
   Err,
   Ok,
+  UnsafeResult,
+  UnsafeErr,
+  SettledUnsafeResult,
 } from "./interface";
 
+/**
+ * Creates an {@link Ok} variant of a {@link Result} with a `void` value.
+ *
+ * Wraps `undefined` in an {@link Ok}, indicating a successful outcome with
+ * no value (`void`) for a checked {@link Result}.
+ *
+ * @template E - The type of the potential error.
+ * @param value - The `void` value (typically omitted or `undefined`).
+ * @returns A {@link Result} containing `undefined` as {@link Ok}.
+ *
+ * ### Example
+ * ```ts
+ * const x = ok<string>();
+ *
+ * expect(x.isOk()).toBe(true);
+ * expect(x.unwrap()).toBeUndefined();
+ * ```
+ */
 export function ok<E>(value: void): Result<void, E>;
+/**
+ * Creates an {@link Ok} variant of a {@link Result} containing the given value.
+ *
+ * Wraps the provided value in an {@link Ok}, indicating a successful outcome
+ * for a checked {@link Result}.
+ *
+ * @template T - The type of the value.
+ * @template E - The type of the potential error.
+ * @param value - The value to wrap in {@link Ok}.
+ * @returns A {@link Result} containing the value as {@link Ok}.
+ *
+ * ### Example
+ * ```ts
+ * const x = ok<number, string>(42);
+ *
+ * expect(x.isOk()).toBe(true);
+ * expect(x.unwrap()).toBe(42);
+ * ```
+ */
 export function ok<T, E>(value: T): Result<T, E>;
 export function ok<T, E>(value: T): Result<T, E> {
   return _Result.ok(value);
 }
 
+/**
+ * Creates an {@link Err} variant of a {@link Result} with a `void` error.
+ *
+ * Wraps `undefined` in a {@link CheckedError} within an {@link Err},
+ * indicating a failed outcome with no error value for a checked {@link Result}.
+ *
+ * @template T - The type of the potential value.
+ * @param error - The `void` error (typically omitted or `undefined`).
+ * @returns A {@link Result} containing `undefined` as {@link Err}.
+ *
+ * ### Example
+ * ```ts
+ * const x = err<number>();
+ *
+ * expect(x.isErr()).toBe(true);
+ * expect(x.unwrapErr().expected).toBeUndefined();
+ * ```
+ */
 export function err<T>(error: void): Result<T, void>;
+/**
+ * Creates an {@link Err} variant of a {@link Result} containing the given error.
+ *
+ * Wraps the provided error in a {@link CheckedError} within an {@link Err},
+ * indicating a failed outcome for a checked {@link Result}. Accepts raw errors,
+ * {@link ResultError}, or {@link CheckedError}.
+ *
+ * @template T - The type of the potential value.
+ * @template E - The type of the expected error.
+ * @param error - The error to wrap in {@link Err}, as a raw `E`, {@link ResultError}, or {@link CheckedError}.
+ * @returns A {@link Result} containing the error as {@link Err}.
+ *
+ * ### Example
+ * ```ts
+ * const x = err<number, string>("failure");
+ *
+ * expect(x.isErr()).toBe(true);
+ * expect(x.unwrapErr().expected).toBe("failure");
+ * ```
+ */
 export function err<T, E>(
   error: E | ResultError | CheckedError<E>,
 ): Result<T, E>;
@@ -35,10 +113,173 @@ export function err<T, E>(
 }
 
 /**
- * Creates a {@link PendingResult | PendingResult\<T, E>} from a
- * {@link Result | Result\<T, E>}, a `Promise<Result<T, E>>`
- * or from a factory function that returns either a {@link Result | Result\<T, E>}
- * or a `Promise<Result<T, E>>`.
+ * Creates an {@link Ok} variant of an {@link UnsafeResult} with a `void` value.
+ *
+ * Wraps `undefined` in an {@link Ok}, indicating a successful outcome with no
+ * value for an unchecked {@link UnsafeResult}, without runtime error handling.
+ *
+ * @template E - The type of the potential error.
+ * @param value - The `void` value (typically omitted or `undefined`).
+ * @returns An {@link UnsafeResult} containing `undefined` as {@link Ok}.
+ *
+ * ### Example
+ * ```ts
+ * const x = unsafeOk<string>();
+ *
+ * expect(x.isOk()).toBe(true);
+ * expect(x.unwrap()).toBeUndefined();
+ * ```
+ */
+export function unsafeOk<E>(value: void): UnsafeResult<void, E>;
+/**
+ * Creates an {@link Ok} variant of an {@link UnsafeResult} containing
+ * the given value.
+ *
+ * Wraps the provided value in an {@link Ok}, indicating a successful outcome
+ * for an unchecked {@link UnsafeResult}, without runtime error handling.
+ *
+ * @template T - The type of the value.
+ * @template E - The type of the potential error.
+ * @param value - The value to wrap in {@link Ok}.
+ * @returns An {@link UnsafeResult} containing the value as {@link Ok}.
+ *
+ * ### Example
+ * ```ts
+ * const x = unsafeOk<number, string>(42);
+ *
+ * expect(x.isOk()).toBe(true);
+ * expect(x.unwrap()).toBe(42);
+ * ```
+ */
+export function unsafeOk<T, E>(value: T): UnsafeResult<T, E>;
+export function unsafeOk<T, E>(value: T): UnsafeResult<T, E> {
+  return _Result.unsafeOk(value);
+}
+
+/**
+ * Creates an {@link UnsafeErr} variant of an {@link UnsafeResult} with
+ * a `void` error.
+ *
+ * Wraps `undefined` directly in an {@link UnsafeErr}, indicating a failed
+ * outcome with no error value for an {@link UnsafeResult}, without wrapping
+ * in {@link CheckedError}.
+ *
+ * @template T - The type of the potential value.
+ * @param error - The `void` error (typically omitted or `undefined`).
+ * @returns An {@link UnsafeResult} containing `undefined` as {@link UnsafeErr}.
+ *
+ * ### Example
+ * ```ts
+ * const x = unsafeErr<number>();
+ *
+ * expect(x.isErr()).toBe(true);
+ * expect(x.unwrapErr()).toBeUndefined();
+ * ```
+ */
+export function unsafeErr<T>(error: void): UnsafeResult<T, void>;
+/**
+ * Creates an {@link UnsafeErr} variant of an {@link UnsafeResult}
+ * containing the given raw error.
+ *
+ * Wraps the provided error directly in an {@link UnsafeErr}, indicating
+ * a failed outcome for an {@link UnsafeResult}, without wrapping in
+ * {@link CheckedError} for runtime safety.
+ *
+ * @template T - The type of the potential value.
+ * @template E - The type of the raw error.
+ * @param error - The raw error to wrap in {@link UnsafeErr}.
+ * @returns An {@link UnsafeResult} containing the error as {@link UnsafeErr}.
+ *
+ * ### Example
+ * ```ts
+ * const x = unsafeErr<number, string>("failure");
+ *
+ * expect(x.isErr()).toBe(true);
+ * expect(x.unwrapErr()).toBe("failure");
+ * ```
+ */
+export function unsafeErr<T, E>(error: E): UnsafeResult<T, E>;
+export function unsafeErr<T, E>(error: E): UnsafeResult<T, E> {
+  return _Result.unsafeErr(error);
+}
+
+/**
+ * Creates a {@link PendingResult | PendingResult\<T, E>} that resolves to
+ * {@link Ok} containing the awaited value.
+ *
+ * Takes a value or promise and wraps its resolved result in an {@link Ok},
+ * ensuring the value type is `Awaited` to handle any `PromiseLike` input.
+ *
+ * @template T - The type of the input value or promise.
+ * @template E - The type of the potential error.
+ * @param value - The value or promise to wrap in {@link Ok}.
+ * @returns A {@link PendingResult} resolving to {@link Ok} with the awaited value.
+ *
+ * ### Example
+ * ```ts
+ * const x = pendingOk<number, string>(42);
+ * const y = pendingOk<string, number>(Promise.resolve("hello"));
+ *
+ * expect(await x).toStrictEqual(ok(42));
+ * expect(await y).toStrictEqual(ok("hello"));
+ * ```
+ */
+export function pendingOk<T, E>(
+  value: T | Promise<T>,
+): PendingResult<Awaited<T>, Awaited<E>> {
+  return _PendingResult.create(toPromise(value).then((x) => ok(x)));
+}
+
+/**
+ * Creates a {@link PendingResult | PendingResult\<T, E>} that resolves to
+ * {@link Err} containing the awaited error.
+ *
+ * Takes an error or promise and wraps its resolved result in an {@link Err},
+ * ensuring the error type is `Awaited` to handle any `PromiseLike` input.
+ *
+ * @template T - The type of the potential value.
+ * @template E - The type of the input error or promise.
+ * @param error - The error or promise to wrap in {@link Err}.
+ * @returns A {@link PendingResult} resolving to {@link Err} with the awaited error.
+ *
+ * ### Example
+ * ```ts
+ * const x = pendingErr<number, string>("failure");
+ * const y = pendingErr<string, number>(Promise.resolve(42));
+ *
+ * expect(await x).toStrictEqual(err("failure"));
+ * expect(await y).toStrictEqual(err(42));
+ * ```
+ */
+export function pendingErr<T, E>(
+  error: E | Promise<E>,
+): PendingResult<Awaited<T>, Awaited<E>> {
+  return _PendingResult.create(toPromise(error).then((e) => err(e)));
+}
+
+/**
+ * Creates a {@link PendingResult | PendingResult\<T, E>} from a result,
+ * promise, or factory function.
+ *
+ * Accepts a {@link Result}, a `Promise` resolving to a {@link Result}, or
+ * a function returning either, and converts it into a pending result, handling
+ * asynchronous resolution as needed.
+ *
+ * @template T - The type of the value in the result.
+ * @template E - The type of the expected error in the result.
+ * @param resultOrFactory - The {@link Result}, promise, or factory function producing a {@link Result}.
+ * @returns A {@link PendingResult} resolving to the provided or produced result.
+ *
+ * ### Example
+ * ```ts
+ * const x = pendingResult(ok<number, string>(42));
+ * const y = pendingResult(() => Promise.resolve(err<string, number>(42)));
+ * const z = pendingResult(async () => err<string, boolean>(true));
+ *
+ * expect(await x).toStrictEqual(ok(42));
+ * expect(await y).toStrictEqual(err(42));
+ * expect(await z).toStrictEqual(err(true));
+ * ```
  */
 export function pendingResult<T, E>(
   resultOrFactory:
@@ -53,17 +294,71 @@ export function pendingResult<T, E>(
   return _PendingResult.create(resultOrFactory);
 }
 
+/**
+ * Checks if a value is a {@link Result}, narrowing its type to
+ * `Result<unknown, unknown>`.
+ *
+ * This type guard verifies whether the input conforms to the {@link Result}
+ * interface, indicating it is either an {@link Ok} or {@link Err}.
+ *
+ * @param x - The value to check.
+ * @returns `true` if the value is a {@link Result}, narrowing to `Result<unknown, unknown>`.
+ *
+ * ### Example
+ * ```ts
+ * const x = ok<number, string>(42);
+ * const y = err<number, string>("failure");
+ * const z = "not a result";
+ *
+ * expect(isResult(x)).toBe(true);
+ * expect(isResult(y)).toBe(true);
+ * expect(isResult(z)).toBe(false);
+ *
+ * if (isResult(x)) {
+ *   expect(x.isOk()).toBe(true); // Type narrowed to Result<unknown, unknown>
+ * }
+ * ```
+ */
+export function isResult(x: unknown): x is Result<unknown, unknown> {
+  return x instanceof _Result;
+}
+
+/**
+ * Checks if a value is a {@link PendingResult}, narrowing its type to
+ * `PendingResult<unknown, unknown>`.
+ *
+ * This type guard verifies whether the input is a {@link PendingResult},
+ * indicating it wraps a `Promise` resolving to a {@link Result}
+ * (either {@link Ok} or {@link Err}).
+ *
+ * @param x - The value to check.
+ * @returns `true` if the value is a {@link PendingResult}, narrowing to `PendingResult<unknown, unknown>`.
+ *
+ * ### Example
+ * ```ts
+ * const x = pendingResult(ok<number, string>(42));
+ * const y = pendingResult(err<number, string>("failure"));
+ * const z = ok(42); // Not a PendingResult
+ *
+ * expect(isPendingResult(x)).toBe(true);
+ * expect(isPendingResult(y)).toBe(true);
+ * expect(isPendingResult(z)).toBe(false);
+ *
+ * if (isPendingResult(x)) {
+ *   // Type narrowed to PendingResult<unknown, unknown>
+ *   expect(await x).toStrictEqual(ok(42));
+ * }
+ * ```
+ */
 export function isPendingResult(
   x: unknown,
 ): x is PendingResult<unknown, unknown> {
   return x instanceof _PendingResult;
 }
 
-export function isResult(x: unknown): x is Result<unknown, unknown> {
-  return x instanceof _Result;
-}
-
 /**
+ * Internal implementation class for {@link Result}.
+ *
  * Class that represents a result of an operation that might fail.
  */
 class _Result<T, E> implements Resultant<T, E> {
@@ -71,7 +366,7 @@ class _Result<T, E> implements Resultant<T, E> {
    * Creates {@link Ok} invariant of {@link Result} with provided value.
    */
   static ok<T, E>(value: T): Result<T, E> {
-    return new _Result<T, E>({ type: "ok", value });
+    return new _Result<T, E>({ kind: "safe", type: "ok", value });
   }
 
   /**
@@ -79,18 +374,61 @@ class _Result<T, E> implements Resultant<T, E> {
    */
   static error<T, E>(error: E | ResultError | CheckedError<E>): Result<T, E> {
     if (isCheckedError(error)) {
-      return new _Result({ type: "error", error });
+      return new _Result({ kind: "safe", type: "error", error });
     }
 
     if (error instanceof ResultError) {
-      return new _Result({ type: "error", error: unexpected(error) });
+      return new _Result({
+        kind: "safe",
+        type: "error",
+        error: unexpected(error),
+      });
     }
 
-    return new _Result({ type: "error", error: expected(error) });
+    return new _Result({ kind: "safe", type: "error", error: expected(error) });
   }
 
+  /**
+   * Creates {@link Ok} invariant of {@link UnsafeResult} with provided value.
+   */
+  static unsafeOk<T, E>(value: T): UnsafeResult<T, E> {
+    return new _Result<T, E>({ kind: "unsafe", type: "ok", value });
+  }
+
+  /**
+   * Creates {@link UnsafeErr} invariant of {@link UnsafeResult} with provided error.
+   */
+  static unsafeErr<T, E>(error: E): UnsafeResult<T, E> {
+    return new _Result({
+      kind: "unsafe",
+      type: "error",
+      error: expected(error),
+    });
+  }
+
+  /**
+   * Private field holding the raw state of the {@link Result}.
+   *
+   * Stores a {@link State} object containing either a `value` of type `T` for {@link Ok}
+   * instances or an `error` of type {@link CheckedError}<E> for {@link Err} instances.
+   * This field is managed internally to ensure type safety and encapsulation, and should
+   * only be accessed directly within the class’s methods.
+   *
+   * ### IMPORTANT
+   * **This property shall only be used within this class’s methods and constructor.**
+   */
   #state: State<T, E>;
 
+  /**
+   * Property that provides access to the value of the {@link Result}.
+   *
+   * Only {@link Ok} instances have a value, so accessing this property on {@link Err}
+   * will throw a {@link ResultError}.
+   *
+   * ## Throws
+   * - {@link ResultError} if `value` is accessed on {@link Err}, with
+   *   {@link ResultErrorKind.ValueAccessedOnErr}.
+   */
   get value(): T {
     if (isErr(this.#state)) {
       throw new ResultError(
@@ -102,6 +440,16 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.#state.value;
   }
 
+  /**
+   * Property that provides access to the error of the {@link Result}.
+   *
+   * Only {@link Err} instances have an error, so accessing this property on {@link Ok}
+   * will throw a {@link ResultError}.
+   *
+   * ## Throws
+   * - {@link ResultError} if `error` is accessed on {@link Ok}, with
+   *   {@link ResultErrorKind.ErrorAccessedOnOk}.
+   */
   get error(): CheckedError<E> {
     if (isOk(this.#state)) {
       throw new ResultError(
@@ -174,6 +522,8 @@ class _Result<T, E> implements Resultant<T, E> {
     );
   }
 
+  isErr(this: Result<T, E>): this is Err<T, E>;
+  isErr(this: UnsafeResult<T, E>): this is UnsafeErr<T, E>;
   isErr(): this is Err<T, E> {
     return isErr(this.#state);
   }
@@ -198,6 +548,20 @@ class _Result<T, E> implements Resultant<T, E> {
       : `Err { ${stringify(this.#state.error, true)} }`;
   }
 
+  toUnsafe(): UnsafeResult<T, E> {
+    if (isOk(this.#state)) {
+      return unsafeOk(this.#state.value);
+    }
+
+    return this.#state.error.handle(
+      (e) => {
+        throw e;
+      },
+      (e) => unsafeErr<T, E>(e),
+    );
+  }
+
+  unwrap(this: SettledResult<T, E> | SettledUnsafeResult<T, E>): T;
   unwrap(): T {
     if (isErr(this.#state)) {
       throw new ResultError(
@@ -209,7 +573,9 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.#state.value;
   }
 
-  unwrapErr(): CheckedError<E> {
+  unwrapErr(this: SettledResult<T, E>): CheckedError<E>;
+  unwrapErr(this: SettledUnsafeResult<T, E>): E;
+  unwrapErr(): CheckedError<E> | E {
     if (isOk(this.#state)) {
       throw new ResultError(
         "`unwrapErr`: called on `Ok`",
@@ -217,10 +583,24 @@ class _Result<T, E> implements Resultant<T, E> {
       );
     }
 
-    return this.#state.error;
+    if (isSafeAndErr(this.#state)) {
+      return this.#state.error;
+    }
+
+    return this.#state.error.handle((e) => {
+      // TODO(nikita.demin): figure out how to test this branch
+      throw e;
+    }, id);
   }
 }
 
+/**
+ * Represents a {@link Result} in a pending state that will be resolved in the future.
+ *
+ * Internally, it wraps a `Promise` that resolves to a {@link Result} on success
+ * or to its {@link Err} variant on failure. Methods mirror those of {@link Result},
+ * adapted for asynchronous resolution.
+ */
 class _PendingResult<T, E> implements PendingResult<T, E> {
   static create<T, E>(
     result: Result<T, E> | PromiseLike<Result<T, E>>,
@@ -260,17 +640,43 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
 }
 
 type State<T, E> =
-  | { type: "ok"; value: T }
-  | { type: "error"; error: CheckedError<E> };
+  | { readonly kind: "safe" | "unsafe"; readonly type: "ok"; value: T }
+  | {
+      readonly kind: "safe" | "unsafe";
+      readonly type: "error";
+      error: CheckedError<E>;
+    };
 
 type PendingSettledRes<T, E> = PendingResult<Awaited<T>, Awaited<E>>;
 
-const isOk = <T, E>(x: State<T, E>): x is { type: "ok"; value: T } =>
+const isOk = <T, E>(
+  x: State<T, E>,
+): x is { readonly kind: "safe" | "unsafe"; readonly type: "ok"; value: T } =>
   x.type === "ok";
 
 const isErr = <T, E>(
   x: State<T, E>,
-): x is { type: "error"; error: CheckedError<E> } => x.type === "error";
+): x is {
+  readonly kind: "safe" | "unsafe";
+  readonly type: "error";
+  error: CheckedError<E>;
+} => x.type === "error";
+
+const isSafeAndErr = <T, E>(
+  x: State<T, E>,
+): x is {
+  readonly kind: "safe";
+  readonly type: "error";
+  error: CheckedError<E>;
+} => x.type === "error" && x.kind === "safe";
+
+const _isUnsafeAndErr = <T, E>(
+  x: State<T, E>,
+): x is {
+  readonly kind: "unsafe";
+  readonly type: "error";
+  error: CheckedError<E>;
+} => x.type === "error" && x.kind === "unsafe";
 
 const defCatchMsg = "Pending result rejected unexpectedly";
 
@@ -289,6 +695,7 @@ const settleResult = async <T, E>(
     catchUnexpected(defCatchMsg),
   );
 
+// TODO(nikita.demin): check if settle* or await* better be used
 const _settleOk = async <T, E>(
   resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
 ): Promise<Result<Awaited<T>, E>> =>

@@ -7,7 +7,7 @@ import {
   unexpected,
 } from "./error";
 import { Err, Ok } from "./interface";
-import { err, isPendingResult, ok } from "./result";
+import { err, isPendingResult, ok, unsafeErr, unsafeOk } from "./result";
 
 describe("Result", () => {
   const syncError = new Error("sync error");
@@ -274,9 +274,16 @@ describe("Result", () => {
 
   describe("isErr", () => {
     it.each([
-      [true, err()],
-      [false, ok(one)],
+      [true, err<number, string>("err")],
+      [false, ok<number, string>(one)],
     ])("returns '%p' if self is %s", (exp, result) => {
+      expect(result.isErr()).toBe(exp);
+    });
+
+    it.each([
+      [true, unsafeErr<number, string>("err")],
+      [false, unsafeOk<number, string>(one)],
+    ])("returns '%p' if self is unsafe %s", (exp, result) => {
       expect(result.isErr()).toBe(exp);
     });
   });
@@ -461,6 +468,30 @@ describe("Result", () => {
     });
   });
 
+  describe("toUnsafe", () => {
+    it(`returns 'Ok' if self is 'Ok'`, () => {
+      const self = ok(one);
+      const result = self.toUnsafe();
+
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe(one);
+    });
+
+    it(`returns 'Err' if inner error is expected 'Err'`, () => {
+      const self = err(expectedErr);
+      const result = self.toUnsafe();
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr()).toBe(expectedErrMsg);
+    });
+
+    it(`throws 'ResultError' if inner error is unexpected 'Err'`, () => {
+      const self = err(unexpectedErr);
+
+      expect(() => self.toUnsafe()).toThrow(unexpectedErr.unexpected);
+    });
+  });
+
   describe("unwrap", () => {
     it("returns inner `Ok` value if self is `Ok`", () => {
       const self = ok(one);
@@ -482,12 +513,32 @@ describe("Result", () => {
   });
 
   describe("unwrapErr", () => {
-    it("returns inner `Err` value if self is `Err`", () => {
+    it("returns inner `Err` value (CheckedError) if inner error is safe `Err`", () => {
       const self = err(expectedErr);
       const another = err(unexpectedErr);
 
       expect(self.unwrapErr()).toBe(expectedErr);
       expect(another.unwrapErr()).toBe(unexpectedErr);
+    });
+
+    it("returns inner `Err` value (E) if inner error is `UnsafeErr`", () => {
+      const self = unsafeErr(expectedErr);
+      const another = unsafeErr(unexpectedErr);
+
+      expect(self.unwrapErr()).toBe(expectedErr);
+      expect(another.unwrapErr()).toBe(unexpectedErr);
+    });
+
+    // TODO(nikita.demin): figure out how to test this
+    it.skip("throws `ResultError` if self is `UnsafeErr` and inner error is unexpected `Err`", () => {
+      const self = err(unexpectedErr);
+
+      expect(() => self.unwrapErr()).toThrow(
+        new ResultError(
+          "`unwrapErr`: called on `Ok`",
+          ResultErrorKind.UnwrapErrCalledOnOk,
+        ),
+      );
     });
 
     it("throws `ResultError` if self is `Ok`", () => {
