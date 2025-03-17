@@ -208,6 +208,9 @@ class CheckedFailure<E> extends Error implements EitherError<E> {
   }
 
   override toString(): string {
-    return this.handle(stringify, stringify);
+    return this.handle(
+      (re) => stringify(re, true),
+      (e) => stringify(e, true),
+    );
   }
 }

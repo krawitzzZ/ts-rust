@@ -37,6 +37,11 @@ export type SettledResult<T, E> =
 export type ExpectedError<E> = EitherError<E> & {
   readonly expected: E;
   readonly unexpected: undefined;
+  /**
+   * Retrieves the contained error value, either an expected error of type `E` or
+   * an unexpected {@link ResultError}.
+   */
+  get(): E;
 };
 
 /**
@@ -46,6 +51,11 @@ export type ExpectedError<E> = EitherError<E> & {
 export type UnexpectedError<E> = EitherError<E> & {
   readonly expected: undefined;
   readonly unexpected: ResultError;
+  /**
+   * Retrieves the contained error value, either an expected error of type `E` or
+   * an unexpected {@link ResultError}.
+   */
+  get(): ResultError;
 };
 
 /**
@@ -64,16 +74,6 @@ export type CheckedError<E> = ExpectedError<E> | UnexpectedError<E>;
  * and handle the contained error.
  */
 export interface EitherError<E> extends Error {
-  /**
-   * Retrieves the contained error value, either an expected error of type `E` or
-   * an unexpected {@link ResultError}.
-   *
-   * Use this method for raw access to the error, or prefer
-   * {@link ExpectedError.expected | expected} and
-   * {@link UnexpectedError.unexpected | unexpected} for type-safe retrieval.
-   */
-  get(): E | ResultError;
-
   /**
    * Applies one of two functions to the contained error based on its type.
    *
@@ -121,8 +121,8 @@ export interface Resultant<T, E> {
   and<U>(x: Result<U, E>): Result<U, E>;
 
   /**
-   * Applies a function to the value if this is an {@link Ok}, or propagates
-   * the error if it’s an {@link Err}.
+   * Applies `f` to the value if this is an {@link Ok} and returns its result,
+   * otherwise returns the {@link Err} value of self.
    *
    * ### Example
    * ```ts
@@ -136,7 +136,7 @@ export interface Resultant<T, E> {
   andThen<U>(f: (x: T) => Result<U, E>): Result<U, E>;
 
   /**
-   * Returns a clone of the {@link Result}.
+   * Returns a **deep clone** of the {@link Result}.
    *
    * Only available on {@link Result}s with {@link Cloneable} value and error.
    *
@@ -162,7 +162,7 @@ export interface Resultant<T, E> {
    * const x = ok<{ a: number }, string>(value);
    *
    * expect(x.copy()).toStrictEqual(ok({ a: 1 }));
-   * expect(x.copy()).not.toBe(x); // Different option reference
+   * expect(x.copy()).not.toBe(x); // Different result reference
    * expect(x.copy().unwrap()).toBe(value); // Same value reference
    * ```
    */
@@ -171,8 +171,6 @@ export interface Resultant<T, E> {
   /**
    * Retrieves the value if this is an {@link Ok}, or throws a {@link ResultError}
    * with an optional message if it’s an {@link Err}.
-   *
-   * Only available on {@link SettledResult}s where `T` and `E` are not `PromiseLike`.
    *
    * ## Throws
    * - {@link ResultError} if this is {@link Err}
@@ -218,7 +216,7 @@ export interface Resultant<T, E> {
 
   /**
    * Maps this result to a {@link PendingResult} by supplying a shallow
-   * {@link Resultant.copy | copy} of this option to {@link PendingResult} factory.
+   * {@link Resultant.copy | copy} of this result to {@link PendingResult} factory.
    *
    * Useful for transposing a result with `PromiseLike` value to a
    * {@link PendingResult} with `Awaited` value.
@@ -239,7 +237,7 @@ export interface Resultant<T, E> {
 
   /**
    * Maps this result to a {@link PendingResult} by supplying a
-   * {@link Resultant.clone | clone} of this option to {@link PendingResult}
+   * {@link Resultant.clone | clone} of this result to {@link PendingResult}
    * factory.
    *
    * Useful for transposing a result with `PromiseLike` value to a
@@ -251,10 +249,10 @@ export interface Resultant<T, E> {
    * const x = ok(value);
    * const pendingX = x.toPendingCloned();
    *
-   * expect(isPendingOption(pendingX)).toBe(true);
-   * expect((await pendingX).unwrap().a).toBe(0);
+   * expect(isPendingResult(pendingX)).toBe(true);
+   * expect((await pendingX).unwrap()).toStrictEqual({ a: 0 });
    * value.a = 42;
-   * expect((await pendingX).unwrap().a).toBe(0);
+   * expect((await pendingX).unwrap()).toStrictEqual({ a: 0 });
    * ```
    */
   toPendingCloned(
@@ -279,9 +277,6 @@ export interface Resultant<T, E> {
    * Retrieves the value if this is an {@link Ok}, or throws a {@link ResultError}
    * if it’s an {@link Err}.
    *
-   * Only available on {@link SettledResult}s where `T` and `E` are not
-   * `PromiseLike`.
-   *
    * ## Throws
    * - {@link ResultError} if this is {@link Err}
    *
@@ -299,9 +294,6 @@ export interface Resultant<T, E> {
   /**
    * Retrieves the error if this is an {@link Err}, or throws
    * a {@link ResultError} if it’s an {@link Ok}.
-   *
-   * Only available on {@link SettledResult}s where `T` and `E` are not
-   * `PromiseLike`.
    *
    * ## Throws
    * - {@link ResultError} if this is {@link Ok}
