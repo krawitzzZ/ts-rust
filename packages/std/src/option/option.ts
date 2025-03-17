@@ -25,9 +25,16 @@ import {
 /**
  * Creates a {@link Some} variant of an {@link Option} containing the given value.
  *
+ * Wraps the provided value in a {@link Some}, indicating the presence of a value.
+ *
+ * @template T - The type of the value.
+ * @param value - The value to wrap in {@link Some}.
+ * @returns An {@link Option} containing the value as {@link Some}.
+ *
  * ### Example
  * ```ts
  * const x = some(42);
+ *
  * expect(x.isSome()).toBe(true);
  * expect(x.expect("Not 42")).toBe(42);
  * ```
@@ -37,13 +44,20 @@ export function some<T>(value: T): Option<T> {
 }
 
 /**
- * Creates a {@link None} variant of an {@link Option}, representing the absence of a value.
+ * Creates a {@link None} variant of an {@link Option}, representing the absence
+ * of a value.
+ *
+ * Produces an option indicating no value is present.
+ *
+ * @template T - The type of the absent value.
+ * @returns An {@link Option} representing {@link None}.
  *
  * ### Example
  * ```ts
  * const x = none<number>();
+ *
  * expect(x.isNone()).toBe(true);
- * expect(x.expect("x is `None`")).toThrow("x is `None`");
+ * expect(() => x.expect("x is `None`")).toThrow("x is `None`");
  * ```
  */
 export function none<T>(): Option<T> {
@@ -51,9 +65,74 @@ export function none<T>(): Option<T> {
 }
 
 /**
- * Creates a {@link PendingOption | PendingOption\<T>} from an
- * {@link Option | Option\<T>}, a `Promise<Option<T>>` or from a factory function
- * that returns either an {@link Option | Option\<T>} or a `Promise<Option<T>>`.
+ * Creates a {@link PendingOption | PendingOption\<T>} that resolves to
+ * {@link Some} containing the awaited value.
+ *
+ * Takes a value or promise and wraps its resolved result in a {@link Some},
+ * ensuring the value type is {@link Awaited} to handle any `PromiseLike` input.
+ *
+ * @template T - The type of the input value or promise.
+ * @param value - The value or promise to wrap in {@link Some}.
+ * @returns A {@link PendingOption} resolving to {@link Some} with the awaited value.
+ *
+ * ### Example
+ * ```ts
+ * const x = pendingSome(42);
+ * const y = pendingSome(Promise.resolve("hello"));
+ *
+ * expect(await x).toStrictEqual(some(42));
+ * expect(await y).toStrictEqual(some("hello"));
+ * ```
+ */
+export function pendingSome<T>(
+  value: T | Promise<T>,
+): PendingOption<Awaited<T>> {
+  return _PendingOption.create(toPromise(value).then(some));
+}
+
+/**
+ * Creates a {@link PendingOption | PendingOption\<T>} that resolves to {@link None}.
+ *
+ * Produces a pending option representing the absence of a value, with the type
+ * resolved to {@link Awaited} for consistency with asynchronous operations.
+ *
+ * @template T - The type of the absent value.
+ * @returns A {@link PendingOption} resolving to {@link None}.
+ *
+ * ### Example
+ * ```ts
+ * const x = pendingNone<number>();
+ *
+ * expect(await x).toStrictEqual(none());
+ * expect((await x).isNone()).toBe(true);
+ * ```
+ */
+export function pendingNone<T>(): PendingOption<Awaited<T>> {
+  return _PendingOption.create(none());
+}
+
+/**
+ * Creates a {@link PendingOption | PendingOption\<T>} from an option, promise,
+ * or factory function.
+ *
+ * Accepts an {@link Option}, a `Promise` resolving to an {@link Option}, or
+ * a function returning either, and converts it into a pending option, handling
+ * asynchronous resolution as needed.
+ *
+ * @template T - The type of the value in the option.
+ * @param optionOrFactory - The {@link Option}, promise, or factory function producing an {@link Option}.
+ * @returns A {@link PendingOption} resolving to the provided or produced option.
+ *
+ * ### Example
+ * ```ts
+ * const x = pendingOption(some(42));
+ * const y = pendingOption(() => Promise.resolve(none<string>()));
+ * const z = pendingOption(async () => some("thing"));
+ *
+ * expect(await x).toStrictEqual(some(42));
+ * expect(await y).toStrictEqual(none());
+ * expect(await z).toStrictEqual(some("thing"));
+ * ```
  */
 export function pendingOption<T>(
   optionOrFactory:
@@ -66,22 +145,6 @@ export function pendingOption<T>(
   }
 
   return _PendingOption.create(optionOrFactory);
-}
-
-/**
- * Creates a {@link PendingOption | PendingOption\<T>} that resolves to
- * {@link Some}.
- */
-export function pendingSome<T>(value: T | Promise<T>): PendingOption<T> {
-  return _PendingOption.create(toPromise(value).then(some));
-}
-
-/**
- * Creates a {@link PendingOption | PendingOption\<T>} that resolves to
- * {@link None}.
- */
-export function pendingNone<T>(): PendingOption<T> {
-  return _PendingOption.create(none());
 }
 
 /**
