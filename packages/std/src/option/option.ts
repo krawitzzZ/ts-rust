@@ -150,8 +150,11 @@ export function pendingOption<T>(
 /**
  * Checks if a value is an {@link Option}, narrowing its type to `Option<unknown>`.
  *
- * This type guard determines whether the input is an instance conforms
- * to the {@link Option} interface.
+ * This type guard verifies whether the input conforms to the {@link Optional}
+ * interface, indicating it is either a {@link Some} or {@link None}.
+ *
+ * @param x - The value to check.
+ * @returns `true` if the value is an {@link Option}, narrowing to `Option<unknown>`.
  *
  * ### Example
  * ```ts
@@ -176,9 +179,12 @@ export function isOption(x: unknown): x is Option<unknown> {
  * Checks if a value is a {@link PendingOption}, narrowing its type to
  * `PendingOption<unknown>`.
  *
- * This type guard determines whether the input is an instance of the
- * {@link PendingOption} class, indicating it is a pending option that wraps a
- * `Promise` resolving to an {@link Option}.
+ * This type guard verifies whether the input is a {@link PendingOption},
+ * indicating it wraps a `Promise` resolving to an {@link Option}
+ * (either {@link Some} or {@link None}).
+ *
+ * @param x - The value to check.
+ * @returns `true` if the value is a {@link PendingOption}, narrowing to `PendingOption<unknown>`.
  *
  * ### Example
  * ```ts
