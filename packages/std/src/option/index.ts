@@ -7,4 +7,12 @@ export {
   Some,
   None,
 } from "./interface";
-export { isPendingOption, isOption, pendingOption, some, none } from "./option";
+export {
+  isPendingOption,
+  isOption,
+  pendingOption,
+  pendingSome,
+  pendingNone,
+  some,
+  none,
+} from "./option";

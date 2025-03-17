@@ -69,6 +69,22 @@ export function pendingOption<T>(
 }
 
 /**
+ * Creates a {@link PendingOption | PendingOption\<T>} that resolves to
+ * {@link Some}.
+ */
+export function pendingSome<T>(value: T | Promise<T>): PendingOption<T> {
+  return _PendingOption.create(toPromise(value).then(some));
+}
+
+/**
+ * Creates a {@link PendingOption | PendingOption\<T>} that resolves to
+ * {@link None}.
+ */
+export function pendingNone<T>(): PendingOption<T> {
+  return _PendingOption.create(none());
+}
+
+/**
  * Checks if a value is an {@link Option}, narrowing its type to `Option<unknown>`.
  *
  * This type guard determines whether the input is an instance conforms

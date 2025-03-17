@@ -1,5 +1,13 @@
 import { OptionError } from "./error";
-import { isOption, isPendingOption, none, pendingOption, some } from "./option";
+import {
+  isOption,
+  isPendingOption,
+  none,
+  pendingNone,
+  pendingOption,
+  pendingSome,
+  some,
+} from "./option";
 
 describe("Option utils", () => {
   const someValues = [
@@ -89,6 +97,26 @@ describe("Option utils", () => {
       expect(isPendingOption(option)).toBe(true);
       expect(awaited.isNone()).toBe(true);
       expect(() => awaited.unwrap()).toThrow(OptionError);
+    });
+  });
+
+  describe("pendingSome", () => {
+    it("returns `PendingOption` that resolves to `Some`", async () => {
+      const value = { a: 1 };
+      const option = pendingSome(value);
+
+      expect(isPendingOption(option)).toBe(true);
+      expect(await option).toStrictEqual(some(value));
+      expect((await option).unwrap()).toBe(value);
+    });
+  });
+
+  describe("pendingNone", () => {
+    it("returns `PendingOption` that resolves to `None`", async () => {
+      const option = pendingNone();
+
+      expect(isPendingOption(option)).toBe(true);
+      expect(await option).toStrictEqual(none());
     });
   });
 

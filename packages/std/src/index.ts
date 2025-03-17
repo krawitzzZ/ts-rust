@@ -5,6 +5,8 @@ export {
   OptionErrorKind,
   PendingOption,
   pendingOption,
+  pendingSome,
+  pendingNone,
   Optional,
   Option,
   SettledOption,
