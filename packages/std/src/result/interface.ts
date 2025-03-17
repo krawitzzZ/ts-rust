@@ -151,7 +151,6 @@ export interface Resultant<T, E> {
    * expect(y.clone()).toStrictEqual(ok({ a: 1 }));
    * ```
    */
-  // TODO(nikita.demin): check if Result<void, void> can be cloned
   clone<U, V>(this: Result<Cloneable<U>, Cloneable<V>>): Result<U, V>;
 
   /**
