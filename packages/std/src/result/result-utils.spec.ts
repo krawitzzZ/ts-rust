@@ -1,5 +1,15 @@
-import { ResultError } from "./error";
-import { err, isPendingResult, isResult, ok, pendingResult } from "./result";
+import { expected, ResultError, ResultErrorKind, unexpected } from "./error";
+import {
+  err,
+  isPendingResult,
+  isResult,
+  ok,
+  pendingErr,
+  pendingOk,
+  pendingResult,
+  unsafeErr,
+  unsafeOk,
+} from "./result";
 
 describe("Result utils", () => {
   const values = [
@@ -16,9 +26,14 @@ describe("Result utils", () => {
     [1, 2, 3],
   ];
   const oks = values.map(ok);
+  const checkedErrors = [
+    unexpected(new ResultError("oi", ResultErrorKind.ResultRejection)),
+    expected("some error"),
+  ];
+  const resError = new ResultError("unexpected", ResultErrorKind.Unexpected);
 
   describe("ok", () => {
-    it.each(values)("returns `Result` with `Ok { %p }` value", (value) => {
+    it.each(values)("returns `Result` with `Ok { %s }` value", (value) => {
       const result = ok(value);
 
       expect(result.isOk()).toBe(true);
@@ -36,11 +51,126 @@ describe("Result utils", () => {
       expect(result.unwrapErr().unexpected).toBeUndefined();
       expect(() => result.unwrap()).toThrow(ResultError);
     });
+
+    it.each(checkedErrors)(
+      "returns `Result` with `CheckedError { %p }` value",
+      (value) => {
+        const result = err(value);
+
+        expect(result.isErr()).toBe(true);
+        expect(result.unwrapErr()).toBe(value);
+        expect(() => result.unwrap()).toThrow(ResultError);
+      },
+    );
+
+    it("returns `Result` with unexpected `Err` if called with `ResultError`", () => {
+      const result = err(resError);
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr().unexpected).toBe(resError);
+      expect(result.unwrapErr().expected).toBeUndefined();
+      expect(() => result.unwrap()).toThrow(ResultError);
+    });
+
+    it("returns `Result` with void `Err` if called without arguments", () => {
+      const result = err();
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr().unexpected).toBeUndefined();
+      expect(result.unwrapErr().expected).toBeUndefined();
+      expect(() => result.unwrap()).toThrow(ResultError);
+    });
+  });
+
+  describe("unsafeOk", () => {
+    it.each(values)(
+      "returns `UnsafeResult` with `Ok { %s }` value",
+      (value) => {
+        const result = unsafeOk(value);
+
+        expect(result.isOk()).toBe(true);
+        expect(result.unwrap()).toBe(value);
+        expect(() => result.unwrapErr()).toThrow(ResultError);
+      },
+    );
+  });
+
+  describe("unsafeErr", () => {
+    it.each([...values, ...checkedErrors])(
+      "returns `UnsafeResult` with `UnsafeErr { %p }` value",
+      (value) => {
+        const result = unsafeErr(value);
+
+        expect(result.isErr()).toBe(true);
+        expect(result.unwrapErr()).toBe(value);
+        expect(() => result.unwrap()).toThrow(ResultError);
+      },
+    );
+  });
+
+  describe("pendingOk", () => {
+    it.each(values)(
+      "returns `PendingResult` with `Ok { %s }` value",
+      async (value) => {
+        const result = pendingOk(value);
+
+        expect(isPendingResult(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited.isOk()).toBe(true);
+        expect(awaited.unwrap()).toBe(value);
+      },
+    );
+
+    it.each(values.map((x) => Promise.resolve(x)))(
+      "returns `PendingResult` with async `Ok { %s }` value",
+      async (value) => {
+        const result = pendingOk(value);
+
+        expect(isPendingResult(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited.isOk()).toBe(true);
+        expect(awaited.unwrap()).toBe(await value);
+      },
+    );
+  });
+
+  describe("pendingErr", () => {
+    it.each(values)(
+      "returns `PendingResult` with `Err { %s }` value",
+      async (value) => {
+        const result = pendingErr(value);
+
+        expect(isPendingResult(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited.isErr()).toBe(true);
+        expect(awaited.unwrapErr().expected).toBe(value);
+      },
+    );
+
+    it.each(values.map((x) => Promise.resolve(x)))(
+      "returns `PendingResult` with async `Err { %s }` value",
+      async (value) => {
+        const result = pendingErr(value);
+
+        expect(isPendingResult(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited.isErr()).toBe(true);
+        expect(awaited.unwrapErr().expected).toBe(await value);
+      },
+    );
   });
 
   describe("pendingResult", () => {
     it.each(values)(
-      "returns `PendingResult` with `Ok { %p }` value",
+      "returns `PendingResult` with `Ok { %s }` value",
       async (value) => {
         const result = pendingResult(ok(value));
 
@@ -54,7 +184,7 @@ describe("Result utils", () => {
     );
 
     it.each(oks)(
-      "returns `PendingResult` with `Ok { %p }` value if called with synchronous factory",
+      "returns `PendingResult` with `Ok { %s }` value if called with synchronous factory",
       async (value) => {
         const result = pendingResult(() => ok(value));
 
@@ -68,7 +198,7 @@ describe("Result utils", () => {
     );
 
     it.each(oks)(
-      "returns `PendingResult` with `Ok { %p }` value if called with asynchronous factory",
+      "returns `PendingResult` with `Ok { %s }` value if called with asynchronous factory",
       async (value) => {
         const result = pendingResult(async () => ok(value));
 
@@ -82,7 +212,7 @@ describe("Result utils", () => {
     );
 
     it.each(values)(
-      "returns `PendingResult` with `Err { %p }` value",
+      "returns `PendingResult` with `Err { %s }` value",
       async (value) => {
         const result = pendingResult(err(value));
 

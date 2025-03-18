@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { id, stringify, toPromise } from "@ts-rust/shared";
 import type { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
@@ -9,6 +10,8 @@ import {
   unexpected,
 } from "./error";
 import type {
+  ExpectedError,
+  UnexpectedError,
   CheckedError,
   PendingResult,
   SettledResult,
@@ -20,6 +23,7 @@ import type {
   UnsafeErr,
   SettledUnsafeResult,
 } from "./interface";
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**
  * Creates an {@link Ok} variant of a {@link Result} with a `void` value.
@@ -80,6 +84,7 @@ export function ok<T, E>(value: T): Result<T, E> {
  *
  * expect(x.isErr()).toBe(true);
  * expect(x.unwrapErr().expected).toBeUndefined();
+ * expect(x.unwrapErr().unexpected).toBeUndefined();
  * ```
  */
 export function err<T>(error: void): Result<T, void>;
@@ -87,8 +92,14 @@ export function err<T>(error: void): Result<T, void>;
  * Creates an {@link Err} variant of a {@link Result} containing the given error.
  *
  * Wraps the provided error in a {@link CheckedError} within an {@link Err},
- * indicating a failed outcome for a checked {@link Result}. Accepts raw errors,
- * {@link ResultError}, or {@link CheckedError}.
+ * indicating a failed outcome for a checked {@link Result}. This function accepts
+ * raw errors, {@link ResultError}, or {@link CheckedError}.
+ *
+ * - If called with an error of type `E`, it creates an {@link ExpectedError}
+ *   variant.
+ * - If called with a {@link ResultError}, it creates an {@link UnexpectedError}
+ *   variant.
+ * - If called with a {@link CheckedError}, it uses the error as is.
  *
  * @template T - The type of the potential value.
  * @template E - The type of the expected error.
@@ -97,10 +108,13 @@ export function err<T>(error: void): Result<T, void>;
  *
  * ### Example
  * ```ts
+ * const oops = new ResultError("err", ResultErrorKind.Unexpected);
  * const x = err<number, string>("failure");
+ * const y = err<number, string>(oops);
  *
  * expect(x.isErr()).toBe(true);
  * expect(x.unwrapErr().expected).toBe("failure");
+ * expect(y.unwrapErr().unexpected).toBe(oops);
  * ```
  */
 export function err<T, E>(
@@ -252,9 +266,17 @@ export function pendingOk<T, E>(
  * ```
  */
 export function pendingErr<T, E>(
-  error: E | Promise<E>,
+  error:
+    | E
+    | ResultError
+    | CheckedError<E>
+    | Promise<E>
+    | Promise<ResultError>
+    | Promise<CheckedError<E>>,
 ): PendingResult<Awaited<T>, Awaited<E>> {
-  return _PendingResult.create(toPromise(error).then((e) => err(e)));
+  return _PendingResult.create(
+    settleResult(toPromise(error).then((e) => err(e))),
+  );
 }
 
 /**
@@ -687,7 +709,7 @@ const catchUnexpected =
       unexpected<Awaited<E>>(msg, ResultErrorKind.ResultRejection, e),
     );
 
-const settleResult = async <T, E>(
+const settleResult = <T, E>(
   resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
 ): Promise<SettledResult<T, E>> =>
   toPromise(resultOrPromise).then(
@@ -696,7 +718,7 @@ const settleResult = async <T, E>(
   );
 
 // TODO(nikita.demin): check if settle* or await* better be used
-const _settleOk = async <T, E>(
+const _settleOk = <T, E>(
   resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
 ): Promise<Result<Awaited<T>, E>> =>
   toPromise(resultOrPromise).then(
@@ -704,7 +726,7 @@ const _settleOk = async <T, E>(
     catchUnexpected(defCatchMsg),
   );
 
-const _settleErr = async <T, E>(
+const _settleErr = <T, E>(
   resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
 ): Promise<Result<T, Awaited<E>>> =>
   toPromise(resultOrPromise).then(
