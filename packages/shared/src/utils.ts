@@ -140,7 +140,7 @@ export const cloneError = (err: Error): Error => {
   }
 
   if ("reason" in err && err.reason instanceof Error) {
-    Object.defineProperty(clone, "cause", {
+    Object.defineProperty(clone, "reason", {
       value: cloneError(err.reason),
       writable: true,
       configurable: true,
