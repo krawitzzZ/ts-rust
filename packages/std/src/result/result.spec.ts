@@ -513,7 +513,7 @@ describe("Result", () => {
   });
 
   describe("unwrapErr", () => {
-    it("returns inner `Err` value (CheckedError) if inner error is safe `Err`", () => {
+    it("returns inner `Err` value (CheckedError) if inner error is regular (safe) `Err`", () => {
       const self = err(expectedErr);
       const another = err(unexpectedErr);
 
@@ -529,7 +529,7 @@ describe("Result", () => {
       expect(another.unwrapErr()).toBe(unexpectedErr);
     });
 
-    // TODO(nikita.demin): figure out how to test this
+    // NOTE(nikita.demin): figure out how to test this and refactor
     it.skip("throws `ResultError` if self is `UnsafeErr` and inner error is unexpected `Err`", () => {
       const self = err(unexpectedErr);
 

@@ -610,7 +610,6 @@ class _Result<T, E> implements Resultant<T, E> {
     }
 
     return this.#state.error.handle((e) => {
-      // TODO(nikita.demin): figure out how to test this branch
       throw e;
     }, id);
   }
