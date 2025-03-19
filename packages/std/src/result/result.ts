@@ -716,7 +716,6 @@ const settleResult = <T, E>(
     catchUnexpected(defCatchMsg),
   );
 
-// TODO(nikita.demin): check if settle* or await* better be used
 const _settleOk = <T, E>(
   resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
 ): Promise<Result<Awaited<T>, E>> =>

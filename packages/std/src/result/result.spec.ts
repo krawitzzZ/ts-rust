@@ -21,7 +21,7 @@ describe("Result", () => {
   );
   const one = 11;
   const two = 222;
-  //   const zero = 0;
+  // const zero = 0;
 
   class Counter implements Clone<Counter> {
     constructor(public data: { count: number }) {}
