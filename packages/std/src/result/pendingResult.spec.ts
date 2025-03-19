@@ -1,7 +1,17 @@
+import { expected, ResultErrorKind, unexpected } from "./error";
 import { Result } from "./interface";
-import { err, ok, pendingResult } from "./result";
+import { err, isPendingResult, ok, pendingResult } from "./result";
 
 describe("PendingResult", () => {
+  const _syncError = new Error("sync error");
+  const _errMsg = "err";
+  const expectedErrMsg = "expected error happened";
+  const unexpectedErrMsg = "unexpected error happened";
+  const expectedErr = expected(expectedErrMsg);
+  const unexpectedErr = unexpected<string>(
+    unexpectedErrMsg,
+    ResultErrorKind.Unexpected,
+  );
   const one = 11;
   const two = 222;
   //   const zero = 0;
@@ -95,6 +105,60 @@ describe("PendingResult", () => {
       expect(catchSpy).toHaveBeenCalledWith(expect.any(Function));
       expect(onError).toHaveBeenCalledTimes(1);
       expect(onError).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe("and", () => {
+    it.each([expectedErr, unexpectedErr])(
+      "returns `Err` value of self if self is  `Err { %p }`",
+      async (e) => {
+        const res = err<number, string>(e);
+        const self = pendingResult(res);
+        const other = ok<number, string>(two);
+        const result = self.and(other);
+
+        expect(isPendingResult(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited.isErr()).toBe(true);
+        expect(awaited.unwrapErr()).toStrictEqual(e);
+      },
+    );
+
+    it.each([expectedErr, unexpectedErr])(
+      "does not await for provided promise and returns `Err` value of self if self is `Err { %p }`",
+      async (e) => {
+        const res = err<number, string>(e);
+        const self = pendingResult(res);
+        const other = Promise.resolve(ok<number, string>(two));
+        const spy = jest.spyOn(other, "then");
+        const result = self.and(other);
+
+        expect(isPendingResult(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited.isErr()).toBe(true);
+        expect(awaited.unwrapErr()).toStrictEqual(e);
+        expect(spy).not.toHaveBeenCalled();
+      },
+    );
+
+    it("returns provided result if self is `Ok`", async () => {
+      const res = ok<number, string>(one);
+      const self = pendingResult(res);
+      const other = Promise.resolve(ok<number, string>(two));
+      const spy = jest.spyOn(other, "then");
+      const result = self.and(other);
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap()).toBe(two);
+      expect(spy).toHaveBeenCalledTimes(1);
     });
   });
 });

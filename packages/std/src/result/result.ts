@@ -632,7 +632,7 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
   #promise: Promise<Result<T, E>>;
 
   private constructor(result: Result<T, E> | PromiseLike<Result<T, E>>) {
-    this.#promise = toPromise(result).catch(catchUnexpected(defCatchMsg));
+    this.#promise = toSafePromise(result, defaultCatchMessage);
   }
 
   // Implements the PromiseLike interface, allowing PendingResult to be used
@@ -652,10 +652,15 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
 
   and<U>(x: MaybePromise<Result<U, E>>): PendingSettledRes<U, E> {
     return pendingResult(
-      this.#promise.then(
-        async (result) => settleResult(result.and(await x)),
-        catchUnexpected("`and`: inner or other result rejected"),
-      ),
+      this.#promise.then((self) => {
+        if (self.isErr()) {
+          return settleResult(err(self.error));
+        }
+
+        return settleResult(
+          toSafePromise(x, "`and`: provided result `x` rejected"),
+        );
+      }),
     );
   }
 }
@@ -691,15 +696,21 @@ const isSafeAndErr = <T, E>(
   error: CheckedError<E>;
 } => x.type === "error" && x.kind === "safe";
 
-const _isUnsafeAndErr = <T, E>(
-  x: State<T, E>,
-): x is {
-  readonly kind: "unsafe";
-  readonly type: "error";
-  error: CheckedError<E>;
-} => x.type === "error" && x.kind === "unsafe";
+// const isUnsafeAndErr = <T, E>(
+//   x: State<T, E>,
+// ): x is {
+//   readonly kind: "unsafe";
+//   readonly type: "error";
+//   error: CheckedError<E>;
+// } => x.type === "error" && x.kind === "unsafe";
 
-const defCatchMsg = "Pending result rejected unexpectedly";
+const defaultCatchMessage = "Pending result rejected unexpectedly";
+
+const toSafePromise = <T, E>(
+  result: MaybePromise<Result<T, E>> | PromiseLike<Result<T, E>>,
+  errorMessage: string,
+): Promise<Result<T, E>> =>
+  toPromise(result).catch(catchUnexpected<T, E>(errorMessage));
 
 const catchUnexpected =
   <T, E>(msg: string) =>
@@ -709,38 +720,35 @@ const catchUnexpected =
     );
 
 const settleResult = <T, E>(
-  resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
+  resultOrPromise: MaybePromise<Result<T, E>>,
 ): Promise<SettledResult<T, E>> =>
-  toPromise(resultOrPromise).then(
-    (r) => (r.isOk() ? awaitOk(r.value) : awaitErr(r.error)),
-    catchUnexpected(defCatchMsg),
+  toSafePromise(resultOrPromise, defaultCatchMessage).then((r) =>
+    r.isOk() ? awaitOk(r.value) : awaitErr(r.error),
   );
 
-const _settleOk = <T, E>(
-  resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
-): Promise<Result<Awaited<T>, E>> =>
-  toPromise(resultOrPromise).then(
-    (r) => (r.isErr() ? err(r.error) : awaitOk(r.value)),
-    catchUnexpected(defCatchMsg),
-  );
+// const settleOk = <T, E>(
+//   resultOrPromise: MaybePromise<Result<T, E>>,
+// ): Promise<Result<Awaited<T>, E>> =>
+//   toSafePromise(resultOrPromise, defaultCatchMessage).then((r) =>
+//     r.isErr() ? err(r.error) : awaitOk(r.value),
+//   );
 
-const _settleErr = <T, E>(
-  resultOrPromise: Result<T, E> | PromiseLike<Result<T, E>>,
-): Promise<Result<T, Awaited<E>>> =>
-  toPromise(resultOrPromise).then(
-    (r) => (r.isOk() ? ok(r.value) : awaitErr(r.error)),
-    catchUnexpected(defCatchMsg),
-  );
+// const settleErr = <T, E>(
+//   resultOrPromise: MaybePromise<Result<T, E>>,
+// ): Promise<Result<T, Awaited<E>>> =>
+//   toSafePromise(resultOrPromise, defaultCatchMessage).then((r) =>
+//     r.isOk() ? ok(r.value) : awaitErr(r.error),
+//   );
 
 const awaitOk = <T, E>(
   v: T,
-  errMsg = "Pending result's `Ok` value rejected unexpectedly",
+  errMsg = "PendingResult's `Ok` value rejected unexpectedly",
 ): Promise<Result<Awaited<T>, E>> =>
   toPromise(v).then((x) => ok<Awaited<T>, E>(x), catchUnexpected<T, E>(errMsg));
 
 const awaitErr = <T, E>(
   error: CheckedError<E>,
-  errMsg = "Pending result's expected `Err` rejected unexpectedly",
+  errMsg = "PendingResult's expected `Err` rejected unexpectedly",
 ): MaybePromise<Result<T, Awaited<E>>> => {
   if (error.isUnexpected()) {
     return err<T, Awaited<E>>(error.unexpected);
