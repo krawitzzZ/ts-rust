@@ -10,7 +10,7 @@ import {
 } from "../result";
 import { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
-import { unexpected } from "../result/error";
+import { unexpectedError } from "../result/error";
 import { OptionError, OptionErrorKind } from "./error";
 import {
   Optional,
@@ -541,7 +541,7 @@ class _Option<T> implements Optional<T> {
       return isSomething(this.#value) ? ok(this.#value) : err(mkErr());
     } catch (e) {
       return err(
-        unexpected<E>(
+        unexpectedError<E>(
           "`Option.okOrElse`: callback `mkErr` threw an exception",
           ResultErrorKind.FromOptionException,
           e,

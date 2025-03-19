@@ -1,8 +1,8 @@
 import {
   ResultError,
   ResultErrorKind,
-  expected,
-  unexpected,
+  expectedError,
+  unexpectedError,
   isCheckedError,
 } from "./error";
 
@@ -43,7 +43,7 @@ describe("Result error", () => {
       describe("expected", () => {
         it("creates an expected `CheckedError` with provided error", () => {
           const error = new Error("Test expected error");
-          const checkedError = expected(error);
+          const checkedError = expectedError(error);
 
           expect(isCheckedError(checkedError)).toBe(true);
           expect(checkedError.isExpected()).toBe(true);
@@ -58,7 +58,7 @@ describe("Result error", () => {
             "Test unexpected",
             ResultErrorKind.Unexpected,
           );
-          const checkedError = unexpected(resultError);
+          const checkedError = unexpectedError(resultError);
 
           expect(isCheckedError(checkedError)).toBe(true);
           expect(checkedError.isUnexpected()).toBe(true);
@@ -67,7 +67,7 @@ describe("Result error", () => {
 
         it("creates an unexpected `CheckedError` with provided `ResultError` arguments", () => {
           const reason = new Error("Reason");
-          const checkedError = unexpected(
+          const checkedError = unexpectedError(
             "Test message",
             ResultErrorKind.PredicateException,
             reason,
@@ -87,12 +87,12 @@ describe("Result error", () => {
 
       describe("isCheckedError", () => {
         it("returns `true` if called with expected `CheckedError`", () => {
-          const error = expected("test error");
+          const error = expectedError("test error");
           expect(isCheckedError(error)).toBe(true);
         });
 
         it("returns `true` if called with unexpected `CheckedError`", () => {
-          const error = unexpected("error", ResultErrorKind.Unexpected);
+          const error = unexpectedError("error", ResultErrorKind.Unexpected);
           expect(isCheckedError(error)).toBe(true);
         });
 
@@ -116,10 +116,10 @@ describe("Result error", () => {
 
     describe("get", () => {
       it("returns error of type `E` if inner error is expected `E` error", () => {
-        const expectedError = "expected error";
-        const checkedError = expected(expectedError);
+        const expectedErr = "expected error";
+        const checkedError = expectedError(expectedErr);
 
-        expect(checkedError.get()).toBe(expectedError);
+        expect(checkedError.get()).toBe(expectedErr);
       });
 
       it("returns error of type `ResultError` if inner error is unexpected `ResultError`", () => {
@@ -127,7 +127,7 @@ describe("Result error", () => {
           "unexpected",
           ResultErrorKind.Unexpected,
         );
-        const checkedError = unexpected(resultError);
+        const checkedError = unexpectedError(resultError);
 
         expect(checkedError.get()).toBe(resultError);
       });
@@ -136,7 +136,7 @@ describe("Result error", () => {
     describe("handle", () => {
       it("calls first callback and returns its result if inner error is expected `E` error", () => {
         const value = "test value";
-        const checkedError = expected(value);
+        const checkedError = expectedError(value);
 
         const unexpectedCallback = jest.fn(() => "unexpected");
         const expectedCallback = jest.fn(() => "expected");
@@ -157,7 +157,7 @@ describe("Result error", () => {
           "error",
           ResultErrorKind.Unexpected,
         );
-        const checkedError = unexpected(resultError);
+        const checkedError = unexpectedError(resultError);
 
         const unexpectedCallback = jest.fn(() => "unexpected");
         const expectedCallback = jest.fn(() => "expected");
@@ -176,35 +176,41 @@ describe("Result error", () => {
 
     describe("isExpected", () => {
       it("returns `true` if inner error is expected `E` error", () => {
-        const checkedError = expected("test error");
+        const checkedError = expectedError("test error");
         expect(checkedError.isExpected()).toBe(true);
       });
 
       it("returns `false` if inner error is unexpected `ResultError` error", () => {
-        const checkedError = unexpected("test", ResultErrorKind.Unexpected);
+        const checkedError = unexpectedError(
+          "test",
+          ResultErrorKind.Unexpected,
+        );
         expect(checkedError.isExpected()).toBe(false);
       });
     });
 
     describe("isUnexpected", () => {
       it("returns `false` if inner error is expected `E` error", () => {
-        const checkedError = expected("test error");
+        const checkedError = expectedError("test error");
         expect(checkedError.isUnexpected()).toBe(false);
       });
 
       it("returns `true` if inner error is unexpected `ResultError` error", () => {
-        const checkedError = unexpected("test", ResultErrorKind.Unexpected);
+        const checkedError = unexpectedError(
+          "test",
+          ResultErrorKind.Unexpected,
+        );
         expect(checkedError.isUnexpected()).toBe(true);
       });
     });
 
     describe("toString", () => {
       it.each([
-        ["expected string", expected("test error string")],
-        ["expected error", expected(new Error("test error"))],
+        ["expected string", expectedError("test error string")],
+        ["expected error", expectedError(new Error("test error"))],
         [
           "unexpected result error",
-          unexpected("test", ResultErrorKind.Unexpected),
+          unexpectedError("test", ResultErrorKind.Unexpected),
         ],
       ])("returns string representation of self for %s", (_, error) => {
         const result = error.toString();

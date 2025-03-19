@@ -90,7 +90,7 @@ export class ResultError
  * @param error - The expected error value to encapsulate.
  * @returns A {@link CheckedError} containing the expected error.
  */
-export function expected<E>(error: E): CheckedError<E> {
+export function expectedError<E>(error: E): CheckedError<E> {
   return CheckedFailure.expected(error);
 }
 
@@ -104,7 +104,7 @@ export function expected<E>(error: E): CheckedError<E> {
  * @param error - The {@link ResultError} representing the unexpected failure.
  * @returns A {@link CheckedError} containing the unexpected error.
  */
-export function unexpected<E>(error: ResultError): CheckedError<E>;
+export function unexpectedError<E>(error: ResultError): CheckedError<E>;
 /**
  * Creates a {@link CheckedError} representing an unexpected {@link ResultError}
  * from arguments.
@@ -118,12 +118,12 @@ export function unexpected<E>(error: ResultError): CheckedError<E>;
  * @param reason - An optional underlying cause of the failure.
  * @returns A {@link CheckedError} containing the unexpected error.
  */
-export function unexpected<E>(
+export function unexpectedError<E>(
   message: string,
   kind: ResultErrorKind,
   reason?: unknown,
 ): CheckedError<E>;
-export function unexpected<E>(
+export function unexpectedError<E>(
   error: ResultError | string,
   kind?: ResultErrorKind,
   reason?: unknown,
@@ -152,7 +152,7 @@ export function isCheckedError(e: unknown): e is CheckedError<unknown> {
  *
  * This class encapsulates the error state of a {@link Result}, holding either an
  * expected error of type `E` or an unexpected {@link ResultError}. It is not
- * intended for direct use; prefer the {@link expected} and {@link unexpected}
+ * intended for direct use; prefer the {@link expectedError} and {@link unexpectedError}
  * factory functions.
  */
 class CheckedFailure<E> extends Error implements EitherError<E> {

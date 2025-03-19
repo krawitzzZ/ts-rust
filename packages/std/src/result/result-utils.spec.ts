@@ -1,4 +1,9 @@
-import { expected, ResultError, ResultErrorKind, unexpected } from "./error";
+import {
+  expectedError,
+  ResultError,
+  ResultErrorKind,
+  unexpectedError,
+} from "./error";
 import {
   err,
   isPendingResult,
@@ -27,8 +32,8 @@ describe("Result utils", () => {
   ];
   const oks = values.map(ok);
   const checkedErrors = [
-    unexpected(new ResultError("oi", ResultErrorKind.ResultRejection)),
-    expected("some error"),
+    unexpectedError(new ResultError("oi", ResultErrorKind.ResultRejection)),
+    expectedError("some error"),
   ];
   const resError = new ResultError("unexpected", ResultErrorKind.Unexpected);
 
@@ -63,12 +68,12 @@ describe("Result utils", () => {
       },
     );
 
-    it("returns `Result` with unexpected `Err` if called with `ResultError`", () => {
+    it("returns `Result` with expected `Err` if called with `ResultError`", () => {
       const result = err(resError);
 
       expect(result.isErr()).toBe(true);
-      expect(result.unwrapErr().unexpected).toBe(resError);
-      expect(result.unwrapErr().expected).toBeUndefined();
+      expect(result.unwrapErr().unexpected).toBeUndefined();
+      expect(result.unwrapErr().expected).toBe(resError);
       expect(() => result.unwrap()).toThrow(ResultError);
     });
 

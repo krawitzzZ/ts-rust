@@ -6,8 +6,8 @@ import {
   ResultError,
   ResultErrorKind,
   isCheckedError,
-  expected,
-  unexpected,
+  expectedError,
+  unexpectedError,
 } from "./error";
 import type {
   ExpectedError,
@@ -385,15 +385,11 @@ class _Result<T, E> implements Resultant<T, E> {
       return new _Result({ kind: "safe", type: "error", error });
     }
 
-    if (error instanceof ResultError) {
-      return new _Result({
-        kind: "safe",
-        type: "error",
-        error: unexpected(error),
-      });
-    }
-
-    return new _Result({ kind: "safe", type: "error", error: expected(error) });
+    return new _Result({
+      kind: "safe",
+      type: "error",
+      error: expectedError(error),
+    });
   }
 
   /**
@@ -410,7 +406,7 @@ class _Result<T, E> implements Resultant<T, E> {
     return new _Result({
       kind: "unsafe",
       type: "error",
-      error: expected(error),
+      error: expectedError(error),
     });
   }
 
@@ -486,7 +482,7 @@ class _Result<T, E> implements Resultant<T, E> {
       return f(this.#state.value);
     } catch (e) {
       return err(
-        unexpected<E>(
+        unexpectedError<E>(
           "`andThen`: callback `f` threw an exception",
           ResultErrorKind.PredicateException,
           e,
@@ -509,7 +505,7 @@ class _Result<T, E> implements Resultant<T, E> {
     }
 
     return err<U, F>(
-      unexpected(
+      unexpectedError(
         isPrimitive(this.error.unexpected)
           ? this.error.unexpected
           : this.error.unexpected.clone(),
@@ -704,7 +700,7 @@ const catchUnexpected =
   <T, E>(msg: string) =>
   (e: unknown): SettledResult<T, E> =>
     err<Awaited<T>, Awaited<E>>(
-      unexpected<Awaited<E>>(msg, ResultErrorKind.ResultRejection, e),
+      unexpectedError<Awaited<E>>(msg, ResultErrorKind.ResultRejection, e),
     );
 
 const settleResult = <T, E>(
@@ -739,7 +735,7 @@ const awaitErr = <T, E>(
   errMsg = "PendingResult's expected `Err` rejected unexpectedly",
 ): MaybePromise<Result<T, Awaited<E>>> => {
   if (error.isUnexpected()) {
-    return err<T, Awaited<E>>(unexpected(error.unexpected));
+    return err<T, Awaited<E>>(unexpectedError(error.unexpected));
   }
 
   return toPromise(error.expected).then(

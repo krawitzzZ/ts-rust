@@ -1,10 +1,10 @@
 import { Clone } from "../types";
 import {
-  expected,
+  expectedError,
   isCheckedError,
   ResultError,
   ResultErrorKind,
-  unexpected,
+  unexpectedError,
 } from "./error";
 import { Err, Ok } from "./interface";
 import { err, isPendingResult, ok, unsafeErr, unsafeOk } from "./result";
@@ -14,8 +14,8 @@ describe("Result", () => {
   const errMsg = "err";
   const expectedErrMsg = "expected error happened";
   const unexpectedErrMsg = "unexpected error happened";
-  const expectedErr = expected(expectedErrMsg);
-  const unexpectedErr = unexpected<string>(
+  const expectedErr = expectedError(expectedErrMsg);
+  const unexpectedErr = unexpectedError<string>(
     unexpectedErrMsg,
     ResultErrorKind.Unexpected,
   );
@@ -99,7 +99,7 @@ describe("Result", () => {
       expect(result.isErr()).toBe(true);
       expect(result).not.toBe(self);
       expect(result).not.toBe(other);
-      expect(result.unwrapErr()).toStrictEqual(expected(errMsg));
+      expect(result.unwrapErr()).toStrictEqual(expectedError(errMsg));
       expect(() => result.unwrap()).toThrow(ResultError);
     });
 
@@ -123,7 +123,7 @@ describe("Result", () => {
 
       expect(result.isErr()).toBe(true);
       expect(result).not.toBe(self);
-      expect(result.unwrapErr()).toStrictEqual(expected(errMsg));
+      expect(result.unwrapErr()).toStrictEqual(expectedError(errMsg));
       expect(() => result.unwrap()).toThrow(ResultError);
       expect(callback).not.toHaveBeenCalled();
     });
@@ -150,7 +150,7 @@ describe("Result", () => {
       expect(result).not.toBe(self);
       expect(result.isErr()).toBe(true);
       expect(result.unwrapErr()).toStrictEqual(
-        unexpected(
+        unexpectedError(
           "`andThen`: callback `f` threw an exception",
           ResultErrorKind.PredicateException,
           syncError,
@@ -181,7 +181,7 @@ describe("Result", () => {
 
     it("returns `Err` with deeply cloned `E` if self is `Err` with expected error", () => {
       const counter = new Counter({ count: 10 });
-      const self = err<number, Counter>(expected(counter));
+      const self = err<number, Counter>(expectedError(counter));
       const cloned = self.clone();
 
       expect(cloned.isErr()).toBe(true);
@@ -329,7 +329,7 @@ describe("Result", () => {
 
     it("returns `PendingResult` with shallow copy of self `Err` if self is unexpected error", async () => {
       const errValue = new ResultError("oops", ResultErrorKind.Unexpected);
-      const err_ = unexpected(errValue);
+      const err_ = unexpectedError(errValue);
       const self = err(err_);
       const spy = jest.spyOn(self, "copy");
       const result = self.toPending();
@@ -347,7 +347,7 @@ describe("Result", () => {
 
     it("returns `PendingResult` with shallow copy of self `Err` if self is expected error", async () => {
       const errValue = { some: "problem" };
-      const err_ = expected(errValue);
+      const err_ = expectedError(errValue);
       const self = err(err_);
       const spy = jest.spyOn(self, "copy");
       const result = self.toPending();
@@ -365,7 +365,7 @@ describe("Result", () => {
 
     it("returns `PendingResult` with shallow copy of awaited self `Err` if self is expected error", async () => {
       const errValue = Promise.resolve({ some: "problem" });
-      const err_ = expected(errValue);
+      const err_ = expectedError(errValue);
       const self = err(err_);
       const spy = jest.spyOn(self, "copy");
       const result = self.toPending();
@@ -402,7 +402,7 @@ describe("Result", () => {
 
     it("returns a `PendingResult` that resolves to a clone of self `Err` if self is unexpected error", async () => {
       const errValue = new ResultError("oops", ResultErrorKind.Unexpected);
-      const err_ = unexpected<string>(errValue);
+      const err_ = unexpectedError<string>(errValue);
       const self = err<number, string>(err_);
       const result = self.toPendingCloned();
 
@@ -421,7 +421,7 @@ describe("Result", () => {
 
     it("returns a `PendingResult` that resolves to a clone of self `Err` if self is expected error", async () => {
       const counter = new Counter({ count: 123 });
-      const err_ = expected(counter);
+      const err_ = expectedError(counter);
       const self = err<number, Counter>(err_);
       const result = self.toPendingCloned();
 

@@ -1,4 +1,4 @@
-import { expected, ResultErrorKind, unexpected } from "./error";
+import { expectedError, ResultErrorKind, unexpectedError } from "./error";
 import { Result } from "./interface";
 import { err, isPendingResult, ok, pendingResult } from "./result";
 
@@ -7,8 +7,8 @@ describe("PendingResult", () => {
   const _errMsg = "err";
   const expectedErrMsg = "expected error happened";
   const unexpectedErrMsg = "unexpected error happened";
-  const expectedErr = expected(expectedErrMsg);
-  const unexpectedErr = unexpected<string>(
+  const expectedErr = expectedError(expectedErrMsg);
+  const unexpectedErr = unexpectedError<string>(
     unexpectedErrMsg,
     ResultErrorKind.Unexpected,
   );
