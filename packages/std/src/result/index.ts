@@ -1,10 +1,4 @@
-export {
-  ResultErrorKind,
-  ResultError,
-  expected,
-  unexpected,
-  isCheckedError,
-} from "./error";
+export { ResultErrorKind, ResultError, isCheckedError } from "./error";
 export {
   EitherError,
   CheckedError,

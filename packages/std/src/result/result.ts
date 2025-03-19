@@ -11,7 +11,6 @@ import {
 } from "./error";
 import type {
   ExpectedError,
-  UnexpectedError,
   CheckedError,
   PendingResult,
   SettledResult,
@@ -95,10 +94,7 @@ export function err<T>(error: void): Result<T, void>;
  * indicating a failed outcome for a checked {@link Result}. This function accepts
  * raw errors, {@link ResultError}, or {@link CheckedError}.
  *
- * - If called with an error of type `E`, it creates an {@link ExpectedError}
- *   variant.
- * - If called with a {@link ResultError}, it creates an {@link UnexpectedError}
- *   variant.
+ * - If called with an error of type `E`, it creates an {@link ExpectedError} variant.
  * - If called with a {@link CheckedError}, it uses the error as is.
  *
  * @template T - The type of the potential value.
@@ -117,12 +113,8 @@ export function err<T>(error: void): Result<T, void>;
  * expect(y.unwrapErr().unexpected).toBe(oops);
  * ```
  */
-export function err<T, E>(
-  error: E | ResultError | CheckedError<E>,
-): Result<T, E>;
-export function err<T, E>(
-  error: E | ResultError | CheckedError<E>,
-): Result<T, E> {
+export function err<T, E>(error: E | CheckedError<E>): Result<T, E>;
+export function err<T, E>(error: E | CheckedError<E>): Result<T, E> {
   return _Result.error(error);
 }
 
@@ -266,13 +258,7 @@ export function pendingOk<T, E>(
  * ```
  */
 export function pendingErr<T, E>(
-  error:
-    | E
-    | ResultError
-    | CheckedError<E>
-    | Promise<E>
-    | Promise<ResultError>
-    | Promise<CheckedError<E>>,
+  error: E | CheckedError<E> | Promise<E> | Promise<CheckedError<E>>,
 ): PendingResult<Awaited<T>, Awaited<E>> {
   return _PendingResult.create(
     settleResult(toPromise(error).then((e) => err(e))),
@@ -394,7 +380,7 @@ class _Result<T, E> implements Resultant<T, E> {
   /**
    * Creates {@link Err} invariant of {@link Result} with provided error.
    */
-  static error<T, E>(error: E | ResultError | CheckedError<E>): Result<T, E> {
+  static error<T, E>(error: E | CheckedError<E>): Result<T, E> {
     if (isCheckedError(error)) {
       return new _Result({ kind: "safe", type: "error", error });
     }
@@ -523,9 +509,11 @@ class _Result<T, E> implements Resultant<T, E> {
     }
 
     return err<U, F>(
-      isPrimitive(this.error.unexpected)
-        ? this.error.unexpected
-        : this.error.unexpected.clone(),
+      unexpected(
+        isPrimitive(this.error.unexpected)
+          ? this.error.unexpected
+          : this.error.unexpected.clone(),
+      ),
     );
   }
 
@@ -751,7 +739,7 @@ const awaitErr = <T, E>(
   errMsg = "PendingResult's expected `Err` rejected unexpectedly",
 ): MaybePromise<Result<T, Awaited<E>>> => {
   if (error.isUnexpected()) {
-    return err<T, Awaited<E>>(error.unexpected);
+    return err<T, Awaited<E>>(unexpected(error.unexpected));
   }
 
   return toPromise(error.expected).then(

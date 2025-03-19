@@ -7,10 +7,10 @@ import {
   PendingResult,
   pendingResult,
   ResultErrorKind,
-  unexpected,
 } from "../result";
 import { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
+import { unexpected } from "../result/error";
 import { OptionError, OptionErrorKind } from "./error";
 import {
   Optional,

@@ -22,8 +22,6 @@ export {
   CheckedError,
   ExpectedError,
   UnexpectedError,
-  expected,
-  unexpected,
   isCheckedError,
   ResultError,
   ResultErrorKind,
