@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import type { Option, Some, None, PendingOption } from "../option";
 import type { Cloneable, Recoverable } from "../types";
 import type { ResultError } from "./error";
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**
  * Represents a successful outcome of a {@link Result} or {@link UnsafeResult},
@@ -201,6 +204,28 @@ export interface Resultant<T, E> {
    * ```
    */
   copy(): Result<T, E>;
+
+  /**
+   * Converts this {@link Result} to an {@link Option | Option\<E>} containing
+   * the error, if present.
+   *
+   * Returns {@link Some} with the error value if this is an {@link Err}, or
+   * {@link None} if this is an {@link Ok}.
+   *
+   * ### Notes
+   * - The error is extracted from the {@link CheckedError} if it’s an {@link ExpectedError};
+   *   If it's an {@link UnexpectedError}, {@link None} is returned.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(1);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.err()).toStrictEqual(none());
+   * expect(y.err()).toStrictEqual(some("failure"));
+   * ```
+   */
+  err(this: SettledResult<T, E>): Option<E>;
 
   /**
    * Retrieves the value if this is an {@link Ok}, or throws a {@link ResultError}
@@ -415,7 +440,7 @@ export interface PendingResult<T, E>
    * Returns a {@link PendingResult} with {@link Err} if this result resolves to
    * {@link Err}, otherwise returns a {@link PendingResult} with `x`.
    *
-   * This is the asynchronous version of the {@link Resultant.and | and}.
+   * This is the asynchronous version of {@link Resultant.and | and}.
    *
    * ### Example
    * ```ts
@@ -437,7 +462,7 @@ export interface PendingResult<T, E>
    * {@link Err}, otherwise applies `f` to the resolved {@link Ok} value and
    * returns its result.
    *
-   * This is the asynchronous version of the {@link Resultant.andThen | andThen}.
+   * This is the asynchronous version of {@link Resultant.andThen | andThen}.
    *
    * ### Example
    * ```ts
@@ -452,4 +477,25 @@ export interface PendingResult<T, E>
   andThen<U>(
     f: (x: T) => Result<U, E> | Promise<Result<U, E>>,
   ): PendingResult<Awaited<U>, Awaited<E>>;
+
+  /**
+   * Converts this {@link PendingResult} to a {@link PendingOption | PendingOption\<E>}
+   * containing the awaited error, if present.
+   *
+   * Returns a {@link PendingOption} that resolves to {@link Some} with the error
+   * value if this resolves to an {@link Err},
+   * or to {@link None} if this resolves to an {@link Ok}.
+   *
+   * This is the asynchronous version of {@link Resultant.err | err}.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(1).toPending();
+   * const y = err<number, string>("failure").toPending();
+   *
+   * expect(await x.err()).toStrictEqual(none());
+   * expect(await y.err()).toStrictEqual(some("failure"));
+   * ```
+   */
+  err(): PendingOption<Awaited<E>>;
 }
