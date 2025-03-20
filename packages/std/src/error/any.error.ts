@@ -51,7 +51,7 @@ export class AnyError<T extends Primitive> extends Error {
    *
    * @param message - The descriptive message for the error.
    * @param kind - The category or type of the error, a primitive value.
-   * @param reason - An optional underlying cause, which can be any value (converted to {@link Error} if not already).
+   * @param reason - An optional underlying cause, which can be any value (converted to `Error` if not already).
    */
   constructor(message: string, kind: T, reason?: unknown) {
     super(message);

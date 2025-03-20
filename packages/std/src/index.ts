@@ -1,48 +1,53 @@
-export { AnyError } from "./error";
-export { Primitive, Clone, Cloneable, Recoverable } from "./types";
-export {
-  OptionError,
+export type { Primitive, Clone, Cloneable, Recoverable } from "./types";
+export type {
   OptionErrorKind,
+  OptionError,
   PendingOption,
-  pendingOption,
-  pendingSome,
-  pendingNone,
   Optional,
   Option,
   SettledOption,
   Some,
   None,
-  some,
-  none,
-  isOption,
-  isPendingOption,
-  isOptionError,
 } from "./option";
-export {
+export type {
+  ResultErrorKind,
+  ResultError,
   EitherError,
-  CheckedError,
   ExpectedError,
   UnexpectedError,
-  isCheckedError,
-  ResultError,
-  ResultErrorKind,
+  CheckedError,
   PendingResult,
-  pendingResult,
-  pendingOk,
-  pendingErr,
   Resultant,
   Result,
   UnsafeResult,
   SettledResult,
   SettledUnsafeResult,
+  UnsafeErr,
   Ok,
   Err,
-  UnsafeErr,
-  ok,
-  err,
+} from "./result";
+
+export { AnyError } from "./error";
+export {
+  isOptionError,
+  isPendingOption,
+  isOption,
+  pendingOption,
+  pendingSome,
+  pendingNone,
+  some,
+  none,
+} from "./option";
+export {
+  isCheckedError,
+  isResultError,
+  isPendingResult,
+  isResult,
+  pendingResult,
+  pendingOk,
+  pendingErr,
   unsafeOk,
   unsafeErr,
-  isResult,
-  isPendingResult,
-  isResultError,
+  ok,
+  err,
 } from "./result";
