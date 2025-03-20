@@ -29,6 +29,7 @@ export enum ResultErrorKind {
   ExpectErrCalledOnOk = "ExpectErrCalledOnOk",
   UnwrapCalledOnErr = "UnwrapCalledOnErr",
   UnwrapErrCalledOnOk = "UnwrapErrCalledOnOk",
+  FlattenCalledOnFlatResult = "FlattenCalledOnFlatResult",
   ResultRejection = "ResultRejection",
   PredicateException = "PredicateException",
   FromOptionException = "FromOptionException",

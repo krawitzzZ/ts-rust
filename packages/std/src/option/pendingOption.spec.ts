@@ -283,8 +283,18 @@ describe("PendingOption", () => {
   });
 
   describe("flatten", () => {
-    it("returns `None` if self is `None`", async () => {
+    it("returns `PendingOption` that resolves `None` if self resolves to `None`", async () => {
       const option: Option<Option<number>> = none();
+      const self = pendingOption(option);
+      const result = await self.flatten();
+
+      expect(result.isNone()).toBe(true);
+      expect(result).not.toBe(option);
+    });
+
+    it("returns `PendingOption` that resolves `None` if self resolves to `Some`, but its value is not an `Option`", async () => {
+      // @ts-expect-error -- for testing
+      const option: Option<Option<number>> = ok(1);
       const self = pendingOption(option);
       const result = await self.flatten();
 

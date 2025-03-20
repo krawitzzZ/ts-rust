@@ -10,6 +10,7 @@ import {
   unsafeOk,
   Err,
   Ok,
+  Result,
 } from "./index";
 
 describe("Result", () => {
@@ -152,8 +153,9 @@ describe("Result", () => {
 
       expect(result).not.toBe(self);
       expect(result.isErr()).toBe(true);
-      expect(result.unwrapErr()).toStrictEqual(
-        unexpectedError(
+      expect(result.unwrapErr().expected).toBeUndefined();
+      expect(result.unwrapErr().unexpected).toStrictEqual(
+        new ResultError(
           "`andThen`: callback `f` threw an exception",
           ResultErrorKind.PredicateException,
           syncError,
@@ -321,6 +323,50 @@ describe("Result", () => {
         );
       },
     );
+  });
+
+  describe("flatten", () => {
+    it("returns `Err` if self is `Err`", () => {
+      const self: Result<Result<number, string>, string> = err(errMsg);
+      const result = self.flatten();
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr().expected).toBe(errMsg);
+    });
+
+    it.each([expectedErr, unexpectedErr])(
+      "returns `Err` if self is `Err { %p }`",
+      (e) => {
+        const self: Result<Result<number, string>, string> = err(e);
+        const result = self.flatten();
+
+        expect(result.isErr()).toBe(true);
+        expect(result.unwrapErr()).toBe(e);
+      },
+    );
+
+    it("returns unexpected `Err` if self is `Ok`, but value is not a `Result`", () => {
+      // @ts-expect-error -- for testing
+      const self: Result<Result<number, string>, string> = ok(one);
+      const result = self.flatten();
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr().expected).toBeUndefined();
+      expect(result.unwrapErr().unexpected).toStrictEqual(
+        new ResultError(
+          "`flatten`: called on `Ok` with non-result value",
+          ResultErrorKind.FlattenCalledOnFlatResult,
+        ),
+      );
+    });
+
+    it("returns inner `Result` if self is `Result<Result<T, E>, E>`", () => {
+      const self = ok(ok(one));
+      const result = self.flatten();
+
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe(one);
+    });
   });
 
   describe("isErr", () => {

@@ -175,10 +175,10 @@ export interface Optional<T> {
    * ```ts
    * const x: Option<Option<Option<number>>> = some(some(some(6)));
    * const y: Option<Option<number>> = x.flatten();
-   * const z = none<Option<number>>();
+   * const z = none<Option<Option<number>>>();
    *
    * expect(x.flatten()).toStrictEqual(some(some(6)));
-   * expect(y.flatten()).toStrictEqual(none());
+   * expect(y.flatten()).toStrictEqual(some(6));
    * expect(z.flatten()).toStrictEqual(none());
    * ```
    */

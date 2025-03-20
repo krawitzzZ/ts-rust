@@ -9,6 +9,7 @@ import {
   ResultErrorKind,
   pendingOk,
   pendingErr,
+  PendingResult,
 } from "./index";
 
 describe("PendingResult", () => {
@@ -292,5 +293,71 @@ describe("PendingResult", () => {
       expect(awaited.isSome()).toBe(true);
       expect(awaited.unwrap()).toBe(expectedErr.expected);
     });
+  });
+
+  describe("flatten", () => {
+    it("returns `PendingResult` that resolves to `Err` if self resolves to `Err`", async () => {
+      const self: PendingResult<Result<number, string>, string> = pendingErr(
+        expectedErr,
+      );
+      const result = self.flatten();
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toStrictEqual(expectedErr);
+    });
+
+    it("returns `PendingResult` that resolves to unexpected `Err` if self resolves to `Ok`, but its value is not a `Result`", async () => {
+      // @ts-expect-error -- for testing
+      const self: PendingResult<Result<number, string>, string> = pendingOk(
+        one,
+      );
+      const result = self.flatten();
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr().expected).toBeUndefined();
+      expect(awaited.unwrapErr().unexpected).toStrictEqual(
+        new ResultError(
+          "`flatten`: called on `Ok` with non-result value",
+          ResultErrorKind.FlattenCalledOnFlatResult,
+        ),
+      );
+    });
+
+    it.each([
+      err<number, string>(unexpectedErr),
+      err<number, string>(expectedErr),
+      ok<number, string>(one),
+      Promise.resolve(err<number, string>(unexpectedErr)),
+      Promise.resolve(err<number, string>(expectedErr)),
+      Promise.resolve(ok<number, string>(one)),
+    ])(
+      "returns `PendingResult` that resolves to awaited inner `Result` if self resolves to `Result<Result<T, E>, E>`",
+      async (inner) => {
+        const self = pendingOk(inner);
+        const result = self.flatten();
+
+        expect(isPendingResult(result)).toBe(true);
+
+        const awaited = await result;
+        const awaitedInner = await inner;
+
+        expect(awaited.isOk()).toBe(awaitedInner.isOk());
+
+        if (awaitedInner.isErr()) {
+          expect(awaited.unwrapErr()).toStrictEqual(awaitedInner.unwrapErr());
+        }
+        if (awaitedInner.isOk()) {
+          expect(awaited.unwrap()).toStrictEqual(awaitedInner.unwrap());
+        }
+      },
+    );
   });
 });

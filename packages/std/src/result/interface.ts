@@ -265,6 +265,25 @@ export interface Resultant<T, E> {
   expectErr(this: SettledResult<T, E>, msg?: string): CheckedError<E>;
 
   /**
+   * Flattens a {@link Result} that holds a {@link Result} into a single
+   * {@link Result}: `Result<Result<T, E>, E>` -> `Result<T, E>`.
+   *
+   * Think of it as of unwrapping a box inside a box.
+   *
+   * ### Example
+   * ```ts
+   * const x: Result<Result<Result<number, string>, string>, string> = ok(ok(ok(6)));
+   * const y: Result<Result<number, string>, string> = x.flatten();
+   * const z: Result<Result<number, string>, string> = err("oops");
+   *
+   * expect(x.flatten()).toStrictEqual(ok(ok(6)));
+   * expect(y.flatten()).toStrictEqual(ok(6));
+   * expect(z.flatten().expected).toBe("oops");
+   * ```
+   */
+  flatten<U, F>(this: Result<Result<U, F>, F>): Result<U, F>;
+
+  /**
    * Checks if this is an {@link Err}, narrowing the type accordingly.
    *
    * ### Example
@@ -517,4 +536,30 @@ export interface PendingResult<T, E>
    * ```
    */
   err(): PendingOption<Awaited<E>>;
+
+  /**
+   * Flattens a {@link PendingResult} that holds a {@link PendingResult} or a
+   * {@link Result} into a single {@link PendingResult}:
+   * `PendingResult<Result<T, E>, E>` -> `PendingResult<Awaited<T>, Awaited<E>>`.
+   *
+   * This is the asynchronous version of {@link Resultant.flatten | flatten}.
+   *
+   * ### Example
+   * ```ts
+   * const result1: PendingResult<Result<number, string>, string> = getPendingResult();
+   * result1.flatten(); // PendingResult<number, string>
+   *
+   * const result2: PendingResult<PendingResult<number, string>, string> = getPendingResult();
+   * result2.flatten(); // PendingResult<number>
+   *
+   * const result3: PendingResult<PendingResult<PendingResult<number, string>, string>, string> = getPendingResult();
+   * result3.flatten(); // PendingResult<Result<number>>
+   * ```
+   */
+  flatten<U, F>(
+    this:
+      | PendingResult<Result<U, F>, F>
+      | PendingResult<PendingResult<U, F>, F>
+      | PendingResult<PromiseLike<Result<U, F>>, F>,
+  ): PendingResult<Awaited<U>, Awaited<F>>;
 }
