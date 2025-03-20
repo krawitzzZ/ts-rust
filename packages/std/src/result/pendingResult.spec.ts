@@ -1,9 +1,15 @@
-import { expectedError, ResultErrorKind, unexpectedError } from "./error";
+import {
+  expectedError,
+  ResultError,
+  ResultErrorKind,
+  unexpectedError,
+} from "./error";
 import { Result } from "./interface";
 import { err, isPendingResult, ok, pendingResult } from "./result";
 
 describe("PendingResult", () => {
-  const _syncError = new Error("sync error");
+  const syncError = new Error("sync error");
+  const asyncError = new Error("async error");
   const _errMsg = "err";
   const expectedErrMsg = "expected error happened";
   const unexpectedErrMsg = "unexpected error happened";
@@ -141,6 +147,8 @@ describe("PendingResult", () => {
 
         expect(awaited.isErr()).toBe(true);
         expect(awaited.unwrapErr()).toStrictEqual(e);
+        expect(awaited.unwrapErr().expected).toStrictEqual(e.expected);
+        expect(awaited.unwrapErr().unexpected).toStrictEqual(e.unexpected);
         expect(spy).not.toHaveBeenCalled();
       },
     );
@@ -159,6 +167,90 @@ describe("PendingResult", () => {
       expect(awaited.isOk()).toBe(true);
       expect(awaited.unwrap()).toBe(two);
       expect(spy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("andThen", () => {
+    it.each([expectedErr, unexpectedErr])(
+      "does not call provided callback and returns err value of self if self is `Err { %p }`",
+      async (e) => {
+        const res = err<number, string>(e);
+        const self = pendingResult(res);
+        const callback = jest.fn(() => ok<number, string>(two));
+        const result = self.andThen(callback);
+
+        expect(isPendingResult(result)).toBe(true);
+
+        const awaited = await result;
+
+        expect(awaited.isErr()).toBe(true);
+        expect(awaited.unwrapErr()).toStrictEqual(e);
+        expect(awaited.unwrapErr().expected).toStrictEqual(e.expected);
+        expect(awaited.unwrapErr().unexpected).toStrictEqual(e.unexpected);
+        expect(callback).not.toHaveBeenCalled();
+      },
+    );
+
+    it("calls provided callback and returns its result if self is `Ok`", async () => {
+      const res = ok<number, string>(one);
+      const self = pendingResult(res);
+      const callback = jest.fn(() => ok<number, string>(two));
+      const result = self.andThen(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap()).toStrictEqual(two);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(one);
+    });
+
+    it("calls provided callback and returns unexpected `Err` if self is `Ok` and provided callback throws", async () => {
+      const res = ok<number, string>(one);
+      const self = pendingResult(res);
+      const callback = jest.fn(() => {
+        throw syncError;
+      });
+      const result = self.andThen(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr().unexpected).toStrictEqual(
+        new ResultError(
+          "`andThen`: callback `f` threw an exception",
+          ResultErrorKind.PredicateException,
+          syncError,
+        ),
+      );
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(one);
+    });
+
+    it("calls provided callback and returns unexpected `Err` if self is `Ok` and result of provided callback rejects", async () => {
+      const res = ok<number, string>(one);
+      const self = pendingResult(res);
+      const callback = jest.fn(() => Promise.reject(asyncError));
+      const result = self.andThen(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr().unexpected).toStrictEqual(
+        new ResultError(
+          "`andThen`: promise returned by provided callback `f` rejected",
+          ResultErrorKind.ResultRejection,
+          asyncError,
+        ),
+      );
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(one);
     });
   });
 });

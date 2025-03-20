@@ -647,6 +647,35 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
       }),
     );
   }
+
+  andThen<U>(
+    f: (x: T) => Result<U, E> | Promise<Result<U, E>>,
+  ): PendingSettledRes<U, E> {
+    return pendingResult(
+      this.#promise.then((self) => {
+        if (self.isErr()) {
+          return settleResult(err(self.error));
+        }
+
+        try {
+          return settleResult(
+            toSafePromise(
+              f(self.value),
+              "`andThen`: promise returned by provided callback `f` rejected",
+            ),
+          );
+        } catch (e) {
+          return err<Awaited<U>, Awaited<E>>(
+            unexpectedError(
+              "`andThen`: callback `f` threw an exception",
+              ResultErrorKind.PredicateException,
+              e,
+            ),
+          );
+        }
+      }),
+    );
+  }
 }
 
 type State<T, E> =

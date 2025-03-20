@@ -431,4 +431,25 @@ export interface PendingResult<T, E>
   and<U>(
     x: Result<U, E> | Promise<Result<U, E>>,
   ): PendingResult<Awaited<U>, Awaited<E>>;
+
+  /**
+   * Returns a {@link PendingResult} with {@link Err} if this result resolves to
+   * {@link Err}, otherwise applies `f` to the resolved {@link Ok} value and
+   * returns its result.
+   *
+   * This is the asynchronous version of the {@link Resultant.andThen | andThen}.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2).toPending();
+   * const y = err<number, string>("failure").toPending();
+   *
+   * expect(await x.andThen((n) => ok(n * 2))).toStrictEqual(ok(4));
+   * expect(await x.andThen((_) => err("oops"))).toStrictEqual(err("oops"));
+   * expect(await y.andThen((n) => err("oops"))).toStrictEqual(err("failure"));
+   * ```
+   */
+  andThen<U>(
+    f: (x: T) => Result<U, E> | Promise<Result<U, E>>,
+  ): PendingResult<Awaited<U>, Awaited<E>>;
 }
