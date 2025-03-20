@@ -1,4 +1,4 @@
-export { OptionError, OptionErrorKind } from "./error";
+export { OptionErrorKind, OptionError, isOptionError } from "./error";
 export {
   PendingOption,
   Optional,

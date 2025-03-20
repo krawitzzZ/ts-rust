@@ -71,13 +71,23 @@ export class ResultError
    * original formatting, and the `stack` trace is set to the new instance’s call
    * context (though it may be copied if supported).
    *
-   * @returns A new {@link ResultError} instance with deeply cloned state.
+   * @returns A new deeply cloned {@link ResultError} instance.
    */
   clone(this: ResultError): ResultError {
     const c = new ResultError(this.message, this.kind, cloneError(this.reason));
     c.message = this.message;
     return c;
   }
+}
+
+/**
+ * Checks if a value is a {@link ResultError}, narrowing its type if true.
+ *
+ * @param e - The value to check.
+ * @returns `true` if the value is a {@link ResultError}, narrowing to `ResultError`.
+ */
+export function isResultError(e: unknown): e is ResultError {
+  return e instanceof ResultError;
 }
 
 /**

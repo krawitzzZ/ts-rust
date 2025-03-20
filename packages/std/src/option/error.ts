@@ -17,6 +17,16 @@ export enum OptionErrorKind {
 }
 
 /**
+ * Checks if a value is an {@link OptionError}, narrowing its type if true.
+ *
+ * @param e - The value to check.
+ * @returns `true` if the value is a {@link OptionError}, narrowing to `OptionError`.
+ */
+export function isOptionError(e: unknown): e is OptionError {
+  return e instanceof OptionError;
+}
+
+/**
  * An error thrown by {@link Option} methods when operations fail due to the option's state
  * or unexpected conditions.
  *

@@ -16,6 +16,7 @@ export {
   none,
   isOption,
   isPendingOption,
+  isOptionError,
 } from "./option";
 export {
   EitherError,
@@ -43,4 +44,5 @@ export {
   unsafeErr,
   isResult,
   isPendingResult,
+  isResultError,
 } from "./result";
