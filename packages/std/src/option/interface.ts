@@ -831,7 +831,7 @@ export interface PendingOption<T>
    * Returns a {@link PendingOption} with {@link None} if this option resolves to
    * {@link None}, otherwise returns a {@link PendingOption} with `x`.
    *
-   * This is the asynchronous version of the {@link Optional.and | and}.
+   * This is the asynchronous version of {@link Optional.and | and}.
    *
    * ### Notes
    * - *Default*: If `x` is a `Promise` and rejects, {@link None} is returned.
@@ -855,7 +855,7 @@ export interface PendingOption<T>
    * Returns a {@link PendingOption} with {@link None} if this {@link Option} resolves
    * to {@link None}, otherwise applies `f` to the resolved value and returns the result.
    *
-   * This is the asynchronous version of the {@link Optional.andThen | andThen}.
+   * This is the asynchronous version of {@link Optional.andThen | andThen}.
    *
    * ### Notes
    * - *Default*: If `f` rejects or throws, {@link None} is returned.
@@ -880,7 +880,7 @@ export interface PendingOption<T>
    * otherwise calls `f` with the resolved value and returns a {@link PendingOption} with
    * the original value if `f` resolves to `true`, or {@link None} otherwise.
    *
-   * This is the asynchronous version of the {@link Optional.filter | filter}.
+   * This is the asynchronous version of {@link Optional.filter | filter}.
    *
    * ### Notes
    * - *Default*: If `f` rejects or throws, {@link None} is returned.
@@ -901,7 +901,7 @@ export interface PendingOption<T>
    * Flattens a {@link PendingOption} of a {@link PendingOption} or {@link Option},
    * resolving nested pending states.
    *
-   * This is the asynchronous version of the {@link Optional.flatten | flatten}.
+   * This is the asynchronous version of {@link Optional.flatten | flatten}.
    *
    * ### Notes
    * - *Default*: If inner {@link Option} is wrapped in a `Promise` and rejects,
@@ -930,7 +930,7 @@ export interface PendingOption<T>
    * Calls `f` with the resolved value if this option is {@link Some}, then returns this
    * {@link PendingOption} unchanged. Useful for side effects.
    *
-   * This is the asynchronous version of the {@link Optional.inspect | inspect}.
+   * This is the asynchronous version of {@link Optional.inspect | inspect}.
    *
    * ### Notes
    * - Returns a new {@link PendingOption} instance with the same value as the original,
@@ -1003,7 +1003,7 @@ export interface PendingOption<T>
    * Matches the resolved option, returning `f` applied to the value if {@link Some},
    * or `g` if {@link None}. Returns a `Promise` with the result.
    *
-   * This is the asynchronous version of the {@link Optional.match | match}.
+   * This is the asynchronous version of {@link Optional.match | match}.
    *
    * ## Rejects
    * - With {@link OptionError} if `f` or `g` throws an exception, original error
@@ -1025,7 +1025,7 @@ export interface PendingOption<T>
    * Converts to a {@link PendingResult}, using `y` as the error value if this
    * {@link PendingOption} resolves to {@link None}.
    *
-   * This is the asynchronous version of the {@link Optional.okOr | okOr},
+   * This is the asynchronous version of {@link Optional.okOr | okOr},
    * check it for more details.
    *
    * ### Example
@@ -1060,7 +1060,7 @@ export interface PendingOption<T>
    * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
    * returns a {@link PendingOption} with `x`.
    *
-   * This is the asynchronous version of the {@link Optional.or | or}.
+   * This is the asynchronous version of {@link Optional.or | or}.
    *
    * ### Notes
    * - *Default*: If `x` is a `Promise` that rejects, {@link None} is returned.
@@ -1082,7 +1082,7 @@ export interface PendingOption<T>
    * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
    * returns a {@link PendingOption} with the result of `f`.
    *
-   * This is the asynchronous version of the {@link Optional.orElse | orElse}.
+   * This is the asynchronous version of {@link Optional.orElse | orElse}.
    *
    * ### Notes
    * - *Default*: If `f` is throws or rejects, {@link None} is returned.
@@ -1125,7 +1125,7 @@ export interface PendingOption<T>
    * containing an {@link Option}. Resolves to {@link Ok}({@link None})
    * if this option is {@link None}, or propagates the error if the result is {@link Err}.
    *
-   * This is the asynchronous version of the {@link Optional.transpose | transpose}.
+   * This is the asynchronous version of {@link Optional.transpose | transpose}.
    *
    * ### Example
    * ```ts
@@ -1147,7 +1147,7 @@ export interface PendingOption<T>
    * `y` resolves to {@link Some}, otherwise returns a {@link PendingOption} with
    * {@link None}.
    *
-   * This is the asynchronous version of the {@link Optional.xor | xor}.
+   * This is the asynchronous version of {@link Optional.xor | xor}.
    *
    * ### Notes
    * - *Default*: If `y` is a `Promise` that rejects, {@link None} is returned.
