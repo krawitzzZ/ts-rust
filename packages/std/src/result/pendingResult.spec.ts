@@ -1,11 +1,15 @@
+import { isPendingOption } from "../option";
+import { expectedError, ResultError, unexpectedError } from "./error";
 import {
-  expectedError,
-  ResultError,
+  Result,
+  err,
+  isPendingResult,
+  ok,
+  pendingResult,
   ResultErrorKind,
-  unexpectedError,
-} from "./error";
-import { Result } from "./interface";
-import { err, isPendingResult, ok, pendingResult } from "./result";
+  pendingOk,
+  pendingErr,
+} from "./index";
 
 describe("PendingResult", () => {
   const syncError = new Error("sync error");
@@ -251,6 +255,42 @@ describe("PendingResult", () => {
       );
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
+    });
+  });
+
+  describe("err", () => {
+    it("returns `PendingOption` that resolves to `None` if self resolves to `Ok`", async () => {
+      const self = pendingOk(one);
+      const result = self.err();
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isNone()).toBe(true);
+    });
+
+    it("returns `PendingOption` that resolves to `None` if self resolves to unexpected `Err`", async () => {
+      const self = pendingErr(unexpectedErr);
+      const result = self.err();
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isNone()).toBe(true);
+    });
+
+    it("returns `PendingOption` that resolves to `None` if self resolves to expected `Err`", async () => {
+      const self = pendingErr(expectedErr);
+      const result = self.err();
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isSome()).toBe(true);
+      expect(awaited.unwrap()).toBe(expectedErr.expected);
     });
   });
 });

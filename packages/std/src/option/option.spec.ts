@@ -1,9 +1,15 @@
 import { err, isCheckedError, ok, Result, ResultErrorKind } from "../result";
 import { ResultError } from "../result/error";
 import { Clone } from "../types";
-import { OptionError, OptionErrorKind } from "./error";
-import { Option, Some } from "./interface";
-import { some, none, isPendingOption } from "./option";
+import { OptionError } from "./error";
+import {
+  Option,
+  Some,
+  some,
+  none,
+  isPendingOption,
+  OptionErrorKind,
+} from "./index";
 
 describe("Option", () => {
   const one = 11;

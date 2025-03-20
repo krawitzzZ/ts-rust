@@ -1,26 +1,26 @@
 import { isPromise, stringify, toPromise, cnst } from "@ts-rust/shared";
 import {
-  Result,
+  type PendingResult,
+  type Result,
   err,
   ok,
   isResult,
-  PendingResult,
   pendingResult,
   ResultErrorKind,
 } from "../result";
-import { Cloneable, MaybePromise } from "../types";
+import type { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
 import { unexpectedError } from "../result/error";
 import { OptionError, OptionErrorKind } from "./error";
-import {
+import type {
   Optional,
   Option,
   PendingOption,
   Some,
   None,
-  phantom,
   SettledOption,
 } from "./interface";
+import { phantom } from "./interface";
 
 /**
  * Creates a {@link Some} variant of an {@link Option} containing the given value.

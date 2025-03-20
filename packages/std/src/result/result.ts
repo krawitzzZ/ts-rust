@@ -1,6 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { id, stringify, toPromise } from "@ts-rust/shared";
 import type { Cloneable, MaybePromise } from "../types";
+import {
+  type PendingOption,
+  type Option,
+  none,
+  pendingOption,
+  pendingSome,
+  some,
+} from "../option";
 import { isPrimitive } from "../types.utils";
 import {
   ResultError,
@@ -517,6 +525,17 @@ class _Result<T, E> implements Resultant<T, E> {
     return isOk(this.#state) ? ok(this.#state.value) : err(this.#state.error);
   }
 
+  err(this: SettledResult<T, E>): Option<E> {
+    if (this.isOk()) {
+      return none();
+    }
+
+    return this.error.handle(
+      () => none(),
+      (e) => some<E>(e),
+    );
+  }
+
   expect(msg?: string): T {
     if (isOk(this.#state)) {
       return this.#state.value;
@@ -673,6 +692,18 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
             ),
           );
         }
+      }),
+    );
+  }
+
+  err(): PendingOption<Awaited<E>> {
+    return pendingOption(
+      this.#promise.then((self) => {
+        if (self.isOk() || !self.error.expected) {
+          return none();
+        }
+
+        return pendingSome(self.error.expected);
       }),
     );
   }

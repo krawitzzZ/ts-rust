@@ -1,10 +1,6 @@
+import { ResultError, expectedError, unexpectedError } from "./error";
 import {
-  expectedError,
-  ResultError,
   ResultErrorKind,
-  unexpectedError,
-} from "./error";
-import {
   err,
   isPendingResult,
   isResult,
@@ -14,7 +10,7 @@ import {
   pendingResult,
   unsafeErr,
   unsafeOk,
-} from "./result";
+} from "./index";
 
 describe("Result utils", () => {
   const values = [

@@ -1,8 +1,7 @@
 import { createMock } from "@golevelup/ts-jest";
 import * as shared from "@ts-rust/shared";
 import { err, isPendingResult, ok, Result } from "../result";
-import { Option } from "./interface";
-import { isPendingOption, none, pendingOption, some } from "./option";
+import { Option, isPendingOption, none, pendingOption, some } from "./index";
 
 jest.mock("@ts-rust/shared", () => ({
   ...jest.requireActual("@ts-rust/shared"),

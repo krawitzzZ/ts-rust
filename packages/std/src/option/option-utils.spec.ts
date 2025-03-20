@@ -7,7 +7,7 @@ import {
   pendingOption,
   pendingSome,
   some,
-} from "./option";
+} from "./index";
 
 describe("Option utils", () => {
   const someValues = [

@@ -1,13 +1,16 @@
 import { Clone } from "../types";
+import { ResultError, expectedError, unexpectedError } from "./error";
 import {
-  expectedError,
   isCheckedError,
-  ResultError,
   ResultErrorKind,
-  unexpectedError,
-} from "./error";
-import { Err, Ok } from "./interface";
-import { err, isPendingResult, ok, unsafeErr, unsafeOk } from "./result";
+  err,
+  isPendingResult,
+  ok,
+  unsafeErr,
+  unsafeOk,
+  Err,
+  Ok,
+} from "./index";
 
 describe("Result", () => {
   const syncError = new Error("sync error");
@@ -246,6 +249,30 @@ describe("Result", () => {
       expect(result).not.toBe(self); // Different reference
       expect(result.isErr()).toBe(true);
       expect(result.unwrapErr()).toBe(expectedErr); // Same err reference
+    });
+  });
+
+  describe("err", () => {
+    it("returns `None` if self is `Ok`", () => {
+      const self = ok(one);
+      const result = self.err();
+
+      expect(result.isNone()).toBe(true);
+    });
+
+    it("returns `None` if self is unexpected `Err`", () => {
+      const self = err(unexpectedErr);
+      const result = self.err();
+
+      expect(result.isNone()).toBe(true);
+    });
+
+    it("returns `Some` if self is expected `Err`", () => {
+      const self = err(expectedErr);
+      const result = self.err();
+
+      expect(result.isSome()).toBe(true);
+      expect(result.unwrap()).toBe(expectedErr.expected);
     });
   });
 
