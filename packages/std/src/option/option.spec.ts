@@ -1,11 +1,5 @@
-import {
-  err,
-  isCheckedError,
-  ok,
-  Result,
-  ResultError,
-  ResultErrorKind,
-} from "../result";
+import { err, isCheckedError, ok, Result, ResultErrorKind } from "../result";
+import { ResultError } from "../result/error";
 import { Clone } from "../types";
 import { OptionError, OptionErrorKind } from "./error";
 import { Option, Some } from "./interface";

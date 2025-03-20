@@ -1,16 +1,9 @@
-export {
-  ResultErrorKind,
-  ResultError,
-  isResultError,
-  isCheckedError,
-  expectedError,
-  unexpectedError,
-} from "./error";
-export {
+export type { ResultError } from "./error";
+export type {
   EitherError,
-  CheckedError,
   ExpectedError,
   UnexpectedError,
+  CheckedError,
   PendingResult,
   Resultant,
   Result,
@@ -21,6 +14,8 @@ export {
   Err,
   UnsafeErr,
 } from "./interface";
+
+export { ResultErrorKind, isResultError, isCheckedError } from "./error";
 export {
   isPendingResult,
   isResult,

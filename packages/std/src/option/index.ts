@@ -1,5 +1,5 @@
-export { OptionErrorKind, OptionError, isOptionError } from "./error";
-export {
+export type { OptionError } from "./error";
+export type {
   PendingOption,
   Optional,
   Option,
@@ -7,6 +7,8 @@ export {
   Some,
   None,
 } from "./interface";
+
+export { OptionErrorKind, isOptionError } from "./error";
 export {
   isPendingOption,
   isOption,

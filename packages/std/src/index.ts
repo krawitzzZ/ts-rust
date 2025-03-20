@@ -1,6 +1,5 @@
 export type { Primitive, Clone, Cloneable, Recoverable } from "./types";
 export type {
-  OptionErrorKind,
   OptionError,
   PendingOption,
   Optional,
@@ -10,7 +9,6 @@ export type {
   None,
 } from "./option";
 export type {
-  ResultErrorKind,
   ResultError,
   EitherError,
   ExpectedError,
@@ -29,6 +27,7 @@ export type {
 
 export { AnyError } from "./error";
 export {
+  OptionErrorKind,
   isOptionError,
   isPendingOption,
   isOption,
@@ -39,6 +38,7 @@ export {
   none,
 } from "./option";
 export {
+  ResultErrorKind,
   isCheckedError,
   isResultError,
   isPendingResult,
