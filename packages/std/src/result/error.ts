@@ -26,6 +26,7 @@ export enum ResultErrorKind {
   ErrorAccessedOnOk = "ErrorAccessedOnOk",
   ValueAccessedOnErr = "ValueAccessedOnErr",
   ExpectCalledOnErr = "ExpectCalledOnErr",
+  ExpectErrCalledOnOk = "ExpectErrCalledOnOk",
   UnwrapCalledOnErr = "UnwrapCalledOnErr",
   UnwrapErrCalledOnOk = "UnwrapErrCalledOnOk",
   ResultRejection = "ResultRejection",

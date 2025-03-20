@@ -299,6 +299,30 @@ describe("Result", () => {
     );
   });
 
+  describe("expectErr", () => {
+    it("returns inner `Err` value if self is `Err`", () => {
+      const self = err(errMsg);
+      const result = self.expectErr("error");
+
+      expect(isCheckedError(result)).toBe(true);
+      expect(result.expected).toBe(errMsg);
+    });
+
+    it.each(["oi oi oi", undefined])(
+      "throws `ResultError` if self is `Ok`",
+      (msg) => {
+        const self = ok(one);
+
+        expect(() => self.expectErr(msg)).toThrow(
+          new ResultError(
+            msg ?? "`expectErr`: called on `Ok`",
+            ResultErrorKind.ExpectErrCalledOnOk,
+          ),
+        );
+      },
+    );
+  });
+
   describe("isErr", () => {
     it.each([
       [true, err<number, string>("err")],

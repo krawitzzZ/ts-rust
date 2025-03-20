@@ -228,11 +228,11 @@ export interface Resultant<T, E> {
   err(this: SettledResult<T, E>): Option<E>;
 
   /**
-   * Retrieves the value if this is an {@link Ok}, or throws a {@link ResultError}
-   * with an optional message if it’s an {@link Err}.
+   * Retrieves the contained `Ok` value if this result is an {@link Ok}, or throws
+   * a {@link ResultError} with an optional message if it’s an {@link Err}.
    *
    * ## Throws
-   * - {@link ResultError} if this is {@link Err}
+   * - {@link ResultError} if this result is {@link Err}
    *
    * ### Example
    * ```ts
@@ -244,6 +244,25 @@ export interface Resultant<T, E> {
    * ```
    */
   expect(this: SettledResult<T, E>, msg?: string): T;
+
+  /**
+   * Retrieves the contained {@link CheckedError} if this is an {@link Err}, or
+   * throws a {@link ResultError} with an optional message if it’s an {@link Ok}.
+   *
+   * ## Throws
+   * - {@link ResultError} if this is {@link Ok}
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(42);
+   * const y = err<number, string>("failure");
+   *
+   * expect(() => x.expectErr("Failed!")).toThrow(ResultError);
+   * expect(isCheckedError(y.expectErr("Failed!"))).toBe(true);
+   * expect(y.expectErr("Failed!").expected).toBe("failure");
+   * ```
+   */
+  expectErr(this: SettledResult<T, E>, msg?: string): CheckedError<E>;
 
   /**
    * Checks if this is an {@link Err}, narrowing the type accordingly.

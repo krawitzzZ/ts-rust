@@ -536,6 +536,7 @@ class _Result<T, E> implements Resultant<T, E> {
     );
   }
 
+  expect(this: SettledResult<T, E>, msg?: string): T;
   expect(msg?: string): T {
     if (isOk(this.#state)) {
       return this.#state.value;
@@ -544,6 +545,18 @@ class _Result<T, E> implements Resultant<T, E> {
     throw new ResultError(
       msg ?? "`expect`: called on `Err`",
       ResultErrorKind.ExpectCalledOnErr,
+    );
+  }
+
+  expectErr(this: SettledResult<T, E>, msg?: string): CheckedError<E>;
+  expectErr(msg?: string): CheckedError<E> {
+    if (isErr(this.#state)) {
+      return this.#state.error;
+    }
+
+    throw new ResultError(
+      msg ?? "`expectErr`: called on `Ok`",
+      ResultErrorKind.ExpectErrCalledOnOk,
     );
   }
 
