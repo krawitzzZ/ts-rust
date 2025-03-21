@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { id, stringify, toPromise } from "@ts-rust/shared";
+import { stringify, toPromise } from "@ts-rust/shared";
 import type { Cloneable, MaybePromise } from "../types";
 import {
   type PendingOption,
@@ -26,9 +26,6 @@ import type {
   Result,
   Err,
   Ok,
-  UnsafeResult,
-  UnsafeErr,
-  SettledUnsafeResult,
 } from "./interface";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
@@ -124,97 +121,6 @@ export function err<T>(error: void): Result<T, void>;
 export function err<T, E>(error: E | CheckedError<E>): Result<T, E>;
 export function err<T, E>(error: E | CheckedError<E>): Result<T, E> {
   return _Result.error(error);
-}
-
-/**
- * Creates an {@link Ok} variant of an {@link UnsafeResult} with a `void` value.
- *
- * Wraps `undefined` in an {@link Ok}, indicating a successful outcome with no
- * value for an unchecked {@link UnsafeResult}, without runtime error handling.
- *
- * @template E - The type of the potential error.
- * @param value - The `void` value (typically omitted or `undefined`).
- * @returns An {@link UnsafeResult} containing `undefined` as {@link Ok}.
- *
- * ### Example
- * ```ts
- * const x = unsafeOk<string>();
- *
- * expect(x.isOk()).toBe(true);
- * expect(x.unwrap()).toBeUndefined();
- * ```
- */
-export function unsafeOk<E>(value: void): UnsafeResult<void, E>;
-/**
- * Creates an {@link Ok} variant of an {@link UnsafeResult} containing
- * the given value.
- *
- * Wraps the provided value in an {@link Ok}, indicating a successful outcome
- * for an unchecked {@link UnsafeResult}, without runtime error handling.
- *
- * @template T - The type of the value.
- * @template E - The type of the potential error.
- * @param value - The value to wrap in {@link Ok}.
- * @returns An {@link UnsafeResult} containing the value as {@link Ok}.
- *
- * ### Example
- * ```ts
- * const x = unsafeOk<number, string>(42);
- *
- * expect(x.isOk()).toBe(true);
- * expect(x.unwrap()).toBe(42);
- * ```
- */
-export function unsafeOk<T, E>(value: T): UnsafeResult<T, E>;
-export function unsafeOk<T, E>(value: T): UnsafeResult<T, E> {
-  return _Result.unsafeOk(value);
-}
-
-/**
- * Creates an {@link UnsafeErr} variant of an {@link UnsafeResult} with
- * a `void` error.
- *
- * Wraps `undefined` directly in an {@link UnsafeErr}, indicating a failed
- * outcome with no error value for an {@link UnsafeResult}, without wrapping
- * in {@link CheckedError}.
- *
- * @template T - The type of the potential value.
- * @param error - The `void` error (typically omitted or `undefined`).
- * @returns An {@link UnsafeResult} containing `undefined` as {@link UnsafeErr}.
- *
- * ### Example
- * ```ts
- * const x = unsafeErr<number>();
- *
- * expect(x.isErr()).toBe(true);
- * expect(x.unwrapErr()).toBeUndefined();
- * ```
- */
-export function unsafeErr<T>(error: void): UnsafeResult<T, void>;
-/**
- * Creates an {@link UnsafeErr} variant of an {@link UnsafeResult}
- * containing the given raw error.
- *
- * Wraps the provided error directly in an {@link UnsafeErr}, indicating
- * a failed outcome for an {@link UnsafeResult}, without wrapping in
- * {@link CheckedError} for runtime safety.
- *
- * @template T - The type of the potential value.
- * @template E - The type of the raw error.
- * @param error - The raw error to wrap in {@link UnsafeErr}.
- * @returns An {@link UnsafeResult} containing the error as {@link UnsafeErr}.
- *
- * ### Example
- * ```ts
- * const x = unsafeErr<number, string>("failure");
- *
- * expect(x.isErr()).toBe(true);
- * expect(x.unwrapErr()).toBe("failure");
- * ```
- */
-export function unsafeErr<T, E>(error: E): UnsafeResult<T, E>;
-export function unsafeErr<T, E>(error: E): UnsafeResult<T, E> {
-  return _Result.unsafeErr(error);
 }
 
 /**
@@ -382,7 +288,7 @@ class _Result<T, E> implements Resultant<T, E> {
    * Creates {@link Ok} invariant of {@link Result} with provided value.
    */
   static ok<T, E>(value: T): Result<T, E> {
-    return new _Result<T, E>({ kind: "safe", type: "ok", value });
+    return new _Result<T, E>({ type: "ok", value });
   }
 
   /**
@@ -390,32 +296,10 @@ class _Result<T, E> implements Resultant<T, E> {
    */
   static error<T, E>(error: E | CheckedError<E>): Result<T, E> {
     if (isCheckedError(error)) {
-      return new _Result({ kind: "safe", type: "error", error });
+      return new _Result({ type: "error", error });
     }
 
-    return new _Result({
-      kind: "safe",
-      type: "error",
-      error: expectedError(error),
-    });
-  }
-
-  /**
-   * Creates {@link Ok} invariant of {@link UnsafeResult} with provided value.
-   */
-  static unsafeOk<T, E>(value: T): UnsafeResult<T, E> {
-    return new _Result<T, E>({ kind: "unsafe", type: "ok", value });
-  }
-
-  /**
-   * Creates {@link UnsafeErr} invariant of {@link UnsafeResult} with provided error.
-   */
-  static unsafeErr<T, E>(error: E): UnsafeResult<T, E> {
-    return new _Result({
-      kind: "unsafe",
-      type: "error",
-      error: expectedError(error),
-    });
+    return new _Result({ type: "error", error: expectedError(error) });
   }
 
   /**
@@ -499,6 +383,17 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  check(
+    this: SettledResult<T, E>,
+  ): this extends Ok<T, E>
+    ? readonly [true, T]
+    : readonly [false, CheckedError<E>];
+  check(): readonly [boolean, T | CheckedError<E>] {
+    return isErr(this.#state)
+      ? [false, this.#state.error]
+      : [true, this.#state.value];
+  }
+
   clone<U, F>(this: Result<Cloneable<U>, Cloneable<F>>): Result<U, F> {
     if (this.isOk()) {
       return ok(isPrimitive(this.value) ? this.value : this.value.clone());
@@ -577,14 +472,28 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.value.copy();
   }
 
-  isErr(this: Result<T, E>): this is Err<T, E>;
-  isErr(this: UnsafeResult<T, E>): this is UnsafeErr<T, E>;
   isErr(): this is Err<T, E> {
     return isErr(this.#state);
   }
 
   isOk(): this is Ok<T, E> {
     return isOk(this.#state);
+  }
+
+  match<U, F = U>(
+    this: SettledResult<T, E>,
+    f: (x: T) => Awaited<U>,
+    g: (e: CheckedError<E>) => Awaited<F>,
+  ): U | F {
+    try {
+      return this.isOk() ? f(this.value) : g(this.error);
+    } catch (e) {
+      throw new ResultError(
+        "`match`: one of the predicates threw an exception",
+        ResultErrorKind.PredicateException,
+        e,
+      );
+    }
   }
 
   toPending(): PendingSettledRes<T, E> {
@@ -603,20 +512,18 @@ class _Result<T, E> implements Resultant<T, E> {
       : `Err { ${stringify(this.#state.error, true)} }`;
   }
 
-  toUnsafe(): UnsafeResult<T, E> {
-    if (isOk(this.#state)) {
-      return unsafeOk(this.#state.value);
-    }
-
-    return this.#state.error.handle(
-      (e) => {
-        throw e;
-      },
-      (e) => unsafeErr<T, E>(e),
-    );
+  try(
+    this: SettledResult<T, E>,
+  ): this extends Ok<T, E>
+    ? readonly [true, undefined, T]
+    : readonly [false, CheckedError<E>, undefined];
+  try(): readonly [boolean, CheckedError<E> | undefined, T | undefined] {
+    return isOk(this.#state)
+      ? [true, undefined, this.#state.value]
+      : [false, this.#state.error, undefined];
   }
 
-  unwrap(this: SettledResult<T, E> | SettledUnsafeResult<T, E>): T;
+  unwrap(this: SettledResult<T, E>): T;
   unwrap(): T {
     if (isErr(this.#state)) {
       throw new ResultError(
@@ -629,8 +536,7 @@ class _Result<T, E> implements Resultant<T, E> {
   }
 
   unwrapErr(this: SettledResult<T, E>): CheckedError<E>;
-  unwrapErr(this: SettledUnsafeResult<T, E>): E;
-  unwrapErr(): CheckedError<E> | E {
+  unwrapErr(): CheckedError<E> {
     if (isOk(this.#state)) {
       throw new ResultError(
         "`unwrapErr`: called on `Ok`",
@@ -638,13 +544,7 @@ class _Result<T, E> implements Resultant<T, E> {
       );
     }
 
-    if (isSafeAndErr(this.#state)) {
-      return this.#state.error;
-    }
-
-    return this.#state.error.handle((e) => {
-      throw e;
-    }, id);
+    return this.#state.error;
   }
 }
 
@@ -726,6 +626,12 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
     );
   }
 
+  check(): Promise<readonly [boolean, CheckedError<Awaited<E>> | Awaited<T>]> {
+    return settleResult(this.#promise).then((self) =>
+      self.isOk() ? [true, self.value] : [false, self.error],
+    );
+  }
+
   err(): PendingOption<Awaited<E>> {
     return pendingOption(
       this.#promise.then((self) => {
@@ -763,46 +669,44 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
 
     return pendingResult(settleResult(promise));
   }
+
+  match<U, F = U>(
+    f: (x: T) => U,
+    g: (e: CheckedError<E>) => F,
+  ): Promise<Awaited<U> | Awaited<F>> {
+    return this.#promise.then((self) =>
+      toPromise(self.isOk() ? f(self.value) : g(self.error)),
+    );
+  }
+
+  try(): Promise<
+    readonly [
+      boolean,
+      CheckedError<Awaited<E>> | undefined,
+      Awaited<T> | undefined,
+    ]
+  > {
+    return settleResult(this.#promise).then((self) =>
+      self.isOk()
+        ? [true, undefined, self.value]
+        : [false, self.error, undefined],
+    );
+  }
 }
 
 type State<T, E> =
-  | { readonly kind: "safe" | "unsafe"; readonly type: "ok"; value: T }
-  | {
-      readonly kind: "safe" | "unsafe";
-      readonly type: "error";
-      error: CheckedError<E>;
-    };
+  | { readonly type: "ok"; value: T }
+  | { readonly type: "error"; error: CheckedError<E> };
 
 type PendingSettledRes<T, E> = PendingResult<Awaited<T>, Awaited<E>>;
 
-const isOk = <T, E>(
-  x: State<T, E>,
-): x is { readonly kind: "safe" | "unsafe"; readonly type: "ok"; value: T } =>
+const isOk = <T, E>(x: State<T, E>): x is { readonly type: "ok"; value: T } =>
   x.type === "ok";
 
 const isErr = <T, E>(
   x: State<T, E>,
-): x is {
-  readonly kind: "safe" | "unsafe";
-  readonly type: "error";
-  error: CheckedError<E>;
-} => x.type === "error";
-
-const isSafeAndErr = <T, E>(
-  x: State<T, E>,
-): x is {
-  readonly kind: "safe";
-  readonly type: "error";
-  error: CheckedError<E>;
-} => x.type === "error" && x.kind === "safe";
-
-// const isUnsafeAndErr = <T, E>(
-//   x: State<T, E>,
-// ): x is {
-//   readonly kind: "unsafe";
-//   readonly type: "error";
-//   error: CheckedError<E>;
-// } => x.type === "error" && x.kind === "unsafe";
+): x is { readonly type: "error"; error: CheckedError<E> } =>
+  x.type === "error";
 
 const defaultCatchMessage = "Pending result rejected unexpectedly";
 

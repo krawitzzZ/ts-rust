@@ -197,7 +197,9 @@ class CheckedFailure<E> extends Error implements EitherError<E> {
   }
 
   private constructor(error: Either<ResultError, E>) {
-    super(`${error.isRight() ? "Expected" : "Unexpected"} error occurred.`);
+    super(
+      `${error.isRight() ? "Expected" : "Unexpected"} error occurred: ${stringify(error.get())}`,
+    );
 
     this.name = this.constructor.name;
     this.#error = error;

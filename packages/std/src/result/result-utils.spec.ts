@@ -8,8 +8,6 @@ import {
   pendingErr,
   pendingOk,
   pendingResult,
-  unsafeErr,
-  unsafeOk,
 } from "./index";
 
 describe("Result utils", () => {
@@ -81,32 +79,6 @@ describe("Result utils", () => {
       expect(result.unwrapErr().expected).toBeUndefined();
       expect(() => result.unwrap()).toThrow(ResultError);
     });
-  });
-
-  describe("unsafeOk", () => {
-    it.each(values)(
-      "returns `UnsafeResult` with `Ok { %s }` value",
-      (value) => {
-        const result = unsafeOk(value);
-
-        expect(result.isOk()).toBe(true);
-        expect(result.unwrap()).toBe(value);
-        expect(() => result.unwrapErr()).toThrow(ResultError);
-      },
-    );
-  });
-
-  describe("unsafeErr", () => {
-    it.each([...values, ...checkedErrors])(
-      "returns `UnsafeResult` with `UnsafeErr { %p }` value",
-      (value) => {
-        const result = unsafeErr(value);
-
-        expect(result.isErr()).toBe(true);
-        expect(result.unwrapErr()).toBe(value);
-        expect(() => result.unwrap()).toThrow(ResultError);
-      },
-    );
   });
 
   describe("pendingOk", () => {

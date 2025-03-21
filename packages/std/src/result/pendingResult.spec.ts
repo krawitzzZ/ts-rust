@@ -25,7 +25,7 @@ describe("PendingResult", () => {
   );
   const one = 11;
   const two = 222;
-  //   const zero = 0;
+  const _zero = 0;
   const _syncErrorCallback =
     <T = Result<number, string>>(e?: Error) =>
     (): T => {
@@ -259,6 +259,10 @@ describe("PendingResult", () => {
     });
   });
 
+  describe("check", () => {
+    // TODO(nikita.demin): implement tests
+  });
+
   describe("err", () => {
     it("returns `PendingOption` that resolves to `None` if self resolves to `Ok`", async () => {
       const self = pendingOk(one);
@@ -359,5 +363,13 @@ describe("PendingResult", () => {
         }
       },
     );
+  });
+
+  describe("match", () => {
+    // TODO(nikita.demin): implement tests
+  });
+
+  describe("try", () => {
+    // TODO(nikita.demin): implement tests
   });
 });

@@ -6,8 +6,6 @@ import {
   err,
   isPendingResult,
   ok,
-  unsafeErr,
-  unsafeOk,
   Err,
   Ok,
   Result,
@@ -25,7 +23,7 @@ describe("Result", () => {
   );
   const one = 11;
   const two = 222;
-  // const zero = 0;
+  const zero = 0;
 
   class Counter implements Clone<Counter> {
     constructor(public data: { count: number }) {}
@@ -164,6 +162,23 @@ describe("Result", () => {
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(self.unwrap());
     });
+  });
+
+  describe("check", () => {
+    it("returns `[true, T]` if self is `Ok`", () => {
+      const self = ok(one);
+
+      expect(self.check()).toStrictEqual([true, one]);
+    });
+
+    it.each([expectedErr, unexpectedErr])(
+      "returns `[false, CheckedError<E>]` if self is `Err { %p }`",
+      (e) => {
+        const self = err(e);
+
+        expect(self.check()).toStrictEqual([false, e]);
+      },
+    );
   });
 
   describe("clone", () => {
@@ -376,13 +391,6 @@ describe("Result", () => {
     ])("returns '%p' if self is %s", (exp, result) => {
       expect(result.isErr()).toBe(exp);
     });
-
-    it.each([
-      [true, unsafeErr<number, string>("err")],
-      [false, unsafeOk<number, string>(one)],
-    ])("returns '%p' if self is unsafe %s", (exp, result) => {
-      expect(result.isErr()).toBe(exp);
-    });
   });
 
   describe("isOk", () => {
@@ -391,6 +399,71 @@ describe("Result", () => {
       [true, ok(one)],
     ])("returns '%p' if self is '%s'", (exp, result) => {
       expect(result.isOk()).toBe(exp);
+    });
+  });
+
+  describe("match", () => {
+    it("calls `ok` callback if self is `Ok`", () => {
+      const self = ok(one);
+      const okCallback = jest.fn(() => two);
+      const errCallback = jest.fn(() => zero);
+      const result = self.match(okCallback, errCallback);
+
+      expect(result).toBe(two);
+      expect(okCallback).toHaveBeenCalledTimes(1);
+      expect(okCallback).toHaveBeenCalledWith(one);
+      expect(errCallback).not.toHaveBeenCalled();
+    });
+
+    it.each([expectedErr, unexpectedErr])(
+      "calls `err` callback if self is `Err { %p }`",
+      (e) => {
+        const self = err(e);
+        const okCallback = jest.fn(() => two);
+        const errCallback = jest.fn(() => zero);
+        const result = self.match(okCallback, errCallback);
+
+        expect(result).toBe(zero);
+        expect(errCallback).toHaveBeenCalledTimes(1);
+        expect(errCallback).toHaveBeenCalledWith(e);
+        expect(okCallback).not.toHaveBeenCalled();
+      },
+    );
+
+    it("throws `ResultError` if `ok` callback throws", () => {
+      const self = ok(one);
+      const okCallback = jest.fn(() => {
+        throw syncError;
+      });
+      const errCallback = jest.fn(() => zero);
+
+      expect(() => self.match(okCallback, errCallback)).toThrow(
+        new ResultError(
+          "`match`: one of the predicates threw an exception",
+          ResultErrorKind.PredicateException,
+          syncError,
+        ),
+      );
+      expect(okCallback).toHaveBeenCalledTimes(1);
+      expect(errCallback).not.toHaveBeenCalled();
+    });
+
+    it("throws `ResultError` if `err` callback throws", () => {
+      const self = err(expectedErr);
+      const okCallback = jest.fn(() => two);
+      const errCallback = jest.fn(() => {
+        throw syncError;
+      });
+
+      expect(() => self.match(okCallback, errCallback)).toThrow(
+        new ResultError(
+          "`match`: one of the predicates threw an exception",
+          ResultErrorKind.PredicateException,
+          syncError,
+        ),
+      );
+      expect(errCallback).toHaveBeenCalledTimes(1);
+      expect(okCallback).not.toHaveBeenCalled();
     });
   });
 
@@ -461,7 +534,8 @@ describe("Result", () => {
     });
 
     it("returns `PendingResult` with shallow copy of awaited self `Err` if self is expected error", async () => {
-      const errValue = Promise.resolve({ some: "problem" });
+      const obj = { some: "problem" };
+      const errValue = Promise.resolve(obj);
       const err_ = expectedError(errValue);
       const self = err(err_);
       const spy = jest.spyOn(self, "copy");
@@ -473,8 +547,8 @@ describe("Result", () => {
       const awaited = await result;
 
       expect(awaited.unwrapErr()).not.toBe(err_);
-      expect(awaited.unwrapErr()).toStrictEqual(err_);
-      expect(awaited.unwrapErr().expected).toBe(await errValue);
+      expect(awaited.unwrapErr()).toStrictEqual(expectedError(obj));
+      expect(awaited.unwrapErr().expected).toBe(obj);
       expect(awaited.unwrapErr().unexpected).toBeUndefined();
     });
   });
@@ -529,7 +603,8 @@ describe("Result", () => {
       expect(awaited).not.toBe(self);
       expect(awaited.isErr()).toBe(true);
       expect(awaited.unwrapErr()).not.toBe(err_);
-      expect(awaited.unwrapErr()).toStrictEqual(err_);
+      expect(awaited.unwrapErr()).not.toStrictEqual(err_);
+      expect(awaited.unwrapErr()).toStrictEqual(expectedError(counter.clone()));
       expect(awaited.unwrapErr().unexpected).toBeUndefined();
       expect(awaited.unwrapErr().expected).not.toBe(counter); // different reference
       expect(awaited.unwrapErr().expected).toStrictEqual(counter.clone());
@@ -565,28 +640,23 @@ describe("Result", () => {
     });
   });
 
-  describe("toUnsafe", () => {
-    it(`returns 'Ok' if self is 'Ok'`, () => {
+  describe("try", () => {
+    it("returns `[true, undefined, T]` if self is `Ok`", () => {
       const self = ok(one);
-      const result = self.toUnsafe();
+      const result = self.try();
 
-      expect(result.isOk()).toBe(true);
-      expect(result.unwrap()).toBe(one);
+      expect(result).toStrictEqual([true, undefined, one]);
     });
 
-    it(`returns 'Err' if inner error is expected 'Err'`, () => {
-      const self = err(expectedErr);
-      const result = self.toUnsafe();
+    it.each([expectedErr, unexpectedErr])(
+      "returns `[false, CheckedError<E>, undefined]` if self is `Err { %p }`",
+      (e) => {
+        const self = err(e);
+        const result = self.try();
 
-      expect(result.isErr()).toBe(true);
-      expect(result.unwrapErr()).toBe(expectedErrMsg);
-    });
-
-    it(`throws 'ResultError' if inner error is unexpected 'Err'`, () => {
-      const self = err(unexpectedErr);
-
-      expect(() => self.toUnsafe()).toThrow(unexpectedErr.unexpected);
-    });
+        expect(result).toStrictEqual([false, e, undefined]);
+      },
+    );
   });
 
   describe("unwrap", () => {
@@ -610,32 +680,12 @@ describe("Result", () => {
   });
 
   describe("unwrapErr", () => {
-    it("returns inner `Err` value (CheckedError) if inner error is regular (safe) `Err`", () => {
+    it("returns inner `Err` value (CheckedError) if inner error is expected or unexpected `Err`", () => {
       const self = err(expectedErr);
       const another = err(unexpectedErr);
 
       expect(self.unwrapErr()).toBe(expectedErr);
       expect(another.unwrapErr()).toBe(unexpectedErr);
-    });
-
-    it("returns inner `Err` value (E) if inner error is `UnsafeErr`", () => {
-      const self = unsafeErr(expectedErr);
-      const another = unsafeErr(unexpectedErr);
-
-      expect(self.unwrapErr()).toBe(expectedErr);
-      expect(another.unwrapErr()).toBe(unexpectedErr);
-    });
-
-    // NOTE(nikita.demin): figure out how to test this and refactor
-    it.skip("throws `ResultError` if self is `UnsafeErr` and inner error is unexpected `Err`", () => {
-      const self = err(unexpectedErr);
-
-      expect(() => self.unwrapErr()).toThrow(
-        new ResultError(
-          "`unwrapErr`: called on `Ok`",
-          ResultErrorKind.UnwrapErrCalledOnOk,
-        ),
-      );
     });
 
     it("throws `ResultError` if self is `Ok`", () => {

@@ -17,10 +17,7 @@ export type {
   PendingResult,
   Resultant,
   Result,
-  UnsafeResult,
   SettledResult,
-  SettledUnsafeResult,
-  UnsafeErr,
   Ok,
   Err,
 } from "./result";
@@ -46,8 +43,6 @@ export {
   pendingResult,
   pendingOk,
   pendingErr,
-  unsafeOk,
-  unsafeErr,
   ok,
   err,
 } from "./result";

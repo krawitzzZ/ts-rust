@@ -5,8 +5,8 @@ import type { ResultError } from "./error";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**
- * Represents a successful outcome of a {@link Result} or {@link UnsafeResult},
- * holding a value of type `T`.
+ * Represents a successful outcome of a {@link Result}, holding a value
+ * of type `T`.
  */
 export type Ok<T, E> = Resultant<T, E> & { readonly value: T };
 
@@ -32,41 +32,12 @@ export type Err<T, E> = Resultant<T, E> & { readonly error: CheckedError<E> };
 export type Result<T, E> = Ok<T, E> | Err<T, E>;
 
 /**
- * Represents an unchecked failed outcome of an {@link UnsafeResult}, holding
- * a raw error of type `E`.
- *
- * Unlike {@link Err}, this type does not wrap the error in {@link CheckedError},
- * leaving runtime or unexpected errors unhandled, making it less safe but simpler
- * for cases where such distinction is unnecessary.
- */
-export type UnsafeErr<T, E> = Resultant<T, E> & { readonly error: E };
-
-/**
- * A type representing the outcome of an operation, either a success
- * ({@link Ok}) or an unchecked failure ({@link UnsafeErr}).
- *
- * Similar to {@link Result}, but uses a raw error type `E` without wrapping it
- * in {@link CheckedError}, omitting runtime error handling for simplicity at
- * the cost of safety.
- */
-export type UnsafeResult<T, E> = Ok<T, E> | UnsafeErr<T, E>;
-
-/**
  * A {@link Result} type where both the value (`T`) and error (`E`) types have
  * been resolved from potential `PromiseLike` types to their awaited forms.
  */
 export type SettledResult<T, E> =
   | Ok<Awaited<T>, Awaited<E>>
   | Err<Awaited<T>, Awaited<E>>;
-
-/**
- * An {@link UnsafeResult} type where both the value (`T`) and error (`E`)
- * types have been resolved from potential `PromiseLike` types to their
- * awaited forms.
- */
-export type SettledUnsafeResult<T, E> =
-  | Ok<Awaited<T>, Awaited<E>>
-  | UnsafeErr<Awaited<T>, Awaited<E>>;
 
 /**
  * Represents an expected error of type `E` within a {@link CheckedError}.
@@ -158,7 +129,7 @@ export interface Resultant<T, E> {
   and<U>(x: Result<U, E>): Result<U, E>;
 
   /**
-   * Applies `f` to the value if this is an {@link Ok} and returns its result,
+   * Applies `f` to the value if this result is {@link Ok} and returns its result,
    * otherwise returns the {@link Err} value of self.
    *
    * ### Example
@@ -173,25 +144,49 @@ export interface Resultant<T, E> {
   andThen<U>(f: (x: T) => Result<U, E>): Result<U, E>;
 
   /**
-   * Returns a **deep clone** of the {@link Result}.
+   * Inspects this result’s state, returning a tuple indicating success and either the value or error.
+   *
+   * ### Notes
+   * - Returns `[true, T]` if this is an {@link Ok}, or `[false, CheckedError<E>]`
+   *   if this is an {@link Err}.
+   * - Never throws, providing a safe way to access the result’s state without
+   *   unwrapping.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(42);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.check()).toEqual([true, 42]);
+   * expect(y.check()).toEqual([false, expect.objectContaining({ expected: "failure" })]);
+   * ```
+   */
+  check(
+    this: SettledResult<T, E>,
+  ): this extends Ok<T, E>
+    ? readonly [true, T]
+    : readonly [false, CheckedError<E>];
+
+  /**
+   * Returns a deep copy of the {@link Result}.
    *
    * Only available on {@link Result}s with {@link Cloneable} value and error.
    *
    * ### Example
    * ```ts
    * const x = ok(1);
-   * const y = ok({ a: 1, clone: () => ({ a: 1 }) });
+   * const y = ok({ a: 1, clone: () => ({ a: 0 }) });
    *
    * expect(x.clone()).toStrictEqual(ok(1));
    * expect(x.clone()).not.toBe(x); // Different reference
    * expect(x.clone().unwrap()).toBe(1);
-   * expect(y.clone()).toStrictEqual(ok({ a: 1 }));
+   * expect(y.clone()).toStrictEqual(ok({ a: 0 }));
    * ```
    */
   clone<U, V>(this: Result<Cloneable<U>, Cloneable<V>>): Result<U, V>;
 
   /**
-   * Returns a **shallow** copy of the {@link Result}.
+   * Returns a shallow copy of the {@link Result}.
    *
    * ### Example
    * ```ts
@@ -213,8 +208,8 @@ export interface Resultant<T, E> {
    * {@link None} if this is an {@link Ok}.
    *
    * ### Notes
-   * - The error is extracted from the {@link CheckedError} if it’s an {@link ExpectedError};
-   *   If it's an {@link UnexpectedError}, {@link None} is returned.
+   * - Extracts the error from {@link CheckedError} if it’s an {@link ExpectedError};
+   *   returns {@link None} for {@link UnexpectedError}.
    *
    * ### Example
    * ```ts
@@ -228,11 +223,11 @@ export interface Resultant<T, E> {
   err(this: SettledResult<T, E>): Option<E>;
 
   /**
-   * Retrieves the contained `Ok` value if this result is an {@link Ok}, or throws
-   * a {@link ResultError} with an optional message if it’s an {@link Err}.
+   * Retrieves the value if this result is an {@link Ok}, or throws a
+   * {@link ResultError} with an optional message if it’s an {@link Err}.
    *
    * ## Throws
-   * - {@link ResultError} if this result is {@link Err}
+   * - {@link ResultError} if this result is an {@link Err}
    *
    * ### Example
    * ```ts
@@ -246,11 +241,11 @@ export interface Resultant<T, E> {
   expect(this: SettledResult<T, E>, msg?: string): T;
 
   /**
-   * Retrieves the contained {@link CheckedError} if this is an {@link Err}, or
-   * throws a {@link ResultError} with an optional message if it’s an {@link Ok}.
+   * Retrieves the error if this result is an {@link Err}, or throws a
+   * {@link ResultError} with an optional message if it’s an {@link Ok}.
    *
    * ## Throws
-   * - {@link ResultError} if this is {@link Ok}
+   * - {@link ResultError} if this result is an {@link Ok}
    *
    * ### Example
    * ```ts
@@ -265,10 +260,8 @@ export interface Resultant<T, E> {
   expectErr(this: SettledResult<T, E>, msg?: string): CheckedError<E>;
 
   /**
-   * Flattens a {@link Result} that holds a {@link Result} into a single
-   * {@link Result}: `Result<Result<T, E>, E>` -> `Result<T, E>`.
-   *
-   * Think of it as of unwrapping a box inside a box.
+   * Flattens a nested result (`Result<Result<T, E>, E>`) into a single result
+   * (`Result<T, E>`).
    *
    * ### Example
    * ```ts
@@ -284,7 +277,8 @@ export interface Resultant<T, E> {
   flatten<U, F>(this: Result<Result<U, F>, F>): Result<U, F>;
 
   /**
-   * Checks if this is an {@link Err}, narrowing the type accordingly.
+   * Checks if this result is an {@link Err}, narrowing its type to
+   * {@link Err} if true.
    *
    * ### Example
    * ```ts
@@ -295,23 +289,11 @@ export interface Resultant<T, E> {
    * expect(y.isErr()).toBe(true);
    * ```
    */
-  isErr(this: Result<T, E>): this is Err<T, E>;
-  /**
-   * Checks if this is an {@link UnsafeErr}, narrowing the type accordingly.
-   *
-   * ### Example
-   * ```ts
-   * const x = unsafeOk<number, string>(2);
-   * const y = unsafeErr<number, string>("failure");
-   *
-   * expect(x.isErr()).toBe(false);
-   * expect(y.isErr()).toBe(true);
-   * ```
-   */
-  isErr(this: UnsafeResult<T, E>): this is UnsafeErr<T, E>;
+  isErr(): this is Err<T, E>;
 
   /**
-   * Checks if this is an {@link Ok}, narrowing the type accordingly.
+   * Checks if this result is an {@link Ok}, narrowing its type to
+   * {@link Ok} if true.
    *
    * ### Example
    * ```ts
@@ -319,17 +301,47 @@ export interface Resultant<T, E> {
    * const y = err<number, string>("failure");
    *
    * expect(x.isOk()).toBe(true);
-   * expect(y.isOk()).toBe(fasle);
+   * expect(y.isOk()).toBe(false);
    * ```
    */
   isOk(): this is Ok<T, E>;
 
   /**
-   * Maps this result to a {@link PendingResult} by supplying a shallow
-   * {@link Resultant.copy | copy} of this result to {@link PendingResult} factory.
+   * Matches this result, returning `f` applied to the value if {@link Ok},
+   * or `g` applied to the {@link CheckedError} if {@link Err}.
    *
-   * Useful for transposing a result with `PromiseLike` value to a
-   * {@link PendingResult} with `Awaited` value.
+   * ## Throws
+   * - {@link ResultError} if `f` or `g` throws an exception, with the original
+   *   error set as {@link ResultError.reason}.
+   *
+   * ### Notes
+   * - If `f` or `g` return a `Promise` that rejects, the caller is responsible
+   *   for handling the rejection.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.match(n => n * 2, () => 0)).toBe(4);
+   * expect(() => x.match(_ => { throw new Error() }, () => 0)).toThrow(ResultError);
+   * expect(y.match(n => n * 2, e => e.expected.length)).toBe(7);
+   * expect(() => y.match(n => n * 2, () => { throw new Error() })).toThrow(ResultError);
+   * ```
+   */
+  match<U, F = U>(
+    this: SettledResult<T, E>,
+    f: (x: T) => Awaited<U>,
+    g: (e: CheckedError<E>) => Awaited<F>,
+  ): U | F;
+
+  /**
+   * Converts this result to a {@link PendingResult} using a shallow
+   * {@link Resultant.copy | copy} of its current state.
+   *
+   * ### Notes
+   * - Useful for transposing a result with a `PromiseLike` value to
+   *   a {@link PendingResult} with an `Awaited` value.
    *
    * ### Example
    * ```ts
@@ -346,16 +358,17 @@ export interface Resultant<T, E> {
   toPending(): PendingResult<Awaited<T>, Awaited<E>>;
 
   /**
-   * Maps this result to a {@link PendingResult} by supplying a
-   * {@link Resultant.clone | clone} of this result to {@link PendingResult}
-   * factory.
+   * Converts this result to a {@link PendingResult} using a deep
+   * {@link Resultant.clone | clone} of its current state.
    *
-   * Useful for transposing a result with `PromiseLike` value to a
-   * {@link PendingResult} with `Awaited` value.
+   * ### Notes
+   * - Useful for transposing a result with a `PromiseLike` value to
+   *   a {@link PendingResult} with an `Awaited` value, preserving independence
+   *   from the original data.
    *
    * ### Example
    * ```ts
-   * const value = { a: 0, clone: () => ({ a: 0 })};
+   * const value = { a: 1, clone: () => ({ a: 0 }) };
    * const x = ok(value);
    * const pendingX = x.toPendingCloned();
    *
@@ -370,7 +383,8 @@ export interface Resultant<T, E> {
   ): PendingResult<Awaited<T>, Awaited<E>>;
 
   /**
-   * Returns a string representation of the {@link Result}.
+   * Generates a string representation of this result,
+   * reflecting its current state.
    *
    * ### Example
    * ```ts
@@ -384,36 +398,39 @@ export interface Resultant<T, E> {
   toString(): string;
 
   /**
-   * Converts this {@link Result} to an {@link UnsafeResult}, stripping
-   * {@link CheckedError} to expose the raw error type `E`.
+   * Extracts this result’s state, returning a tuple with a success flag, error,
+   * and value.
    *
-   * If this is an {@link Ok}, the value is preserved. If it’s an expected
-   * {@link Err}, the {@link CheckedError} is unwrapped to its expected error
-   * (`E`), throwing if the error is unexpected {@link ResultError}.
+   * Inspired by the {@link https://github.com/arthurfiorette/proposal-try-operator Try Operator}
+   * proposal.
    *
-   * ## Throws
-   * - {@link ResultError} if this is an {@link Err} with an unexpected error
-   *   (see {@link UnexpectedError})
+   * ### Notes
+   * - Returns `[true, undefined, T]` if this is an {@link Ok}, or
+   *   `[false, CheckedError<E>, undefined]` if this is an {@link Err}.
+   * - Never throws, offering a safe way to inspect the result’s state with
+   *   explicit success indication.
    *
    * ### Example
    * ```ts
    * const x = ok<number, string>(42);
    * const y = err<number, string>("failure");
-   * const z = err(unexpected("Crash", ResultErrorKind.Unexpected));
    *
-   * expect(x.toUnsafe()).toStrictEqual(ok(42));
-   * expect(y.toUnsafe()).toStrictEqual(unsafeErr("failure"));
-   * expect(() => z.toUnsafe()).toThrow(ResultError);
+   * expect(x.try()).toEqual([true, undefined, 42]);
+   * expect(y.try()).toEqual([false, expect.objectContaining({ expected: "failure" }), undefined]);
    * ```
    */
-  toUnsafe(): UnsafeResult<T, E>;
+  try(
+    this: SettledResult<T, E>,
+  ): this extends Ok<T, E>
+    ? readonly [true, undefined, T]
+    : readonly [false, CheckedError<E>, undefined];
 
   /**
-   * Retrieves the value if this is an {@link Ok}, or throws a {@link ResultError}
-   * if it’s an {@link Err}.
+   * Retrieves the value if this result is an {@link Ok}, or throws
+   * a {@link ResultError} if it’s an {@link Err}.
    *
    * ## Throws
-   * - {@link ResultError} if this is {@link Err}
+   * - {@link ResultError} if this result is an {@link Err}
    *
    * ### Example
    * ```ts
@@ -424,14 +441,14 @@ export interface Resultant<T, E> {
    * expect(() => y.unwrap()).toThrow(ResultError);
    * ```
    */
-  unwrap(this: SettledResult<T, E> | SettledUnsafeResult<T, E>): T;
+  unwrap(this: SettledResult<T, E>): T;
 
   /**
-   * Retrieves the error if this is an {@link Err}, or throws
-   * a {@link ResultError} if it’s an {@link Ok}.
+   * Retrieves the {@link CheckedError} if this result is an {@link Err}, or
+   * throws a {@link ResultError} if it’s an {@link Ok}.
    *
    * ## Throws
-   * - {@link ResultError} if this is {@link Ok}
+   * - {@link ResultError} if this result is an {@link Ok}
    *
    * ### Example
    * ```ts
@@ -443,23 +460,6 @@ export interface Resultant<T, E> {
    * ```
    */
   unwrapErr(this: SettledResult<T, E>): CheckedError<E>;
-  /**
-   * Retrieves the error if this is an {@link Err}, or throws
-   * a {@link ResultError} if it’s an {@link Ok}.
-   *
-   * ## Throws
-   * - {@link ResultError} if this is {@link Ok}
-   *
-   * ### Example
-   * ```ts
-   * const x = ok<number, string>(42);
-   * const y = err<number, string>("failure");
-   *
-   * expect(() => x.unwrapErr()).toThrow(ResultError);
-   * expect(y.unwrapErr().expected).toBe("failure");
-   * ```
-   */
-  unwrapErr(this: SettledUnsafeResult<T, E>): E;
 }
 
 /**
@@ -475,8 +475,8 @@ export interface PendingResult<T, E>
   extends PromiseLike<Result<T, E>>,
     Recoverable<Result<T, E>> {
   /**
-   * Returns a {@link PendingResult} with {@link Err} if this result resolves to
-   * {@link Err}, otherwise returns a {@link PendingResult} with `x`.
+   * Returns a {@link PendingResult} that resolves to {@link Err} if this result
+   * resolves to {@link Err}, otherwise returns a {@link PendingResult} with `x`.
    *
    * This is the asynchronous version of {@link Resultant.and | and}.
    *
@@ -496,9 +496,9 @@ export interface PendingResult<T, E>
   ): PendingResult<Awaited<U>, Awaited<E>>;
 
   /**
-   * Returns a {@link PendingResult} with {@link Err} if this result resolves to
-   * {@link Err}, otherwise applies `f` to the resolved {@link Ok} value and
-   * returns its result.
+   * Returns a {@link PendingResult} that resolves to {@link Err} if this result
+   * resolves to {@link Err}, otherwise applies `f` to the resolved {@link Ok}
+   * value and returns its result.
    *
    * This is the asynchronous version of {@link Resultant.andThen | andThen}.
    *
@@ -507,9 +507,9 @@ export interface PendingResult<T, E>
    * const x = ok<number, string>(2).toPending();
    * const y = err<number, string>("failure").toPending();
    *
-   * expect(await x.andThen((n) => ok(n * 2))).toStrictEqual(ok(4));
-   * expect(await x.andThen((_) => err("oops"))).toStrictEqual(err("oops"));
-   * expect(await y.andThen((n) => err("oops"))).toStrictEqual(err("failure"));
+   * expect(await x.andThen(n => ok(n * 2))).toStrictEqual(ok(4));
+   * expect(await x.andThen(_ => err("oops"))).toStrictEqual(err("oops"));
+   * expect(await y.andThen(n => err("oops"))).toStrictEqual(err("failure"));
    * ```
    */
   andThen<U>(
@@ -517,12 +517,33 @@ export interface PendingResult<T, E>
   ): PendingResult<Awaited<U>, Awaited<E>>;
 
   /**
+   * Inspects this {@link PendingResult}’s state, returning a promise of
+   * a tuple with a success flag and either the value or error.
+   *
+   * ### Notes
+   * - Resolves to `[true, Awaited<T>]` if this is an {@link Ok}, or to
+   *   `[false, CheckedError<Awaited<E>>]` if this is an {@link Err}.
+   * - Never rejects, providing a safe way to await the result’s state.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(42).toPending();
+   * const y = err<number, string>("failure").toPending();
+   *
+   * expect(await x.check()).toEqual([true, 42]);
+   * expect(await y.check()).toEqual([false, expect.objectContaining({ expected: "failure" })]);
+   * ```
+   */
+  check(): Promise<readonly [boolean, Awaited<T> | CheckedError<Awaited<E>>]>;
+
+  /**
    * Converts this {@link PendingResult} to a {@link PendingOption | PendingOption\<E>}
    * containing the awaited error, if present.
    *
    * Returns a {@link PendingOption} that resolves to {@link Some} with the error
-   * value if this resolves to an {@link Err},
-   * or to {@link None} if this resolves to an {@link Ok}.
+   * value if this resolves to an {@link Err} with {@link ExpectedError},
+   * or to {@link None} if this resolves to an {@link Ok} or {@link Err} with
+   * {@link UnexpectedError}.
    *
    * This is the asynchronous version of {@link Resultant.err | err}.
    *
@@ -538,22 +559,25 @@ export interface PendingResult<T, E>
   err(): PendingOption<Awaited<E>>;
 
   /**
-   * Flattens a {@link PendingResult} that holds a {@link PendingResult} or a
-   * {@link Result} into a single {@link PendingResult}:
-   * `PendingResult<Result<T, E>, E>` -> `PendingResult<Awaited<T>, Awaited<E>>`.
+   * Flattens a nested {@link PendingResult} into a single pending result,
+   * resolving any inner {@link Result} or {@link PendingResult} to its final state.
    *
    * This is the asynchronous version of {@link Resultant.flatten | flatten}.
    *
+   * ### Notes
+   * - Handles cases like `PendingResult<Result<T, E>, E>` or
+   *   `PendingResult<PendingResult<T, E>, E>`, resolving to
+   *   `PendingResult<Awaited<T>, Awaited<E>>`.
+   *
    * ### Example
    * ```ts
-   * const result1: PendingResult<Result<number, string>, string> = getPendingResult();
-   * result1.flatten(); // PendingResult<number, string>
+   * const x = ok(ok(6)).toPending();
+   * const y = ok(err<number, string>("oops")).toPending();
+   * const z = err<string, string>("outer").toPending();
    *
-   * const result2: PendingResult<PendingResult<number, string>, string> = getPendingResult();
-   * result2.flatten(); // PendingResult<number>
-   *
-   * const result3: PendingResult<PendingResult<PendingResult<number, string>, string>, string> = getPendingResult();
-   * result3.flatten(); // PendingResult<Result<number>>
+   * expect(await x.flatten()).toStrictEqual(ok(6));
+   * expect(await y.flatten()).toStrictEqual(err("oops"));
+   * expect(await z.flatten()).toStrictEqual(err("outer"));
    * ```
    */
   flatten<U, F>(
@@ -562,4 +586,62 @@ export interface PendingResult<T, E>
       | PendingResult<PendingResult<U, F>, F>
       | PendingResult<PromiseLike<Result<U, F>>, F>,
   ): PendingResult<Awaited<U>, Awaited<F>>;
+
+  /**
+   * Matches this {@link PendingResult}, returning a promise of `f` applied to
+   * the value if it resolves to an {@link Ok}, or `g` applied to the error if
+   * it resolves to an {@link Err}.
+   *
+   * This is the asynchronous version of {@link Resultant.match | match}.
+   *
+   * ### Notes
+   * - If `f` or `g` throw or return a rejected `Promise`, the returned promise
+   *   rejects with the original error. In this case the caller is responsible
+   *   for handling the rejection.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2).toPending();
+   * const y = err<number, string>("failure").toPending();
+   *
+   * expect(await x.match(n => n * 2, () => 0)).toBe(4);
+   * expect(await y.match(n => n * 2, e => e.expected.length)).toBe(7);
+   * ```
+   */
+  match<U, F = U>(
+    f: (x: T) => U,
+    g: (e: CheckedError<E>) => F,
+  ): Promise<Awaited<U | F>>;
+
+  /**
+   * Extracts this {@link PendingResult}’s state, returning a promise of a tuple
+   * with a success flag, error, and value.
+   *
+   * Inspired by the {@link https://github.com/arthurfiorette/proposal-try-operator Try Operator}
+   * proposal.
+   *
+   * This is the asynchronous version of {@link Resultant.try | try}.
+   *
+   * ### Notes
+   * - Resolves to `[true, undefined, Awaited<T>]` if this is an {@link Ok}, or
+   *   `[false, CheckedError<Awaited<E>>, undefined]` if this is an {@link Err}.
+   * - Never rejects, offering a safe way to await the result’s state with
+   *   explicit success indication.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(42).toPending();
+   * const y = err<number, string>("failure").toPending();
+   *
+   * expect(await x.try()).toEqual([true, undefined, 42]);
+   * expect(await y.try()).toEqual([false, expect.objectContaining({ expected: "failure" }), undefined]);
+   * ```
+   */
+  try(): Promise<
+    readonly [
+      boolean,
+      CheckedError<Awaited<E>> | undefined,
+      Awaited<T> | undefined,
+    ]
+  >;
 }
