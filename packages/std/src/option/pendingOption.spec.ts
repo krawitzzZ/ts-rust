@@ -339,6 +339,18 @@ describe("PendingOption", () => {
       expect(awaited.unwrap()).toBe(one);
       expect(inspectSpy).toHaveBeenCalledTimes(1);
     });
+
+    it("return `PendingOption` that resolves to `None` if inner option promise rejects", async () => {
+      const error = new Error("oops");
+      const self = pendingOption(Promise.reject(error));
+      const callback = jest.fn();
+      const result = self.inspect(callback);
+
+      expect(result).not.toBe(self);
+
+      const awaited = await result;
+      expect(awaited.isNone()).toBe(true);
+    });
   });
 
   describe("map", () => {

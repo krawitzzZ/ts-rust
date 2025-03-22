@@ -415,7 +415,43 @@ describe("PendingResult", () => {
   });
 
   describe("inspect", () => {
-    it("todo", async () => {});
+    it("calls `inspect` on inner `Option` and returns its result", async () => {
+      const inner = ok(one);
+      const inspectResult = ok(one);
+      const self = pendingResult(inner);
+      const callback = jest.fn();
+      const inspectSpy = jest
+        .spyOn(inner, "inspect")
+        .mockReturnValueOnce(inspectResult);
+      const result = self.inspect(callback);
+
+      expect(result).not.toBe(self);
+      expect(inspectSpy).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited).toBe(inspectResult);
+      expect(awaited.unwrap()).toBe(one);
+      expect(inspectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not throw/reject if inner result promise rejects", async () => {
+      const self = pendingResult(Promise.reject(asyncError));
+      const callback = jest.fn();
+      const result = self.inspect(callback);
+
+      expect(result).not.toBe(self);
+
+      const awaited = await result;
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "Pending result rejected unexpectedly",
+          ResultErrorKind.ResultRejection,
+          asyncError,
+        ),
+      );
+    });
   });
 
   describe("match", () => {
