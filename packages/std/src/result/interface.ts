@@ -300,6 +300,30 @@ export interface Resultant<T, E> {
   inspect(f: (x: T) => unknown): Result<T, E>;
 
   /**
+   * Calls `f` with the value if this result is an {@link Err}, then returns
+   * a copy of this result.
+   *
+   * ### Notes
+   * - Returns a new {@link Result} instance, not the original reference.
+   * - If `f` throws or returns a `Promise` that rejects, the error is ignored.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   * let sideEffect = 0;
+   *
+   * expect(x.inspect(n => (sideEffect = n))).toStrictEqual(ok(2));
+   * expect(x.inspect(_ => { throw new Error() })).toStrictEqual(ok(2));
+   * expect(sideEffect).toBe(0);
+   * expect(y.inspect(n => (sideEffect = n))).toStrictEqual(err("failure"));
+   * expect(y.inspect(_ => { throw new Error() })).toStrictEqual(err("failure"));
+   * expect(sideEffect).toBe(2);
+   * ```
+   */
+  inspectErr(f: (x: CheckedError<E>) => unknown): Result<T, E>;
+
+  /**
    * Checks if this result is an {@link Err}, narrowing its type to
    * {@link Err} if true.
    *
@@ -637,6 +661,33 @@ export interface PendingResult<T, E>
    * ```
    */
   inspect(f: (x: T) => unknown): PendingResult<T, E>;
+
+  /**
+   * Calls `f` with the error if this pending result resolves to an {@link Err},
+   * then returns a new pending result with the original state.
+   *
+   * This is the asynchronous version of {@link Resultant.inspectErr | inspectErr}.
+   *
+   * ### Notes
+   * - Returns a new {@link PendingResult} instance, not the original reference.
+   * - If `f` throws or returns a `Promise` that rejects, the error is ignored,
+   *   and the returned promise still resolves to the original state.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2).toPending();
+   * const y = err<number, string>("failure").toPending();
+   * let sideEffect = 0;
+   *
+   * expect(await x.inspect(n => (sideEffect = n))).toStrictEqual(ok(2));
+   * expect(await x.inspect(_ => { throw new Error() })).toStrictEqual(ok(2));
+   * expect(sideEffect).toBe(0);
+   * expect(await y.inspect(n => (sideEffect = n))).toStrictEqual(err("failure"));
+   * expect(await y.inspect(_ => { throw new Error() })).toStrictEqual(ok(2));
+   * expect(sideEffect).toBe(2);
+   * ```
+   */
+  inspectErr(f: (x: CheckedError<E>) => unknown): PendingResult<T, E>;
 
   /**
    * Matches this {@link PendingResult}, returning a promise of `f` applied to

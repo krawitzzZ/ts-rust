@@ -499,6 +499,97 @@ describe("Result", () => {
     });
   });
 
+  describe("inspectErr", () => {
+    it.each([expectedErr, unexpectedErr])(
+      "calls provided callback if self is `Err { %p }`",
+      (e) => {
+        const self = err(e);
+        const spy = jest.spyOn(self, "copy");
+        const callback = jest.fn();
+        const result = self.inspectErr(callback);
+
+        expect(result).not.toBe(self);
+        expect(result.unwrapErr()).toBe(self.unwrapErr());
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback).toHaveBeenCalledWith(e);
+        expect(spy).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it("does not call provided callback if self is `Ok`", () => {
+      const self = ok(one);
+      const spy = jest.spyOn(self, "copy");
+      const callback = jest.fn();
+      const result = self.inspectErr(callback);
+
+      expect(result).not.toBe(self);
+      expect(result.unwrap()).toBe(self.unwrap());
+      expect(callback).not.toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([expectedErr, unexpectedErr])(
+      "calls provided callback and does not await for the result if self is `Err` and provided callback returns a promise",
+      async (e) => {
+        jest.useFakeTimers();
+        let sideEffect = 0;
+        const timeout = 1000;
+        const self = err(e);
+        const spy = jest.spyOn(self, "copy");
+        const callback = jest.fn(async () => {
+          setTimeout(() => {
+            sideEffect = 1;
+          }, timeout);
+        });
+        const result = self.inspectErr(callback);
+
+        expect(result).not.toBe(self);
+        expect(result.unwrapErr()).toBe(self.unwrapErr());
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback).toHaveBeenCalledWith(e);
+        expect(sideEffect).toBe(0);
+
+        jest.advanceTimersByTime(timeout);
+        expect(result).not.toBe(self);
+        expect(result.unwrapErr()).toBe(self.unwrapErr());
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback).toHaveBeenCalledWith(e);
+        expect(spy).toHaveBeenCalledTimes(1);
+        expect(sideEffect).toBe(1);
+
+        jest.useRealTimers();
+      },
+    );
+
+    it("does not throw if provided callback throws", () => {
+      const self = err(one);
+      const spy = jest.spyOn(self, "copy");
+      const callback = jest.fn(() => {
+        throw syncError;
+      });
+      const result = self.inspectErr(callback);
+
+      expect(result).not.toBe(self);
+      expect(result.unwrapErr()).toBe(self.unwrapErr());
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(expectedError(one));
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not throw if provided callback returns a promise that rejects", () => {
+      const self = err(one);
+      const spy = jest.spyOn(self, "copy");
+      const callback = jest.fn(() => Promise.reject(asyncError));
+      const result = self.inspectErr(callback);
+
+      expect(result).not.toBe(self);
+      expect(result.unwrapErr()).toBe(self.unwrapErr());
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(expectedError(one));
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("isErr", () => {
     it.each([
       [true, err<number, string>("err")],

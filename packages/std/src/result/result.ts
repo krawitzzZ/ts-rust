@@ -482,6 +482,22 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.copy();
   }
 
+  inspectErr(f: (x: CheckedError<E>) => unknown): Result<T, E> {
+    if (isErr(this.#state)) {
+      try {
+        const inspection = f(this.#state.error);
+
+        if (isPromise(inspection)) {
+          inspection.catch(() => void 0);
+        }
+      } catch {
+        // do not care about the error
+      }
+    }
+
+    return this.copy();
+  }
+
   isErr(): this is Err<T, E> {
     return isErr(this.#state);
   }
@@ -682,6 +698,10 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
 
   inspect(f: (x: T) => unknown): PendingResult<T, E> {
     return pendingResult(this.#promise.then((self) => self.inspect(f)));
+  }
+
+  inspectErr(f: (x: CheckedError<E>) => unknown): PendingResult<T, E> {
+    return pendingResult(this.#promise.then((self) => self.inspectErr(f)));
   }
 
   match<U, F = U>(

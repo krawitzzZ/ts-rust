@@ -415,7 +415,7 @@ describe("PendingResult", () => {
   });
 
   describe("inspect", () => {
-    it("calls `inspect` on inner `Option` and returns its result", async () => {
+    it("calls `inspect` on inner `Result` and returns its result", async () => {
       const inner = ok(one);
       const inspectResult = ok(one);
       const self = pendingResult(inner);
@@ -439,6 +439,46 @@ describe("PendingResult", () => {
       const self = pendingResult(Promise.reject(asyncError));
       const callback = jest.fn();
       const result = self.inspect(callback);
+
+      expect(result).not.toBe(self);
+
+      const awaited = await result;
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "Pending result rejected unexpectedly",
+          ResultErrorKind.ResultRejection,
+          asyncError,
+        ),
+      );
+    });
+  });
+
+  describe("inspectErr", () => {
+    it("calls `inspect` on inner `Result` and returns its result", async () => {
+      const inner = err(one);
+      const inspectResult = err(one);
+      const self = pendingResult(inner);
+      const callback = jest.fn();
+      const inspectSpy = jest
+        .spyOn(inner, "inspectErr")
+        .mockReturnValueOnce(inspectResult);
+      const result = self.inspectErr(callback);
+
+      expect(result).not.toBe(self);
+      expect(inspectSpy).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited).toBe(inspectResult);
+      expect(awaited.unwrapErr()).toStrictEqual(expectedError(one));
+      expect(inspectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not throw/reject if inner result promise rejects", async () => {
+      const self = pendingResult(Promise.reject(asyncError));
+      const callback = jest.fn();
+      const result = self.inspectErr(callback);
 
       expect(result).not.toBe(self);
 
