@@ -25,7 +25,7 @@ describe("PendingResult", () => {
   );
   const one = 11;
   const two = 222;
-  const _zero = 0;
+  const zero = 0;
   const _syncErrorCallback =
     <T = Result<number, string>>(e?: Error) =>
     (): T => {
@@ -260,7 +260,56 @@ describe("PendingResult", () => {
   });
 
   describe("check", () => {
-    // TODO(nikita.demin): implement tests
+    it.each([ok(one), Promise.resolve(ok(two))])(
+      "returns a promise that resolves to `[true, Awaited<T>]` if inner result resolves to `Ok { %s }`",
+      async (opt) => {
+        const self = pendingOk(opt);
+        const result = self.check();
+
+        expect(result).toBeInstanceOf(Promise);
+
+        const awaited = await result;
+
+        expect(awaited).toStrictEqual([true, await opt]);
+      },
+    );
+
+    it.each([
+      expectedErr,
+      unexpectedErr,
+      Promise.resolve(expectedErr),
+      Promise.resolve(unexpectedErr),
+    ])(
+      "returns a promise that resolves to `[false, CheckedError<Awaited<E>>]` if inner result resolves to `Err { %p }`",
+      async (opt) => {
+        const self = pendingErr(opt);
+        const result = self.check();
+
+        expect(result).toBeInstanceOf(Promise);
+
+        const awaited = await result;
+
+        expect(awaited).toStrictEqual([false, await opt]);
+      },
+    );
+
+    it("returns a promise that resolves to `[false, CheckedError<Awaited<E>>]` if inner result rejects", async () => {
+      const self = pendingResult(Promise.reject(syncError));
+      const result = self.check();
+
+      expect(result).toBeInstanceOf(Promise);
+
+      const awaited = await result;
+
+      expect(awaited).toStrictEqual([
+        false,
+        unexpectedError(
+          "Pending result rejected unexpectedly",
+          ResultErrorKind.ResultRejection,
+          syncError,
+        ),
+      ]);
+    });
   });
 
   describe("err", () => {
@@ -366,10 +415,115 @@ describe("PendingResult", () => {
   });
 
   describe("match", () => {
-    // TODO(nikita.demin): implement tests
+    it("calls `ok` callback and returns its result if self is `Ok`", async () => {
+      const self = pendingOk(one);
+      const okCallback = jest.fn(() => two);
+      const errCallback = jest.fn(() => zero);
+      const result = self.match(okCallback, errCallback);
+
+      expect(result).toBeInstanceOf(Promise);
+
+      const awaited = await result;
+
+      expect(awaited).toBe(two);
+      expect(okCallback).toHaveBeenCalledTimes(1);
+      expect(okCallback).toHaveBeenCalledWith(one);
+      expect(errCallback).not.toHaveBeenCalled();
+    });
+
+    it.each([expectedErr, unexpectedErr])(
+      "calls `err` callback and returns its result if self is `Err { %p }`",
+      async (e) => {
+        const self = pendingErr(e);
+        const okCallback = jest.fn(() => two);
+        const errCallback = jest.fn(() => zero);
+        const result = self.match(okCallback, errCallback);
+
+        expect(result).toBeInstanceOf(Promise);
+
+        const awaited = await result;
+
+        expect(awaited).toBe(zero);
+        expect(errCallback).toHaveBeenCalledTimes(1);
+        expect(errCallback).toHaveBeenCalledWith(e);
+        expect(okCallback).not.toHaveBeenCalled();
+      },
+    );
+
+    it("returns a promise that rejects if provided callback throws", async () => {
+      const self = pendingOk(one);
+      const okCallback = jest.fn(() => {
+        throw syncError;
+      });
+      const errCallback = jest.fn(() => zero);
+      const result = self.match(okCallback, errCallback);
+
+      expect(result).toBeInstanceOf(Promise);
+
+      await expect(result).rejects.toThrow(syncError);
+      expect(okCallback).toHaveBeenCalledTimes(1);
+      expect(okCallback).toHaveBeenCalledWith(one);
+      expect(errCallback).not.toHaveBeenCalled();
+    });
+
+    it("returns a promise that rejects if provided callback returns a promise that rejects", async () => {
+      const self = pendingOk(one);
+      const okCallback = jest.fn(() => Promise.reject(asyncError));
+      const errCallback = jest.fn(() => zero);
+      const result = self.match(okCallback, errCallback);
+
+      expect(result).toBeInstanceOf(Promise);
+
+      await expect(result).rejects.toThrow(asyncError);
+      expect(okCallback).toHaveBeenCalledTimes(1);
+      expect(okCallback).toHaveBeenCalledWith(one);
+      expect(errCallback).not.toHaveBeenCalled();
+    });
   });
 
   describe("try", () => {
-    // TODO(nikita.demin): implement tests
+    it("returns a promise that resolves `[true, undefined, T]` if self resolves to `Ok`", async () => {
+      const self = pendingOk(one);
+      const result = self.try();
+
+      expect(result).toBeInstanceOf(Promise);
+
+      const awaited = await result;
+
+      expect(awaited).toStrictEqual([true, undefined, one]);
+    });
+
+    it.each([expectedErr, unexpectedErr])(
+      "returns a promise that resolves `[false, CheckedError<E>, undefined]` if self resolves `Err { %p }`",
+      async (e) => {
+        const self = pendingErr(e);
+        const result = self.try();
+
+        expect(result).toBeInstanceOf(Promise);
+
+        const awaited = await result;
+
+        expect(awaited).toStrictEqual([false, e, undefined]);
+      },
+    );
+
+    it("returns a promise that resolves `[false, CheckedError<E>, undefined]` if self rejects", async () => {
+      const self = pendingOk(Promise.reject(asyncError));
+      const result = self.try();
+
+      expect(result).toBeInstanceOf(Promise);
+
+      const awaited = await result;
+
+      expect(awaited).toStrictEqual([
+        false,
+        unexpectedError(
+          "Pending result rejected unexpectedly",
+          ResultErrorKind.ResultRejection,
+          asyncError,
+        ),
+        undefined,
+      ]);
+    });
   });
 });

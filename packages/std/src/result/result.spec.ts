@@ -183,9 +183,15 @@ describe("Result", () => {
 
   describe("clone", () => {
     it("returns `Err` with cloned `ResultError` if self is `Err` with unexpected error", () => {
-      const self = err<number, string>(unexpectedErr);
+      const resError = new ResultError(
+        unexpectedErrMsg,
+        ResultErrorKind.Unexpected,
+      );
+      const self = err<number, string>(unexpectedError(resError));
+      const spy = jest.spyOn(resError, "clone");
       const cloned = self.clone();
 
+      expect(spy).toHaveBeenCalledTimes(1);
       expect(cloned.isErr()).toBe(true);
       expect(cloned).not.toBe(self);
       expect(cloned.unwrapErr()).not.toBe(self.unwrapErr());
@@ -195,15 +201,33 @@ describe("Result", () => {
 
       expect(error.expected).toBeUndefined();
       expect(error.unexpected).toBeInstanceOf(ResultError);
-      expect(error.unexpected?.message).toBe(unexpectedErr.unexpected?.message);
-      expect(error.unexpected?.kind).toBe(unexpectedErr.unexpected?.kind);
+      expect(error.unexpected?.message).toBe(resError.message);
+      expect(error.unexpected?.kind).toBe(resError.kind);
+    });
+
+    it("returns `Err` with deeply cloned `E` if self is `Err` with expected error with primitive value", () => {
+      const self = err<number, string>(expectedError("ulala"));
+      const cloned = self.clone();
+
+      expect(cloned.isErr()).toBe(true);
+      expect(cloned).not.toBe(self);
+      expect(cloned.unwrapErr()).not.toBe(self.unwrapErr());
+      expect(cloned.unwrapErr()).not.toBe(self.unwrapErr());
+      expect(() => cloned.unwrap()).toThrow(ResultError);
+
+      const error = cloned.unwrapErr();
+
+      expect(error.unexpected).toBeUndefined();
+      expect(error.expected).toBe("ulala");
     });
 
     it("returns `Err` with deeply cloned `E` if self is `Err` with expected error", () => {
       const counter = new Counter({ count: 10 });
+      const spy = jest.spyOn(counter, "clone");
       const self = err<number, Counter>(expectedError(counter));
       const cloned = self.clone();
 
+      expect(spy).toHaveBeenCalledTimes(1);
       expect(cloned.isErr()).toBe(true);
       expect(cloned).not.toBe(self);
       expect(cloned.unwrapErr()).not.toBe(self.unwrapErr());
@@ -224,9 +248,11 @@ describe("Result", () => {
 
     it("returns `Ok` with the same value", () => {
       const counter = new Counter({ count: 10 });
+      const spy = jest.spyOn(counter, "clone");
       const self = ok<Counter, string>(counter);
       const cloned = self.clone();
 
+      expect(spy).toHaveBeenCalledTimes(1);
       expect(cloned.isOk()).toBe(true);
       expect(cloned).not.toBe(self);
       expect(cloned.unwrap()).not.toBe(self.unwrap());
@@ -403,7 +429,7 @@ describe("Result", () => {
   });
 
   describe("match", () => {
-    it("calls `ok` callback if self is `Ok`", () => {
+    it("calls `ok` callback and returns its result if self is `Ok`", () => {
       const self = ok(one);
       const okCallback = jest.fn(() => two);
       const errCallback = jest.fn(() => zero);
@@ -416,7 +442,7 @@ describe("Result", () => {
     });
 
     it.each([expectedErr, unexpectedErr])(
-      "calls `err` callback if self is `Err { %p }`",
+      "calls `err` callback and returns its result if self is `Err { %p }`",
       (e) => {
         const self = err(e);
         const okCallback = jest.fn(() => two);

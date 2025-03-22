@@ -407,13 +407,7 @@ class _Result<T, E> implements Resultant<T, E> {
       );
     }
 
-    return err<U, F>(
-      unexpectedError(
-        isPrimitive(this.error.unexpected)
-          ? this.error.unexpected
-          : this.error.unexpected.clone(),
-      ),
-    );
+    return err<U, F>(unexpectedError(this.error.unexpected.clone()));
   }
 
   copy(): Result<T, E> {
