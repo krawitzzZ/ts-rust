@@ -410,6 +410,10 @@ describe("Result", () => {
     });
   });
 
+  describe("inspect", () => {
+    it("todo", () => {});
+  });
+
   describe("isErr", () => {
     it.each([
       [true, err<number, string>("err")],

@@ -277,6 +277,29 @@ export interface Resultant<T, E> {
   flatten<U, F>(this: Result<Result<U, F>, F>): Result<U, F>;
 
   /**
+   * Calls `f` with the value if this result is an {@link Ok}, then returns
+   * a copy of this result.
+   *
+   * ### Notes
+   * - Returns a new {@link Result} instance, not the original reference.
+   * - If `f` throws or returns a `Promise` that rejects, the error is ignored.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   * let sideEffect = 0;
+   *
+   * expect(x.inspect(n => (sideEffect = n))).toStrictEqual(ok(2));
+   * expect(x.inspect(_ => { throw new Error() })).toStrictEqual(ok(2));
+   * expect(sideEffect).toBe(2);
+   * expect(y.inspect(n => (sideEffect = n))).toStrictEqual(err("failure"));
+   * expect(sideEffect).toBe(2); // Unchanged
+   * ```
+   */
+  inspect(f: (x: T) => unknown): Result<T, E>;
+
+  /**
    * Checks if this result is an {@link Err}, narrowing its type to
    * {@link Err} if true.
    *
@@ -520,6 +543,8 @@ export interface PendingResult<T, E>
    * Inspects this {@link PendingResult}’s state, returning a promise of
    * a tuple with a success flag and either the value or error.
    *
+   * This is the asynchronous version of {@link Resultant.check | check}.
+   *
    * ### Notes
    * - Resolves to `[true, Awaited<T>]` if this is an {@link Ok}, or to
    *   `[false, CheckedError<Awaited<E>>]` if this is an {@link Err}.
@@ -586,6 +611,32 @@ export interface PendingResult<T, E>
       | PendingResult<PendingResult<U, F>, F>
       | PendingResult<PromiseLike<Result<U, F>>, F>,
   ): PendingResult<Awaited<U>, Awaited<F>>;
+
+  /**
+   * Calls `f` with the value if this pending result resolves to an {@link Ok},
+   * then returns a new pending result with the original state.
+   *
+   * This is the asynchronous version of {@link Resultant.inspect | inspect}.
+   *
+   * ### Notes
+   * - Returns a new {@link PendingResult} instance, not the original reference.
+   * - If `f` throws or returns a `Promise` that rejects, the error is ignored,
+   *   and the returned promise still resolves to the original state.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2).toPending();
+   * const y = err<number, string>("failure").toPending();
+   * let sideEffect = 0;
+   *
+   * expect(await x.inspect(n => (sideEffect = n))).toStrictEqual(ok(2));
+   * expect(await x.inspect(_ => { throw new Error() })).toStrictEqual(ok(2));
+   * expect(sideEffect).toBe(2);
+   * expect(await y.inspect(n => (sideEffect = n))).toStrictEqual(err("failure"));
+   * expect(sideEffect).toBe(2); // Unchanged
+   * ```
+   */
+  inspect(f: (x: T) => unknown): PendingResult<T, E>;
 
   /**
    * Matches this {@link PendingResult}, returning a promise of `f` applied to

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { stringify, toPromise } from "@ts-rust/shared";
+import { isPromise, stringify, toPromise } from "@ts-rust/shared";
 import type { Cloneable, MaybePromise } from "../types";
 import {
   type PendingOption,
@@ -466,6 +466,22 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.value.copy();
   }
 
+  inspect(f: (x: T) => unknown): Result<T, E> {
+    if (isOk(this.#state)) {
+      try {
+        const inspection = f(this.#state.value);
+
+        if (isPromise(inspection)) {
+          inspection.catch(() => void 0);
+        }
+      } catch {
+        // do not care about the error
+      }
+    }
+
+    return this.copy();
+  }
+
   isErr(): this is Err<T, E> {
     return isErr(this.#state);
   }
@@ -662,6 +678,10 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
     });
 
     return pendingResult(settleResult(promise));
+  }
+
+  inspect(f: (x: T) => unknown): PendingResult<T, E> {
+    return pendingResult(this.#promise.then((self) => self.inspect(f)));
   }
 
   match<U, F = U>(

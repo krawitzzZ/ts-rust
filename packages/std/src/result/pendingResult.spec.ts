@@ -414,6 +414,10 @@ describe("PendingResult", () => {
     );
   });
 
+  describe("inspect", () => {
+    it("todo", async () => {});
+  });
+
   describe("match", () => {
     it("calls `ok` callback and returns its result if self is `Ok`", async () => {
       const self = pendingOk(one);
