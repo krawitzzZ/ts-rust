@@ -339,6 +339,25 @@ export interface Resultant<T, E> {
   isErr(): this is Err<T, E>;
 
   /**
+   * Returns `true` if the result is {@link Err} and `f` returns `true`
+   * for the contained error.
+   *
+   * ### Notes
+   * - *Default*: If `f` throws, `false` is returned.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.isErrAnd(e => e.expected === "failure")).toBe(false);
+   * expect(y.isErrAnd(e => e.expected === "failure")).toBe(true);
+   * expect(y.isErrAnd(e => Boolean(e.unexpected))).toBe(false);
+   * ```
+   */
+  isErrAnd(f: (x: CheckedError<E>) => boolean): this is Err<T, E> & boolean;
+
+  /**
    * Checks if this result is an {@link Ok}, narrowing its type to
    * {@link Ok} if true.
    *

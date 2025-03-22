@@ -502,6 +502,18 @@ class _Result<T, E> implements Resultant<T, E> {
     return isErr(this.#state);
   }
 
+  isErrAnd(f: (x: CheckedError<E>) => boolean): this is Err<T, E> & boolean {
+    if (isOk(this.#state)) {
+      return false;
+    }
+
+    try {
+      return f(this.#state.error);
+    } catch {
+      return false;
+    }
+  }
+
   isOk(): this is Ok<T, E> {
     return isOk(this.#state);
   }

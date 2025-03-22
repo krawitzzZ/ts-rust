@@ -326,7 +326,8 @@ export interface Optional<T> {
   isSome(): this is Some<T>;
 
   /**
-   * Returns `true` if the option is {@link Some} and `f` returns `true` for the contained value.
+   * Returns `true` if the option is {@link Some} and `f` returns `true`
+   * for the contained value.
    *
    * ### Notes
    * - *Default*: If `f` throws, `false` is returned.

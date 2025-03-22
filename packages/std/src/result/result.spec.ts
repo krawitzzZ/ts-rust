@@ -599,6 +599,32 @@ describe("Result", () => {
     });
   });
 
+  describe("isErrAnd", () => {
+    it("returns `false` if provided callback returns `true`, but self is `Ok`", () => {
+      expect(ok(one).isErrAnd(() => true)).toBe(false);
+    });
+
+    it("returns `false` if provided callback returns `false` and self is `Err`", () => {
+      expect(err(expectedErr).isErrAnd(() => false)).toBe(false);
+    });
+
+    it("returns `true` if provided callback returns `true` and self is `Err`", () => {
+      expect(err(expectedErr).isErrAnd(() => true)).toBe(true);
+    });
+
+    it("returns `false` if provided callback throws and self is `Err`", () => {
+      expect(err(expectedErr).isErrAnd(() => false)).toBe(false);
+    });
+
+    it("returns `false` if provided callback throws and self is `Err`", () => {
+      expect(
+        err(expectedErr).isErrAnd(() => {
+          throw syncError;
+        }),
+      ).toBe(false);
+    });
+  });
+
   describe("isOk", () => {
     it.each([
       [false, err()],
