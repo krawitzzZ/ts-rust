@@ -783,11 +783,11 @@ describe("Result", () => {
     );
 
     it("returns unexpected `Err` if provided synchronous callback throws", () => {
-      const option = ok(one);
+      const self = ok(one);
       const callback = jest.fn(() => {
         throw syncError;
       });
-      const result = option.mapAll(callback);
+      const result = self.mapAll(callback);
 
       expect(result.isErr()).toBe(true);
       expect(result.unwrapErr()).toStrictEqual(
@@ -798,13 +798,13 @@ describe("Result", () => {
         ),
       );
       expect(callback).toHaveBeenCalledTimes(1);
-      expect(callback).toHaveBeenCalledWith(option);
+      expect(callback).toHaveBeenCalledWith(self);
     });
 
     it("returns unexpected `Err` if provided asynchronous callback rejects", async () => {
-      const option = ok(one);
+      const self = ok(one);
       const callback = jest.fn(() => Promise.reject(asyncError));
-      const result = option.mapAll(callback);
+      const result = self.mapAll(callback);
 
       expect(isPendingResult(result)).toBe(true);
 
@@ -819,7 +819,7 @@ describe("Result", () => {
         ),
       );
       expect(callback).toHaveBeenCalledTimes(1);
-      expect(callback).toHaveBeenCalledWith(option);
+      expect(callback).toHaveBeenCalledWith(self);
     });
   });
 
