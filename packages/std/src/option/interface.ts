@@ -372,8 +372,8 @@ export interface Optional<T> {
   iter(): IterableIterator<T, T, void>;
 
   /**
-   * Maps the contained value with `f` if {@link Some}, returning a new {@link Option}; otherwise,
-   * returns {@link None}.
+   * Maps the contained value with `f` if {@link Some}, returning a new
+   * {@link Option}; otherwise, returns {@link None}.
    *
    * ### Notes
    * - *Default*: If `f` throws, {@link None} is returned.

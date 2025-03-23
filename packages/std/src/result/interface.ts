@@ -419,6 +419,26 @@ export interface Resultant<T, E> {
   iter(): IterableIterator<T, T, void>;
 
   /**
+   * Transforms this result by applying `f` to the value if it’s an {@link Ok},
+   * or preserves the {@link Err} unchanged.
+   *
+   * ### Notes
+   * - If `f` throws, returns an {@link Err} with an {@link UnexpectedError}
+   *   containing the original error.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.map(n => n * 2)).toStrictEqual(ok(4));
+   * expect(x.map(() => { throw new Error("boom") })).toStrictEqual(err(unexpected(new Error("boom"))));
+   * expect(y.map(n => n * 2)).toStrictEqual(err("failure"));
+   * ```
+   */
+  map<U>(f: (x: T) => Awaited<U>): Result<U, E>;
+
+  /**
    * Matches this result, returning `f` applied to the value if {@link Ok},
    * or `g` applied to the {@link CheckedError} if {@link Err}.
    *
@@ -786,6 +806,28 @@ export interface PendingResult<T, E>
    * ```
    */
   iter(): AsyncIterableIterator<Awaited<T>, Awaited<T>, void>;
+
+  /**
+   * Maps the resolved value with `f`, returning a {@link PendingResult} with
+   * the result if {@link Ok}, or the original {@link Err} if {@link Err}.
+   *
+   * This is the asynchronous version of {@link Resultant.map | map}.
+   *
+   * ### Notes
+   * - If `f` throws or returns a rejected promise, returns a {@link PendingResult}
+   *   with an {@link Err} containing an {@link UnexpectedError}.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2).toPending();
+   * const y = err<number, string>("failure").toPending();
+   *
+   * expect(await x.map(n => n * 2)).toStrictEqual(ok(4));
+   * expect(await x.map(() => { throw new Error("boom") })).toStrictEqual(err(unexpected("boom")));
+   * expect(await y.map(n => n * 2)).toStrictEqual(err("failure"));
+   * ```
+   */
+  map<U>(f: (x: T) => U): PendingResult<Awaited<U>, Awaited<E>>;
 
   /**
    * Matches this {@link PendingResult}, returning a promise of `f` applied to

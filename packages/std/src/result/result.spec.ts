@@ -697,6 +697,48 @@ describe("Result", () => {
     );
   });
 
+  describe("map", () => {
+    it.each([expectedErr, unexpectedErr])(
+      "does not call provided callback and returns self if self is `Err`",
+      (e) => {
+        const self = err(e);
+        const callback = jest.fn();
+        const result = self.map(callback);
+
+        expect(callback).not.toHaveBeenCalled();
+        expect(result.unwrapErr()).toStrictEqual(e);
+      },
+    );
+
+    it("calls provided callback with inner value and returns new `Result` with result", () => {
+      const self = ok(one);
+      const callback = jest.fn(() => two);
+      const result = self.map(callback);
+
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe(two);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(one);
+    });
+
+    it("returns `Err` with unexpected error if provided callback throws", () => {
+      const self = ok(one);
+      const callback = jest.fn(() => {
+        throw syncError;
+      });
+      const result = self.map(callback);
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "`map`: callback `f` threw an exception",
+          ResultErrorKind.PredicateException,
+          syncError,
+        ),
+      );
+    });
+  });
+
   describe("match", () => {
     it("calls `ok` callback and returns its result if self is `Ok`", () => {
       const self = ok(one);

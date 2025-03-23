@@ -552,6 +552,24 @@ class _Result<T, E> implements Resultant<T, E> {
     };
   }
 
+  map<U>(f: (x: T) => Awaited<U>): Result<U, E> {
+    if (isErr(this.#state)) {
+      return err(this.#state.error);
+    }
+
+    try {
+      return ok(f(this.#state.value));
+    } catch (e) {
+      return err<U, E>(
+        unexpectedError(
+          "`map`: callback `f` threw an exception",
+          ResultErrorKind.PredicateException,
+          e,
+        ),
+      );
+    }
+  }
+
   match<U, F = U>(
     this: SettledResult<T, E>,
     f: (x: T) => Awaited<U>,
@@ -772,6 +790,28 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
         return this;
       },
     };
+  }
+
+  map<U>(f: (x: T) => U): PendingResult<Awaited<U>, Awaited<E>> {
+    const promise: Promise<Result<U, E>> = this.#promise.then(async (self) => {
+      if (self.isErr()) {
+        return err(self.error);
+      }
+
+      try {
+        return ok(await f(self.value));
+      } catch (e) {
+        return err<U, E>(
+          unexpectedError(
+            "`map`: callback `f` threw an exception",
+            ResultErrorKind.PredicateException,
+            e,
+          ),
+        );
+      }
+    });
+
+    return pendingResult(settleResult(promise));
   }
 
   match<U, F = U>(
