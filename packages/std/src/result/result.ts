@@ -570,6 +570,32 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  mapAll<U, F>(f: (x: Result<T, E>) => Result<U, F>): Result<U, F>;
+  mapAll<U, F>(
+    f: (x: Result<T, E>) => Promise<Result<U, F>>,
+  ): PendingResult<Awaited<U>, Awaited<F>>;
+  mapAll<U, F>(
+    f: (x: Result<T, E>) => MaybePromise<Result<U, F>>,
+  ): Result<U, F> | PendingResult<Awaited<U>, Awaited<F>> {
+    try {
+      const mapped = f(this.copy());
+
+      if (!isPromise(mapped)) {
+        return mapped;
+      }
+
+      return pendingResult(settleResult(mapped));
+    } catch (e) {
+      return err<U, F>(
+        unexpectedError(
+          "`mapAll`: callback `f` threw an exception",
+          ResultErrorKind.PredicateException,
+          e,
+        ),
+      );
+    }
+  }
+
   mapErr<F>(f: (e: E) => Awaited<F>): Result<T, F> {
     if (isOk(this.#state)) {
       return ok(this.#state.value);
@@ -879,6 +905,12 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
     });
 
     return pendingResult(settleResult(promise));
+  }
+
+  mapAll<U, F>(
+    f: (x: Result<T, E>) => Result<U, F> | Promise<Result<U, F>>,
+  ): PendingResult<Awaited<U>, Awaited<F>> {
+    return pendingResult(settleResult(this.#promise.then(f)));
   }
 
   mapErr<F>(f: (x: E) => F): PendingResult<Awaited<T>, Awaited<F>> {

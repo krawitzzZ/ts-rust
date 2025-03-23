@@ -15,7 +15,6 @@ import {
 describe("PendingResult", () => {
   const syncError = new Error("sync error");
   const asyncError = new Error("async error");
-  const _errMsg = "err";
   const expectedErrMsg = "expected error happened";
   const unexpectedErrMsg = "unexpected error happened";
   const expectedErr = expectedError(expectedErrMsg);
@@ -34,10 +33,9 @@ describe("PendingResult", () => {
   const asyncErrorCallback =
     <T = Result<number, string>>(e?: Error) =>
     (): Promise<T> =>
-      Promise.reject(e ?? new Error("async error"));
-  const _rejectedPromise = <T = Result<number, string>>(
-    e?: Error,
-  ): Promise<T> => Promise.reject(e ?? new Error("async error"));
+      Promise.reject(e ?? asyncError);
+  const rejectedPromise = <T = Result<number, string>>(e?: Error): Promise<T> =>
+    Promise.reject(e ?? asyncError);
 
   describe("then", () => {
     it("calls provided `onSuccess` callback with inner `Ok` if self resolves", async () => {
@@ -613,6 +611,120 @@ describe("PendingResult", () => {
       );
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(one);
+    });
+  });
+
+  describe("mapAll", () => {
+    it("calls provided callback with inner `Result` once resolved and returns its result", async () => {
+      const inner = ok(one);
+      const mapped = ok(two);
+      const self = pendingResult(inner);
+      const callback = jest.fn(() => mapped);
+
+      const result = self.mapAll(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(callback).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(mapped);
+      expect(awaited).toStrictEqual(mapped);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(inner);
+    });
+
+    it("calls provided callback with unexpected `Err` if self rejects", async () => {
+      const mapped = ok(two);
+      const self = pendingResult(rejectedPromise<Result<number, string>>());
+      const callback = jest.fn(() => mapped);
+
+      const result = self.mapAll(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(callback).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(mapped);
+      expect(awaited).toStrictEqual(mapped);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(
+        err(
+          unexpectedError(
+            "Pending result rejected unexpectedly",
+            ResultErrorKind.ResultRejection,
+            asyncError,
+          ),
+        ),
+      );
+    });
+
+    it("returns unexpected `Err` if provided callback throws", async () => {
+      const inner = ok(one);
+      const self = pendingResult(inner);
+      const callback = jest.fn(syncErrorCallback());
+
+      const result = self.mapAll(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(callback).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "Pending result rejected unexpectedly",
+          ResultErrorKind.ResultRejection,
+          syncError,
+        ),
+      );
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(inner);
+    });
+
+    it("supports asynchronous callbacks and returns the awaited result", async () => {
+      const inner = ok(one);
+      const mapped = ok(two);
+      const self = pendingResult(inner);
+      const callback = jest.fn(() => Promise.resolve(mapped));
+
+      const result = self.mapAll(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(callback).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(mapped);
+      expect(awaited).toStrictEqual(mapped);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(inner);
+    });
+
+    it("returns unexpected `Err` if provided asynchronous callback rejects", async () => {
+      const inner = ok(one);
+      const self = pendingResult(inner);
+      const callback = jest.fn(() => rejectedPromise());
+
+      const result = self.mapAll(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(callback).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "Pending result rejected unexpectedly",
+          ResultErrorKind.ResultRejection,
+          asyncError,
+        ),
+      );
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(inner);
     });
   });
 

@@ -439,6 +439,64 @@ export interface Resultant<T, E> {
   map<U>(f: (x: T) => Awaited<U>): Result<U, E>;
 
   /**
+   * Maps this result by applying a callback to its full state, executing the
+   * callback for both {@link Ok} and {@link Err}, returning a new {@link Result}.
+   *
+   * Unlike {@link Resultant.andThen | andThen}, which only invokes the callback
+   * for {@link Ok}, this method always calls `f`, passing the entire {@link Result}
+   * as its argument.
+   *
+   * ### Notes
+   * - If `f` throws an {@link Err} with an {@link UnexpectedError} is returned.
+   *
+   * ### Example
+   * ```ts
+   * const okRes = ok<number, string>(42);
+   * const errRes = err<number, string>("failure");
+   *
+   * expect(okRes.mapAll(res => ok(res.unwrapOr(0) + 1))).toStrictEqual(ok(43));
+   * expect(errRes.mapAll(res => ok(res.unwrapOr(0) + 1))).toStrictEqual(ok(1));
+   * expect(okRes.mapAll(res => res.isOk() ? ok("success") : err("fail"))).toStrictEqual(ok("success"));
+   * expect(errRes.mapAll(() => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
+   * ```
+   */
+  mapAll<U, F>(f: (x: Result<T, E>) => Result<U, F>): Result<U, F>;
+  /**
+   * Maps this result by applying a callback to its full state, executing the
+   * callback for both {@link Ok} and {@link Err}, returning a new
+   * {@link PendingResult}.
+   *
+   * Unlike {@link Resultant.andThen | andThen}, which only invokes the callback
+   * for {@link Ok}, this method always calls `f`, passing the entire
+   * {@link Result} as its argument.
+   *
+   * ### Notes
+   * - If `f` returns a `Promise` that rejects, the resulting {@link PendingResult}
+   *   resolves to an {@link Err} with an {@link UnexpectedError}.
+   *
+   * ### Example
+   * ```ts
+   * const okRes = ok<number, string>(42);
+   * const errRes = err<number, string>("failure");
+   *
+   * const mappedOk = okRes.mapAll(res => Promise.resolve(ok(res.unwrapOr(0) + 1)));
+   * expect(await mappedOk).toStrictEqual(ok(43));
+   *
+   * const mappedErr = errRes.mapAll(res => Promise.resolve(ok(res.unwrapOr(0) + 1)));
+   * expect(await mappedErr).toStrictEqual(ok(1));
+   *
+   * const mappedCheck = okRes.mapAll(res => Promise.resolve(res.isOk() ? ok("success") : err("fail")));
+   * expect(await mappedCheck).toStrictEqual(ok("success"));
+   *
+   * const mappedThrow = errRes.mapAll(() => Promise.reject(new Error("boom")));
+   * expect((await mappedThrow).unwrapErr().unexpected).toBeDefined();
+   * ```
+   */
+  mapAll<U, F>(
+    f: (x: Result<T, E>) => Promise<Result<U, F>>,
+  ): PendingResult<Awaited<U>, Awaited<F>>;
+
+  /**
    * Transforms this result by applying `f` to the error if it’s an {@link Err}
    * with an expected error, or preserves the {@link Ok} unchanged.
    *
@@ -901,6 +959,10 @@ export interface PendingResult<T, E>
    * ```
    */
   map<U>(f: (x: T) => U): PendingResult<Awaited<U>, Awaited<E>>;
+
+  mapAll<U, F>(
+    f: (x: Result<T, E>) => Result<U, F> | Promise<Result<U, F>>,
+  ): PendingResult<Awaited<U>, Awaited<F>>;
 
   /**
    * Transforms this pending result by applying `f` to the error if it resolves
