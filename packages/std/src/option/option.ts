@@ -573,7 +573,7 @@ class _Option<T> implements Optional<T> {
   }
 
   or(x: Option<T>): Option<T> {
-    return isSomething(this.#value) ? some(this.#value) : x.copy();
+    return isSomething(this.#value) ? some(this.#value) : x;
   }
 
   orElse(f: () => Option<T>): Option<T> {
@@ -892,8 +892,12 @@ class _PendingOption<T> implements PendingOption<T> {
   }
 
   or(x: MaybePromise<Option<T>>): PendingSettledOpt<T> {
-    return pendingOption(() =>
-      settleOption(this.#promise.then(async (option) => option.or(await x))),
+    return pendingOption(
+      settleOption(
+        this.#promise.then((option) =>
+          option.isSome() ? some(option.value) : x,
+        ),
+      ),
     );
   }
 

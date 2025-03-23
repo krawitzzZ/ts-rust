@@ -940,7 +940,7 @@ describe("Option", () => {
       const result = option.or(other);
 
       expect(result.isSome()).toBe(true);
-      expect(result).not.toBe(other);
+      expect(result).toBe(other);
       expect(result).toStrictEqual(other);
       expect(result.unwrap()).toBe(one);
     });

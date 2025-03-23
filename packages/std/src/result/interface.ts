@@ -616,6 +616,22 @@ export interface Resultant<T, E> {
   ok(): Option<T>;
 
   /**
+   * Returns the current result if it is {@link Ok}, otherwise returns `x`.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.or(ok(3))).toStrictEqual(ok(2));
+   * expect(x.or(err("failure"))).toStrictEqual(ok(2));
+   * expect(y.or(ok(3))).toStrictEqual(ok(3));
+   * expect(y.or(err("another one"))).toStrictEqual(err("failure"));
+   * ```
+   */
+  or<F>(x: Result<T, F>): Result<T, F>;
+
+  /**
    * Executes `f` with a copy of this result, then returns a new copy unchanged.
    *
    * Useful for side-effects like logging, works with both {@link Ok} and {@link Err}.
@@ -1008,6 +1024,8 @@ export interface PendingResult<T, E>
    * Unlike {@link andThen}, which only invokes the callback for {@link Ok},
    * this method always calls `f`, passing the entire {@link Result} as its argument.
    *
+   * This is the asynchronous version of {@link Resultant.mapAll | mapAll}.
+   *
    * ### Notes
    * - If `f` throws or returns a `Promise` that rejects, the newly created
    *   {@link PendingResult} will resolve to an {@link Err} with
@@ -1085,6 +1103,33 @@ export interface PendingResult<T, E>
     f: (x: T) => U,
     g: (e: CheckedError<E>) => F,
   ): Promise<Awaited<U | F>>;
+
+  /**
+   * Returns this pending result if it resolves to an {@link Ok},
+   * otherwise returns `x`.
+   *
+   * This is the asynchronous version of {@link Resultant.or | or}.
+   *
+   * ### Notes
+   * - If this result resolves to an {@link Err} and `x` is a `Promise` that
+   *   rejects, the resulting {@link PendingResult} resolves to an {@link Err}
+   *   with an {@link UnexpectedError}.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2).toPending();
+   * const y = err<number, string>("failure").toPending();
+   *
+   * expect(await x.or(ok(3))).toStrictEqual(ok(2));
+   * expect(await x.or(err("another one"))).toStrictEqual(ok(2));
+   * expect(await y.or(ok(3))).toStrictEqual(ok(3));
+   * expect(await y.or(err("another one"))).toStrictEqual(err("failure"));
+   * expect(await y.or(Promise.reject(new Error("boom"))).unwrapErr().unexpected).toBeDefined();
+   * ```
+   */
+  or<F>(
+    x: Result<T, F> | Promise<Result<T, F>>,
+  ): PendingResult<Awaited<T>, Awaited<F>>;
 
   /**
    * Executes `f` with the resolved result, then returns a new {@link PendingResult}

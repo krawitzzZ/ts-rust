@@ -1083,6 +1083,33 @@ describe("Result", () => {
     );
   });
 
+  describe("or", () => {
+    it.each([one, Promise.resolve(two)])(
+      "returns self if self is `Ok { %s }`",
+      (v) => {
+        const self = ok(v);
+        const other = ok(one);
+        const result = self.or(other);
+
+        expect(result).not.toBe(self);
+        // @ts-expect-error -- for testing
+        expect(result.unwrap()).toBe(v);
+      },
+    );
+
+    it.each([expectedErr, unexpectedErr])(
+      "returns other if self is `Err { %p }`",
+      (e) => {
+        const self = err(e);
+        const other = ok(one);
+        const result = self.or(other);
+
+        expect(result.isOk()).toBe(true);
+        expect(result).toBe(other);
+      },
+    );
+  });
+
   describe("tap", () => {
     it.each([
       err<number, string>(expectedErr),

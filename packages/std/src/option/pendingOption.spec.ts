@@ -642,37 +642,58 @@ describe("PendingOption", () => {
   });
 
   describe("or", () => {
-    it.each([some(1), Promise.resolve(some(1))])(
-      "calls inner `Option`'s `or` method with (awaited) provided default '%O' and return its result",
-      async (other) => {
-        const inner = some(one);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- for some reason ts expects other to be PendingOption only
-        const spy = jest.spyOn(inner, "or").mockReturnValueOnce(other as any);
-        const self = pendingOption(inner);
-        const result = self.or(other);
-
-        expect(result).not.toBe(self);
-
-        const awaited = await result;
-
-        expect(awaited).not.toBe(await other);
-        expect(awaited).toStrictEqual(await other);
-        expect(spy).toHaveBeenCalledTimes(1);
-      },
-    );
-
-    it("does not call internal `Option`'s `or` method and returns `None` if provided default `Promise<Option<T>>` rejects", async () => {
+    it("returns self if self is `Some`", async () => {
       const inner = some(one);
-      const spy = jest.spyOn(inner, "or");
+      const other = some(two);
       const self = pendingOption(inner);
-      const result = self.or(rejectedPromise());
+      const result = self.or(other);
 
-      expect(result).not.toBe(self);
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.unwrap()).toBe(inner.unwrap());
+    });
+
+    it("does not await for provided promise and returns self if self is `Some`", async () => {
+      const inner = some(one);
+      const other = Promise.resolve(some(two));
+      const spy = jest.spyOn(other, "then");
+      const self = pendingOption(inner);
+      const result = self.or(other);
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.unwrap()).toBe(inner.unwrap());
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("returns other if self is `None`", async () => {
+      const inner = none();
+      const other = some(two);
+      const self = pendingOption(inner);
+      const result = self.or(other);
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.unwrap()).toBe(other.unwrap());
+    });
+
+    it("returns `None` if self is `None` and provided promise with option rejects", async () => {
+      const inner = none();
+      const other = Promise.reject(new Error("oops"));
+      const self = pendingOption(inner);
+      const result = self.or(other);
+
+      expect(isPendingOption(result)).toBe(true);
 
       const awaited = await result;
 
       expect(awaited.isNone()).toBe(true);
-      expect(spy).not.toHaveBeenCalled();
     });
   });
 

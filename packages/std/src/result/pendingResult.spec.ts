@@ -895,6 +895,70 @@ describe("PendingResult", () => {
     });
   });
 
+  describe("or", () => {
+    it("returns self if self is `Ok`", async () => {
+      const inner = ok(one);
+      const other = ok(two);
+      const self = pendingResult(inner);
+      const result = self.or(other);
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.unwrap()).toBe(inner.unwrap());
+    });
+
+    it("does not await for provided promise and returns self if self is `Ok`", async () => {
+      const inner = ok(one);
+      const other = Promise.resolve(ok(two));
+      const spy = jest.spyOn(other, "then");
+      const self = pendingResult(inner);
+      const result = self.or(other);
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.unwrap()).toBe(inner.unwrap());
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("returns other if self is `Err`", async () => {
+      const msg = "nope";
+      const inner = err(msg);
+      const other = ok(two);
+      const self = pendingResult(inner);
+      const result = self.or(other);
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.unwrap()).toBe(other.unwrap());
+    });
+
+    it("returns unexpected `Err` if self is `Err` and provided promise with result rejects", async () => {
+      const inner = err("nope");
+      const other = Promise.reject(asyncError);
+      const self = pendingResult(inner);
+      const result = self.or(other);
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "Pending result rejected unexpectedly",
+          ResultErrorKind.ResultRejection,
+          asyncError,
+        ),
+      );
+    });
+  });
+
   describe("tap", () => {
     it("calls provided callback with copy of inner `Result` once resolved", async () => {
       const inner = ok<number, string>(one);

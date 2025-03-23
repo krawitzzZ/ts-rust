@@ -683,6 +683,14 @@ class _Result<T, E> implements Resultant<T, E> {
     return isOk(this.#state) ? some<T>(this.#state.value) : none<T>();
   }
 
+  or<F>(x: Result<T, F>): Result<T, F> {
+    if (isOk(this.#state)) {
+      return ok(this.#state.value);
+    }
+
+    return x;
+  }
+
   tap(f: (x: Result<T, E>) => unknown): Result<T, E> {
     try {
       const r = f(this.copy());
@@ -964,6 +972,14 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
     return this.#promise.then((self) =>
       toPromise(self.isOk() ? f(self.value) : g(self.error)),
     );
+  }
+
+  or<F>(x: MaybePromise<Result<T, F>>): PendingResult<Awaited<T>, Awaited<F>> {
+    const promise: Promise<Result<T, F>> = this.#promise.then((self) =>
+      self.isOk() ? ok(self.value) : x,
+    );
+
+    return pendingResult(settleResult(promise));
   }
 
   tap(f: (x: Result<T, E>) => unknown): PendingResult<T, E> {
