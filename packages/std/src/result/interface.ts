@@ -432,11 +432,33 @@ export interface Resultant<T, E> {
    * const y = err<number, string>("failure");
    *
    * expect(x.map(n => n * 2)).toStrictEqual(ok(4));
-   * expect(x.map(() => { throw new Error("boom") })).toStrictEqual(err(unexpected(new Error("boom"))));
+   * expect(x.map(() => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
    * expect(y.map(n => n * 2)).toStrictEqual(err("failure"));
    * ```
    */
   map<U>(f: (x: T) => Awaited<U>): Result<U, E>;
+
+  /**
+   * Transforms this result by applying `f` to the error if it’s an {@link Err}
+   * with an expected error, or preserves the {@link Ok} unchanged.
+   *
+   * ### Notes
+   * - If `f` throws, returns an {@link Err} with an {@link UnexpectedError}
+   *   containing the original error.
+   * - If this is an {@link Err} with an {@link UnexpectedError}, `f` is not called,
+   *   and the original error is preserved.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.mapErr(e => e.length)).toStrictEqual(ok(2));
+   * expect(y.mapErr(e => e.length)).toStrictEqual(err(7));
+   * expect(y.mapErr(() => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
+   * ```
+   */
+  mapErr<F>(f: (e: E) => Awaited<F>): Result<T, F>;
 
   /**
    * Matches this result, returning `f` applied to the value if {@link Ok},
@@ -823,11 +845,35 @@ export interface PendingResult<T, E>
    * const y = err<number, string>("failure").toPending();
    *
    * expect(await x.map(n => n * 2)).toStrictEqual(ok(4));
-   * expect(await x.map(() => { throw new Error("boom") })).toStrictEqual(err(unexpected("boom")));
+   * expect(await x.map(() => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
    * expect(await y.map(n => n * 2)).toStrictEqual(err("failure"));
    * ```
    */
   map<U>(f: (x: T) => U): PendingResult<Awaited<U>, Awaited<E>>;
+
+  /**
+   * Transforms this pending result by applying `f` to the error if it resolves
+   * to an {@link Err} with an expected error, or preserves the {@link Ok} unchanged.
+   *
+   * This is the asynchronous version of {@link Resultant.mapErr | mapErr}.
+   *
+   * ### Notes
+   * - If `f` throws or returns a rejected promise, returns a {@link PendingResult}
+   *   with an {@link Err} containing an {@link UnexpectedError}.
+   * - If this resolves to an {@link Err} with an {@link UnexpectedError}, `f`
+   *   is not called, and the original error is preserved.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2).toPending();
+   * const y = err<number, string>("failure").toPending();
+   *
+   * expect(await x.mapErr(e => e.length)).toStrictEqual(ok(2));
+   * expect(await y.mapErr(e => e.length)).toStrictEqual(err(7));
+   * expect(await y.mapErr(() => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
+   * ```
+   */
+  mapErr<F>(f: (x: E) => F): PendingResult<Awaited<T>, Awaited<F>>;
 
   /**
    * Matches this {@link PendingResult}, returning a promise of `f` applied to

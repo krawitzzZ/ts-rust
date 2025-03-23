@@ -739,6 +739,54 @@ describe("Result", () => {
     });
   });
 
+  describe("mapErr", () => {
+    it("does not call provided callback and returns self if self is unexpected `Err`", () => {
+      const self = err(unexpectedErr);
+      const callback = jest.fn();
+      const result = self.mapErr(callback);
+
+      expect(callback).not.toHaveBeenCalled();
+      expect(result.unwrapErr()).toStrictEqual(unexpectedErr);
+    });
+
+    it("does not call provided callback and returns self if self is `Ok`", () => {
+      const self = ok(one);
+      const callback = jest.fn();
+      const result = self.mapErr(callback);
+
+      expect(callback).not.toHaveBeenCalled();
+      expect(result.unwrap()).toBe(one);
+    });
+
+    it("calls provided callback with inner expected error and returns new `Result` with result", () => {
+      const self = err(expectedErr);
+      const callback = jest.fn(() => two);
+      const result = self.mapErr(callback);
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr().expected).toBe(two);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(expectedErrMsg);
+    });
+
+    it("returns `Err` with unexpected error if provided callback throws", () => {
+      const self = err(expectedErr);
+      const callback = jest.fn(() => {
+        throw syncError;
+      });
+      const result = self.mapErr(callback);
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "`mapErr`: callback `f` threw an exception",
+          ResultErrorKind.PredicateException,
+          syncError,
+        ),
+      );
+    });
+  });
+
   describe("match", () => {
     it("calls `ok` callback and returns its result if self is `Ok`", () => {
       const self = ok(one);

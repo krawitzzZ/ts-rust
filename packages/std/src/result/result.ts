@@ -570,6 +570,29 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  mapErr<F>(f: (e: E) => Awaited<F>): Result<T, F> {
+    if (isOk(this.#state)) {
+      return ok(this.#state.value);
+    }
+
+    return this.#state.error.handle(
+      (e) => err<T, F>(unexpectedError(e)),
+      (e) => {
+        try {
+          return err(f(e));
+        } catch (error) {
+          return err<T, F>(
+            unexpectedError(
+              "`mapErr`: callback `f` threw an exception",
+              ResultErrorKind.PredicateException,
+              error,
+            ),
+          );
+        }
+      },
+    );
+  }
+
   match<U, F = U>(
     this: SettledResult<T, E>,
     f: (x: T) => Awaited<U>,
@@ -804,6 +827,32 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
         return err<U, E>(
           unexpectedError(
             "`map`: callback `f` threw an exception",
+            ResultErrorKind.PredicateException,
+            e,
+          ),
+        );
+      }
+    });
+
+    return pendingResult(settleResult(promise));
+  }
+
+  mapErr<F>(f: (x: E) => F): PendingResult<Awaited<T>, Awaited<F>> {
+    const promise: Promise<Result<T, F>> = this.#promise.then(async (self) => {
+      if (self.isOk()) {
+        return ok(self.value);
+      }
+
+      if (self.error.isUnexpected()) {
+        return err<T, F>(unexpectedError(self.error.unexpected));
+      }
+
+      try {
+        return err(await f(self.error.expected));
+      } catch (e) {
+        return err<T, F>(
+          unexpectedError(
+            "`mapErr`: callback `f` threw an exception",
             ResultErrorKind.PredicateException,
             e,
           ),

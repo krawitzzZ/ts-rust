@@ -616,6 +616,106 @@ describe("PendingResult", () => {
     });
   });
 
+  describe("mapErr", () => {
+    it("does not call provided callback and returns self `Ok` if self is `Ok`", async () => {
+      const inner = ok(one);
+      const self = pendingResult(inner);
+      const callback = jest.fn();
+      const result = self.mapErr(callback);
+
+      expect(result).not.toBe(self);
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(inner);
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap()).toBe(one);
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it("does not call provided callback and returns self `Err` if self is unexpected `Err`", async () => {
+      const inner = err(unexpectedErr);
+      const self = pendingResult(inner);
+      const callback = jest.fn();
+      const result = self.mapErr(callback);
+
+      expect(result).not.toBe(self);
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(inner);
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr().unexpected).toBe(unexpectedErr.unexpected);
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it.each([two, Promise.resolve(two)])(
+      "calls provided callback and returns `Err` with its (awaited) result '%O' if self is expected `Err`",
+      async (mapped) => {
+        const inner = err(expectedErr);
+        const self = pendingResult(inner);
+        const callback = jest.fn(() => mapped);
+        const result = self.mapErr(callback);
+
+        expect(result).not.toBe(self);
+
+        const awaited = await result;
+
+        expect(awaited.isErr()).toBe(true);
+        expect(awaited.unwrapErr().expected).toBe(await mapped);
+        expect(awaited).not.toBe(inner);
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback).toHaveBeenCalledWith(expectedErr.expected);
+      },
+    );
+
+    it("calls provided callback and returns unexpected `Err` if self is expected `Err` and provided callback throws an exception", async () => {
+      const inner = err(expectedErr);
+      const self = pendingResult(inner);
+      const callback = jest.fn(syncErrorCallback());
+      const result = self.mapErr(callback);
+
+      expect(result).not.toBe(self);
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(inner);
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "`mapErr`: callback `f` threw an exception",
+          ResultErrorKind.PredicateException,
+          syncError,
+        ),
+      );
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(expectedErr.expected);
+    });
+
+    it("calls provided callback and returns unexpected `Err` if self is expected `Err` and provided callback rejects with an exception", async () => {
+      const inner = err(expectedErr);
+      const self = pendingResult(inner);
+      const callback = jest.fn(asyncErrorCallback());
+      const result = self.mapErr(callback);
+
+      expect(result).not.toBe(self);
+
+      const awaited = await result;
+
+      expect(awaited).not.toBe(inner);
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "`mapErr`: callback `f` threw an exception",
+          ResultErrorKind.PredicateException,
+          asyncError,
+        ),
+      );
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(expectedErr.expected);
+    });
+  });
+
   describe("match", () => {
     it("calls `ok` callback and returns its result if self is `Ok`", async () => {
       const self = pendingOk(one);
