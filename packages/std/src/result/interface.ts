@@ -1158,17 +1158,19 @@ export interface PendingResult<T, E>
    * This is the asynchronous version of {@link Resultant.orElse | orElse}.
    *
    * ### Notes
-   * - If `f` throws or returns a rejected promise, returns a {@link PendingResult}
-   *   with an {@link Err} containing an {@link UnexpectedError}.
+   * - If `f` throws or returns a rejected promise, the resulting
+   *   {@link PendingResult} resolves to an {@link Err} with
+   *   an {@link UnexpectedError}.
    *
    * ### Example
    * ```ts
-   * const x = pendingResult(some(2));
-   * const y = pendingResult(none<number>());
+   * const x = ok<number, string>(2).toPending();
+   * const y = err<number, string>("failure").toPending();
    *
-   * expect(await x.orElse(() => some(3))).toStrictEqual(some(2));
-   * expect(await y.orElse(() => Promise.resolve(some(3)))).toStrictEqual(some(3));
-   * expect(await y.orElse(() => none())).toStrictEqual(none());
+   * expect(await x.orElse(() => ok(3))).toStrictEqual(ok(2));
+   * expect(await y.orElse(() => Promise.resolve(ok(3)))).toStrictEqual(ok(3));
+   * expect(await y.orElse(() => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
+   * expect(await y.orElse(() => err("another one"))).toStrictEqual(err("another one"));
    * ```
    */
   orElse<F>(
