@@ -960,6 +960,34 @@ export interface PendingResult<T, E>
    */
   map<U>(f: (x: T) => U): PendingResult<Awaited<U>, Awaited<E>>;
 
+  /**
+   * Maps this pending result by applying a callback to its full state,
+   * executing the callback for both {@link Ok} and {@link Err}, returning
+   * a new {@link PendingResult}.
+   *
+   * Unlike {@link andThen}, which only invokes the callback for {@link Ok},
+   * this method always calls `f`, passing the entire {@link Result} as its argument.
+   *
+   * ### Notes
+   * - If `f` throws or returns a `Promise` that rejects, the newly created
+   *   {@link PendingResult} will resolve to an {@link Err} with
+   *   an {@link UnexpectedError}.
+   *
+   * ### Example
+   * ```ts
+   * const okRes = ok<number, string>(42).toPending();
+   * const errRes = err<number, string>("failure").toPending();
+   *
+   * const okMapped = okRes.mapAll(res => Promise.resolve(ok(res.unwrapOr(0) + 1)));
+   * expect(await okMapped).toStrictEqual(ok(43));
+   *
+   * const errMapped = errRes.mapAll(res => Promise.resolve(ok(res.unwrapOr(0) + 1)));
+   * expect(await errMapped).toStrictEqual(ok(1));
+   *
+   * const throwMapped = okRes.mapAll(() => { throw new Error("boom") });
+   * expect(await throwMapped.unwrapErr().unexpected).toBeDefined();
+   * ```
+   */
   mapAll<U, F>(
     f: (x: Result<T, E>) => Result<U, F> | Promise<Result<U, F>>,
   ): PendingResult<Awaited<U>, Awaited<F>>;
