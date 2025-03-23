@@ -183,7 +183,7 @@ export interface Resultant<T, E> {
    * expect(y.clone()).toStrictEqual(ok({ a: 0 }));
    * ```
    */
-  clone<U, V>(this: Result<Cloneable<U>, Cloneable<V>>): Result<U, V>;
+  clone<U, F>(this: Result<Cloneable<U>, Cloneable<F>>): Result<U, F>;
 
   /**
    * Returns a shallow copy of the {@link Result}.
@@ -630,6 +630,26 @@ export interface Resultant<T, E> {
    * ```
    */
   or<F>(x: Result<T, F>): Result<T, F>;
+
+  /**
+   * Returns the current result if {@link Ok}, otherwise returns the result of `f`.
+   *
+   * ### Notes
+   * - If `f` throws, returns an {@link Err} with an {@link UnexpectedError}
+   *   containing the original error.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.orElse(() => ok(3))).toStrictEqual(ok(2));
+   * expect(y.orElse(() => ok(3))).toStrictEqual(ok(3));
+   * expect(y.orElse(() => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
+   * expect(y.orElse(() => err("another one"))).toStrictEqual(err("another one"));
+   * ```
+   */
+  orElse<F>(f: () => Result<T, F>): Result<T, F>;
 
   /**
    * Executes `f` with a copy of this result, then returns a new copy unchanged.
@@ -1129,6 +1149,30 @@ export interface PendingResult<T, E>
    */
   or<F>(
     x: Result<T, F> | Promise<Result<T, F>>,
+  ): PendingResult<Awaited<T>, Awaited<F>>;
+
+  /**
+   * Returns this {@link PendingResult} if it resolves to {@link Ok}, otherwise
+   * returns a {@link PendingResult} with the result of `f`.
+   *
+   * This is the asynchronous version of {@link Resultant.orElse | orElse}.
+   *
+   * ### Notes
+   * - If `f` throws or returns a rejected promise, returns a {@link PendingResult}
+   *   with an {@link Err} containing an {@link UnexpectedError}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingResult(some(2));
+   * const y = pendingResult(none<number>());
+   *
+   * expect(await x.orElse(() => some(3))).toStrictEqual(some(2));
+   * expect(await y.orElse(() => Promise.resolve(some(3)))).toStrictEqual(some(3));
+   * expect(await y.orElse(() => none())).toStrictEqual(none());
+   * ```
+   */
+  orElse<F>(
+    f: () => Result<T, F> | Promise<Result<T, F>>,
   ): PendingResult<Awaited<T>, Awaited<F>>;
 
   /**

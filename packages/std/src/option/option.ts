@@ -904,7 +904,9 @@ class _PendingOption<T> implements PendingOption<T> {
   orElse(f: () => MaybePromise<Option<T>>): PendingSettledOpt<T> {
     return pendingOption(
       settleOption(
-        this.#promise.then((option) => (option.isSome() ? option.copy() : f())),
+        this.#promise.then((option) =>
+          option.isSome() ? some(option.value) : f(),
+        ),
       ),
     );
   }

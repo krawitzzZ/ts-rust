@@ -691,6 +691,24 @@ class _Result<T, E> implements Resultant<T, E> {
     return x;
   }
 
+  orElse<F>(f: () => Result<T, F>): Result<T, F> {
+    if (isOk(this.#state)) {
+      return ok(this.#state.value);
+    }
+
+    try {
+      return f();
+    } catch (e) {
+      return err<T, F>(
+        unexpectedError(
+          "`orElse`: callback `f` threw an exception",
+          ResultErrorKind.PredicateException,
+          e,
+        ),
+      );
+    }
+  }
+
   tap(f: (x: Result<T, E>) => unknown): Result<T, E> {
     try {
       const r = f(this.copy());
@@ -978,6 +996,30 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
     const promise: Promise<Result<T, F>> = this.#promise.then((self) =>
       self.isOk() ? ok(self.value) : x,
     );
+
+    return pendingResult(settleResult(promise));
+  }
+
+  orElse<F>(
+    f: () => Result<T, F> | Promise<Result<T, F>>,
+  ): PendingResult<Awaited<T>, Awaited<F>> {
+    const promise: Promise<Result<T, F>> = this.#promise.then((self) => {
+      if (self.isOk()) {
+        return ok(self.value);
+      }
+
+      try {
+        return f();
+      } catch (e) {
+        return err<T, F>(
+          unexpectedError(
+            "`orElse`: callback `f` threw an exception",
+            ResultErrorKind.PredicateException,
+            e,
+          ),
+        );
+      }
+    });
 
     return pendingResult(settleResult(promise));
   }

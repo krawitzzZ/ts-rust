@@ -1110,6 +1110,55 @@ describe("Result", () => {
     );
   });
 
+  describe("orElse", () => {
+    it.each([one, Promise.resolve(two)])(
+      "returns self if self is `Ok { %s }`",
+      (v) => {
+        const self = ok(v);
+        const other = ok(one);
+        const callback = jest.fn(() => other);
+        const result = self.orElse(callback);
+
+        expect(result).not.toBe(self);
+        // @ts-expect-error -- for testing
+        expect(result.unwrap()).toBe(v);
+        expect(callback).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([expectedErr, unexpectedErr])(
+      "returns result of provided callback if self is `Err { %p }`",
+      (e) => {
+        const self = err(e);
+        const other = ok(one);
+        const callback = jest.fn(() => other);
+        const result = self.orElse(callback);
+
+        expect(result.isOk()).toBe(true);
+        expect(result).toBe(other);
+        expect(callback).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it("returns unexpected `Err` if self is `Err` and provided callback throws", () => {
+      const self = err("error");
+      const callback = jest.fn(() => {
+        throw syncError;
+      });
+      const result = self.orElse(callback);
+
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "`orElse`: callback `f` threw an exception",
+          ResultErrorKind.PredicateException,
+          syncError,
+        ),
+      );
+    });
+  });
+
   describe("tap", () => {
     it.each([
       err<number, string>(expectedErr),
