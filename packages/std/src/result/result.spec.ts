@@ -1059,6 +1059,30 @@ describe("Result", () => {
     });
   });
 
+  describe("ok", () => {
+    it.each([one, Promise.resolve(two)])(
+      "returns `Some` if self is `Ok { %s }`",
+      (v) => {
+        const self = ok(v);
+        const result = self.ok();
+
+        expect(result.isSome()).toBe(true);
+        // @ts-expect-error -- for testing
+        expect(result.unwrap()).toBe(v);
+      },
+    );
+
+    it.each([expectedErr, unexpectedErr])(
+      "returns `None` if self is `Err { %p }`",
+      (e) => {
+        const self = err(e);
+        const result = self.ok();
+
+        expect(result.isNone()).toBe(true);
+      },
+    );
+  });
+
   describe("tap", () => {
     it.each([
       err<number, string>(expectedErr),

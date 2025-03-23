@@ -599,6 +599,23 @@ export interface Resultant<T, E> {
   ): U | F;
 
   /**
+   * Converts this result to an {@link Option}, discarding the error if present.
+   *
+   * Maps {@link Ok | Ok(v)} to {@link Some | Some(v)} and {@link Err | Err(e)}
+   * to {@link None}.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.ok()).toStrictEqual(some(2));
+   * expect(y.ok()).toStrictEqual(none());
+   * ```
+   */
+  ok(): Option<T>;
+
+  /**
    * Executes `f` with a copy of this result, then returns a new copy unchanged.
    *
    * Useful for side-effects like logging, works with both {@link Ok} and {@link Err}.

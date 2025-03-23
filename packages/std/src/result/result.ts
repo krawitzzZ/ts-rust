@@ -679,6 +679,10 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  ok(): Option<T> {
+    return isOk(this.#state) ? some<T>(this.#state.value) : none<T>();
+  }
+
   tap(f: (x: Result<T, E>) => unknown): Result<T, E> {
     try {
       const r = f(this.copy());
