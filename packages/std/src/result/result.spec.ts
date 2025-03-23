@@ -613,10 +613,6 @@ describe("Result", () => {
     });
 
     it("returns `false` if provided callback throws and self is `Err`", () => {
-      expect(err(expectedErr).isErrAnd(() => false)).toBe(false);
-    });
-
-    it("returns `false` if provided callback throws and self is `Err`", () => {
       expect(
         err(expectedErr).isErrAnd(() => {
           throw syncError;
@@ -631,6 +627,28 @@ describe("Result", () => {
       [true, ok(one)],
     ])("returns '%p' if self is '%s'", (exp, result) => {
       expect(result.isOk()).toBe(exp);
+    });
+  });
+
+  describe("isOkAnd", () => {
+    it("returns `false` if provided callback returns `true`, but self is `Err`", () => {
+      expect(err(expectedErr).isOkAnd(() => true)).toBe(false);
+    });
+
+    it("returns `false` if provided callback returns `false` and self is `Ok`", () => {
+      expect(ok(one).isOkAnd(() => false)).toBe(false);
+    });
+
+    it("returns `true` if provided callback returns `true` and self is `Ok`", () => {
+      expect(ok(one).isOkAnd(() => true)).toBe(true);
+    });
+
+    it("returns `false` if provided callback throws and self is `Ok`", () => {
+      expect(
+        ok(one).isOkAnd(() => {
+          throw syncError;
+        }),
+      ).toBe(false);
     });
   });
 

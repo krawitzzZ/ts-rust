@@ -373,6 +373,25 @@ export interface Resultant<T, E> {
   isOk(): this is Ok<T, E>;
 
   /**
+   * Returns `true` if the result is {@link Ok} and `f` returns `true`
+   * for the contained value.
+   *
+   * ### Notes
+   * - *Default*: If `f` throws, `false` is returned.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.isOkAnd(n => n > 0)).toBe(true);
+   * expect(x.isOkAnd(n => n < 0)).toBe(false);
+   * expect(y.isOkAnd(n => true)).toBe(false);
+   * ```
+   */
+  isOkAnd(f: (x: T) => boolean): this is Ok<T, E> & boolean;
+
+  /**
    * Matches this result, returning `f` applied to the value if {@link Ok},
    * or `g` applied to the {@link CheckedError} if {@link Err}.
    *

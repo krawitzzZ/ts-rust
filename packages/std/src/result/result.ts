@@ -518,6 +518,18 @@ class _Result<T, E> implements Resultant<T, E> {
     return isOk(this.#state);
   }
 
+  isOkAnd(f: (x: T) => boolean): this is Ok<T, E> & boolean {
+    if (isErr(this.#state)) {
+      return false;
+    }
+
+    try {
+      return f(this.#state.value);
+    } catch {
+      return false;
+    }
+  }
+
   match<U, F = U>(
     this: SettledResult<T, E>,
     f: (x: T) => Awaited<U>,
