@@ -599,6 +599,29 @@ export interface Resultant<T, E> {
   ): U | F;
 
   /**
+   * Executes `f` with a copy of this result, then returns a new copy unchanged.
+   *
+   * Useful for side-effects like logging, works with both {@link Ok} and {@link Err}.
+   *
+   * ### Notes
+   * - If `f` throws or rejects, the error is silently ignored
+   * - If `f` returns a promise, the promise is not awaited before returning
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(42);
+   * const y = err<number, string>("failure");
+   * let log = "";
+   *
+   * expect(x.tap(res => (log = res.toString()))).toStrictEqual(ok(42));
+   * expect(log).toBe("Ok { 42 }");
+   * expect(y.tap(res => (log = res.toString()))).toStrictEqual(err("failure"));
+   * expect(log).toBe("Err { 'failure' }");
+   * ```
+   */
+  tap(f: (x: Result<T, E>) => unknown): Result<T, E>;
+
+  /**
    * Converts this result to a {@link PendingResult} using a shallow
    * {@link Resultant.copy | copy} of its current state.
    *
@@ -1041,6 +1064,30 @@ export interface PendingResult<T, E>
     f: (x: T) => U,
     g: (e: CheckedError<E>) => F,
   ): Promise<Awaited<U | F>>;
+
+  /**
+   * Executes `f` with the resolved result, then returns a new {@link PendingResult}
+   * unchanged.
+   *
+   * This is the asynchronous version of {@link Resultant.tap | tap}.
+   *
+   * ### Notes
+   * - If `f` throws or rejects, the error is ignored
+   * - If `f` returns a promise, the promise is not awaited before returning
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingResult(ok<number, string>(42));
+   * const y = pendingResult(err<number, string>("failure"));
+   * let log = "";
+   *
+   * expect(await x.tap(res => (log = res.toString()))).toStrictEqual(ok(42));
+   * expect(log).toBe("Some { 42 }");
+   * expect(await y.tap(res => (log = res.toString()))).toStrictEqual(err("failure"));
+   * expect(log).toBe("Err { 'failure' }");
+   * ```
+   */
+  tap(f: (x: Result<T, E>) => unknown): PendingResult<T, E>;
 
   /**
    * Extracts this {@link PendingResult}’s state, returning a promise of a tuple

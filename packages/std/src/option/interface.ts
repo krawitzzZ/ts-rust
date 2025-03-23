@@ -652,10 +652,11 @@ export interface Optional<T> {
   /**
    * Executes `f` with a copy of this option, then returns a new copy unchanged.
    *
-   * Useful for side-effects like logging, affecting both {@link Some} and {@link None}.
+   * Useful for side-effects like logging, works with both {@link Some} and {@link None}.
    *
    * ### Notes
-   * - If `f` throws, the error is ignored.
+   * - If `f` throws, the error is ignored
+   * - If `f` returns a promise, the promise is not awaited before returning
    *
    * ### Example
    * ```ts
@@ -669,7 +670,7 @@ export interface Optional<T> {
    * expect(log).toBe("None");
    * ```
    */
-  tap(f: (opt: Option<T>) => unknown): Option<T>;
+  tap(f: (x: Option<T>) => unknown): Option<T>;
 
   /**
    * Maps this option to a {@link PendingOption} by supplying a shallow
@@ -1162,8 +1163,11 @@ export interface PendingOption<T>
    * Executes `f` with the resolved option, then returns a new {@link PendingOption}
    * unchanged.
    *
+   * This is the asynchronous version of {@link Optional.tap | tap}.
+   *
    * ### Notes
-   * - If `f` throws or rejects, the error is ignored.
+   * - If `f` throws or rejects, the error is ignored
+   * - If `f` returns a promise, the promise is not awaited before returning
    *
    * ### Example
    * ```ts
@@ -1177,7 +1181,7 @@ export interface PendingOption<T>
    * expect(log).toBe("None");
    * ```
    */
-  tap(f: (opt: Option<T>) => unknown): PendingOption<T>;
+  tap(f: (x: Option<T>) => unknown): PendingOption<T>;
 
   /**
    * Transposes a {@link PendingOption} of a {@link Result} into a {@link PendingResult}

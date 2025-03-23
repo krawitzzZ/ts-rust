@@ -906,23 +906,7 @@ class _PendingOption<T> implements PendingOption<T> {
   }
 
   tap(f: (opt: Option<T>) => unknown): PendingOption<T> {
-    return pendingOption(
-      this.#promise.then(async (opt) => {
-        try {
-          const r = f(opt.copy());
-
-          if (isPromise(r)) {
-            await r.catch(() => void 0);
-          }
-
-          return opt.copy();
-        } catch {
-          // do not care about the error
-        }
-
-        return opt.copy();
-      }),
-    );
+    return pendingOption(this.#promise.then((opt) => opt.tap(f)));
   }
 
   toString(): string {

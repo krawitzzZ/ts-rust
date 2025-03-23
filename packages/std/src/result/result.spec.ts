@@ -1059,6 +1059,65 @@ describe("Result", () => {
     });
   });
 
+  describe("tap", () => {
+    it.each([
+      err<number, string>(expectedErr),
+      err<number, string>(unexpectedErr),
+      ok<number, string>(one),
+    ])(
+      "calls provided callback with a copy of the result and returns a copy of self if self is `%s`",
+      (res) => {
+        let capturedResult: Result<number, string> | null = null;
+        const callback = jest.fn((r: Result<number, string>) => {
+          capturedResult = r;
+        });
+
+        const result = res.tap(callback);
+
+        expect(result).not.toBe(res); // Different reference
+        expect(result.isOk()).toBe(res.isOk());
+        if (result.isOk()) {
+          expect(result.unwrap()).toBe(res.unwrap());
+        } else {
+          expect(result.unwrapErr()).toBe(res.unwrapErr());
+        }
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(capturedResult).not.toBe(res); // Callback receives copy
+        expect(capturedResult).toStrictEqual(res);
+      },
+    );
+
+    it("does not throw and returns a copy of self if provided callback throws", () => {
+      const self = ok(one);
+      const spy = jest.spyOn(self, "copy");
+      const callback = jest.fn(() => {
+        throw syncError;
+      });
+
+      const result = self.tap(callback);
+
+      expect(result).not.toBe(self);
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe(one);
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not throw and returns a copy of self if provided asynchronous callback rejects", () => {
+      const self = ok(one);
+      const spy = jest.spyOn(self, "copy");
+      const callback = jest.fn(() => Promise.reject(asyncError));
+
+      const result = self.tap(callback);
+
+      expect(result).not.toBe(self);
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe(one);
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("toPending", () => {
     it("returns `PendingResult` with self `Ok`", async () => {
       const value = { number: one };

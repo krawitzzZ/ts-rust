@@ -895,6 +895,96 @@ describe("PendingResult", () => {
     });
   });
 
+  describe("tap", () => {
+    it("calls provided callback with copy of inner `Result` once resolved", async () => {
+      const inner = ok<number, string>(one);
+      const spy = jest.spyOn(inner, "copy");
+      const self = pendingResult(inner);
+      let capturedResult: Result<number, string> = err("oops");
+      const callback = jest.fn((r: Result<number, string>) => {
+        capturedResult = r;
+      });
+
+      const result = self.tap(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(callback).not.toHaveBeenCalled();
+      expect(spy).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap()).toBe(one);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(capturedResult.isOk()).toBe(true);
+      expect(capturedResult).not.toBe(inner);
+      expect(capturedResult.unwrap()).toBe(one);
+    });
+
+    it("calls provided callback with `Err` if self rejects", async () => {
+      const self = pendingResult(rejectedPromise());
+      let capturedResult: Result<number, string> = ok(zero);
+      const callback = jest.fn((r: Result<number, string>) => {
+        capturedResult = r;
+      });
+
+      const result = self.tap(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(callback).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "Pending result rejected unexpectedly",
+          ResultErrorKind.ResultRejection,
+          asyncError,
+        ),
+      );
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(capturedResult.isErr()).toBe(true);
+    });
+
+    it("ignores errors thrown by the callback and returns a copy of the resolved result", async () => {
+      const inner = ok(one);
+      const self = pendingResult(inner);
+      const callback = jest.fn(() => {
+        throw syncError;
+      });
+
+      const result = self.tap(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(callback).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap()).toBe(one);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it("ignores rejections in callback's returned Promise", async () => {
+      const inner = ok(one);
+      const self = pendingResult(inner);
+      const callback = jest.fn(() => Promise.reject(asyncError));
+
+      const result = self.tap(callback);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(callback).not.toHaveBeenCalled();
+
+      const awaited = await result;
+
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap()).toBe(one);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("try", () => {
     it("returns a promise that resolves `[true, undefined, T]` if self resolves to `Ok`", async () => {
       const self = pendingOk(one);

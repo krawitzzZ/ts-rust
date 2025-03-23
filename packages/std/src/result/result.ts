@@ -679,6 +679,20 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  tap(f: (x: Result<T, E>) => unknown): Result<T, E> {
+    try {
+      const r = f(this.copy());
+
+      if (isPromise(r)) {
+        r.catch(() => void 0);
+      }
+    } catch {
+      // do not care about the error
+    }
+
+    return this.copy();
+  }
+
   toPending(): PendingSettledRes<T, E> {
     return pendingResult(settleResult(this.copy()));
   }
@@ -946,6 +960,10 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
     return this.#promise.then((self) =>
       toPromise(self.isOk() ? f(self.value) : g(self.error)),
     );
+  }
+
+  tap(f: (x: Result<T, E>) => unknown): PendingResult<T, E> {
+    return pendingResult(this.#promise.then((self) => self.tap(f)));
   }
 
   try(): Promise<
