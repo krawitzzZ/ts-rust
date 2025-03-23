@@ -85,7 +85,6 @@ export interface EitherError<E> extends Error {
   /**
    * Applies one of two functions to the contained error based on its type.
    *
-   *
    * Applies the first function in case the inner error is unexpected
    * {@link ResultError}, or the second function if the inner error is
    * expected `E`.
@@ -107,8 +106,9 @@ export interface EitherError<E> extends Error {
  * Interface representing the resultant state of an operation, either a success
  * ({@link Ok | Ok\<T>}) or an error ({@link Err | Err\<E>}).
  *
- * Inspired by Rust’s Result, it provides a type-safe alternative to exceptions for
- * handling success or failure outcomes.
+ * Inspired by Rust’s {@link https://doc.rust-lang.org/std/result/enum.Result.html | Result},
+ * it provides a type-safe alternative to exceptions for handling success or
+ * failure outcomes.
  */
 export interface Resultant<T, E> {
   /**
@@ -621,8 +621,8 @@ export interface Resultant<T, E> {
    * Useful for side-effects like logging, works with both {@link Ok} and {@link Err}.
    *
    * ### Notes
-   * - If `f` throws or rejects, the error is silently ignored
-   * - If `f` returns a promise, the promise is not awaited before returning
+   * - If `f` throws or rejects, the error is silently ignored.
+   * - If `f` returns a promise, the promise is not awaited before returning.
    *
    * ### Example
    * ```ts
@@ -935,11 +935,11 @@ export interface PendingResult<T, E>
    * const y = err<number, string>("failure").toPending();
    * let sideEffect = 0;
    *
-   * expect(await x.inspect(n => (sideEffect = n))).toStrictEqual(ok(2));
-   * expect(await x.inspect(_ => { throw new Error() })).toStrictEqual(ok(2));
+   * expect(await x.inspectErr(n => (sideEffect = n))).toStrictEqual(ok(2));
+   * expect(await x.inspectErr(_ => { throw new Error() })).toStrictEqual(ok(2));
    * expect(sideEffect).toBe(0);
-   * expect(await y.inspect(n => (sideEffect = n))).toStrictEqual(err("failure"));
-   * expect(await y.inspect(_ => { throw new Error() })).toStrictEqual(ok(2));
+   * expect(await y.inspectErr(n => (sideEffect = n))).toStrictEqual(err("failure"));
+   * expect(await y.inspectErr(_ => { throw new Error() })).toStrictEqual(err("failure"));
    * expect(sideEffect).toBe(2);
    * ```
    */
@@ -1063,8 +1063,12 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.match | match}.
    *
+   * ## Rejects
+   * - With {@link ResultError} if `f` or `g` throws an exception or rejects,
+   *   original error will be set as {@link OptionError.reason}.
+   *
    * ### Notes
-   * - If `f` or `g` throw or return a rejected `Promise`, the returned promise
+   * - If `f` or `g` throws or returns a rejected `Promise`, the returned promise
    *   rejects with the original error. In this case the caller is responsible
    *   for handling the rejection.
    *
@@ -1099,7 +1103,7 @@ export interface PendingResult<T, E>
    * let log = "";
    *
    * expect(await x.tap(res => (log = res.toString()))).toStrictEqual(ok(42));
-   * expect(log).toBe("Some { 42 }");
+   * expect(log).toBe("Ok { 42 }");
    * expect(await y.tap(res => (log = res.toString()))).toStrictEqual(err("failure"));
    * expect(log).toBe("Err { 'failure' }");
    * ```

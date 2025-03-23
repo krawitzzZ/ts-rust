@@ -169,8 +169,6 @@ export interface Optional<T> {
   /**
    * Flattens an {@link Option} of an {@link Option} into a single {@link Option}.
    *
-   * Think of it as of unwrapping a box inside a box.
-   *
    * ### Example
    * ```ts
    * const x: Option<Option<Option<number>>> = some(some(some(6)));
@@ -655,8 +653,8 @@ export interface Optional<T> {
    * Useful for side-effects like logging, works with both {@link Some} and {@link None}.
    *
    * ### Notes
-   * - If `f` throws, the error is ignored
-   * - If `f` returns a promise, the promise is not awaited before returning
+   * - If `f` throws, the error is ignored.
+   * - If `f` returns a promise, the promise is not awaited before returning.
    *
    * ### Example
    * ```ts
@@ -904,9 +902,10 @@ export interface PendingOption<T>
   ): PendingOption<Awaited<U>>;
 
   /**
-   * Returns {@link PendingOption} with {@link None} if this option resolves to {@link None},
-   * otherwise calls `f` with the resolved value and returns a {@link PendingOption} with
-   * the original value if `f` resolves to `true`, or {@link None} otherwise.
+   * Returns a {@link PendingOption} with {@link None} if this option resolves to
+   * {@link None}, otherwise calls `f` with the resolved value and returns
+   * a {@link PendingOption} with the original value if `f` resolves to `true`,
+   * or {@link None} otherwise.
    *
    * This is the asynchronous version of {@link Optional.filter | filter}.
    *
@@ -1040,7 +1039,7 @@ export interface PendingOption<T>
    * this method always calls `f`, passing the entire {@link Option} as its argument.
    *
    * ### Notes
-   * - *Default*: If `f` throws or returns a `Promise` that rejects, newly
+   * - *Default*: If `f` throws or returns a `Promise` that rejects, the newly
    *   created {@link PendingOption} will resolve to a {@link None}.
    *
    * ### Example
@@ -1066,8 +1065,13 @@ export interface PendingOption<T>
    * This is the asynchronous version of {@link Optional.match | match}.
    *
    * ## Rejects
-   * - With {@link OptionError} if `f` or `g` throws an exception, original error
-   *   will be set as {@link OptionError.reason}.
+   * - With {@link OptionError} if `f` or `g` throws an exception or rejects,
+   *   original error will be set as {@link OptionError.reason}.
+   *
+   * ### Notes
+   * - If `f` or `g` throws or returns a rejected `Promise`, the returned promise
+   *   rejects with the original error. In this case the caller is responsible
+   *   for handling the rejection.
    *
    * ### Example
    * ```ts
@@ -1145,7 +1149,7 @@ export interface PendingOption<T>
    * This is the asynchronous version of {@link Optional.orElse | orElse}.
    *
    * ### Notes
-   * - *Default*: If `f` is throws or rejects, {@link None} is returned.
+   * - *Default*: If `f` throws or rejects, {@link None} is returned.
    *
    * ### Example
    * ```ts
@@ -1166,8 +1170,8 @@ export interface PendingOption<T>
    * This is the asynchronous version of {@link Optional.tap | tap}.
    *
    * ### Notes
-   * - If `f` throws or rejects, the error is ignored
-   * - If `f` returns a promise, the promise is not awaited before returning
+   * - If `f` throws or rejects, the error is ignored.
+   * - If `f` returns a promise, the promise is not awaited before returning.
    *
    * ### Example
    * ```ts
