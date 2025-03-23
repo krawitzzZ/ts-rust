@@ -392,6 +392,33 @@ export interface Resultant<T, E> {
   isOkAnd(f: (x: T) => boolean): this is Ok<T, E> & boolean;
 
   /**
+   * Returns an iterator over this result’s value, yielding it if {@link Ok}
+   * or nothing if {@link Err}.
+   *
+   * ### Notes
+   * - Yields exactly one item for {@link Ok}, or zero items for {@link Err}.
+   * - Compatible with `for...of` loops and spread operators.
+   * - Ignores the error value in {@link Err} cases, focusing only on the success case.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(42);
+   * const y = err<number, string>("failure");
+   *
+   * const iterX = x.iter();
+   * expect(iterX.next()).toEqual({ value: 42, done: false });
+   * expect(iterX.next()).toEqual({ done: true });
+   *
+   * const iterY = y.iter();
+   * expect(iterY.next()).toEqual({ done: true });
+   *
+   * expect([...x.iter()]).toEqual([42]);
+   * expect([...y.iter()]).toEqual([]);
+   * ```
+   */
+  iter(): IterableIterator<T, T, void>;
+
+  /**
    * Matches this result, returning `f` applied to the value if {@link Ok},
    * or `g` applied to the {@link CheckedError} if {@link Err}.
    *
@@ -726,6 +753,39 @@ export interface PendingResult<T, E>
    * ```
    */
   inspectErr(f: (x: CheckedError<E>) => unknown): PendingResult<T, E>;
+
+  /**
+   * Returns an async iterator over this pending result’s value, yielding it if
+   * it resolves to {@link Ok} or nothing if it resolves to {@link Err}.
+   *
+   * ### Notes
+   * - Yields exactly one item for a resolved {@link Ok}, or zero items
+   *   for a resolved {@link Err}.
+   * - Compatible with `for await...of` loops and async spread operators (with caution).
+   * - Ignores the error value in {@link Err} cases, focusing only on the success case.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(42).toPending();
+   * const y = err<number, string>("failure").toPending();
+   *
+   * const iterX = x.iter();
+   * expect(await iterX.next()).toEqual({ value: 42, done: false });
+   * expect(await iterX.next()).toEqual({ done: true });
+   *
+   * const iterY = y.iter();
+   * expect(await iterY.next()).toEqual({ done: true });
+   *
+   * async function collect(iter) {
+   *   const result = [];
+   *   for await (const val of iter) result.push(val);
+   *   return result;
+   * }
+   * expect(await collect(x.iter())).toEqual([42]);
+   * expect(await collect(y.iter())).toEqual([]);
+   * ```
+   */
+  iter(): AsyncIterableIterator<Awaited<T>, Awaited<T>, void>;
 
   /**
    * Matches this {@link PendingResult}, returning a promise of `f` applied to

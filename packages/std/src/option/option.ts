@@ -442,6 +442,28 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  iter(): IterableIterator<T, T, void> {
+    const value = this.#value;
+    let isConsumed = false;
+
+    return {
+      next(): IteratorResult<T, T> {
+        if (isConsumed || isNothing(value)) {
+          // according to the specification (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#value)
+          // `value` can be omitted if `done` is true
+          return { done: true } as IteratorResult<T, T>;
+        }
+
+        isConsumed = true;
+
+        return { done: false, value };
+      },
+      [Symbol.iterator]() {
+        return this;
+      },
+    };
+  }
+
   map<U>(f: (x: T) => Awaited<U>): Option<U> {
     if (isNothing(this.#value)) {
       return none();
@@ -799,6 +821,30 @@ class _PendingOption<T> implements PendingOption<T> {
     return pendingOption(this.#promise.then((option) => option.inspect(f)));
   }
 
+  iter(): AsyncIterableIterator<Awaited<T>, Awaited<T>, void> {
+    const promise = settleOption(this.#promise);
+    let isConsumed = false;
+
+    return {
+      async next(): Promise<IteratorResult<Awaited<T>, Awaited<T>>> {
+        return promise.then((self) => {
+          if (isConsumed || self.isNone()) {
+            // according to the specification (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#value)
+            // `value` can be omitted if `done` is true
+            return { done: true } as IteratorResult<Awaited<T>, Awaited<T>>;
+          }
+
+          isConsumed = true;
+
+          return { done: false, value: self.value };
+        });
+      },
+      [Symbol.asyncIterator]() {
+        return this;
+      },
+    };
+  }
+
   map<U>(f: (x: T) => U): PendingSettledOpt<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
@@ -922,7 +968,7 @@ const isNothing = (x: unknown): x is Nothing => x === nothing;
 
 const isSomething = <T>(x: T | Nothing): x is T => !isNothing(x);
 
-const settleOption = async <T>(
+const settleOption = <T>(
   optionOrPromise: Option<T> | PromiseLike<Option<T>>,
 ): Promise<SettledOption<T>> =>
   toPromise(optionOrPromise).then(async (option) => {
@@ -931,4 +977,4 @@ const settleOption = async <T>(
     }
 
     return some(await option.value);
-  });
+  }, cnst(none()));

@@ -530,6 +530,28 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  iter(): IterableIterator<T, T, void> {
+    const state = this.#state;
+    let isConsumed = false;
+
+    return {
+      next(): IteratorResult<T, T> {
+        if (isConsumed || isErr(state)) {
+          // according to the specification (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#value)
+          // `value` can be omitted if `done` is true
+          return { done: true } as IteratorResult<T, T>;
+        }
+
+        isConsumed = true;
+
+        return { done: false, value: state.value };
+      },
+      [Symbol.iterator]() {
+        return this;
+      },
+    };
+  }
+
   match<U, F = U>(
     this: SettledResult<T, E>,
     f: (x: T) => Awaited<U>,
@@ -726,6 +748,30 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
 
   inspectErr(f: (x: CheckedError<E>) => unknown): PendingResult<T, E> {
     return pendingResult(this.#promise.then((self) => self.inspectErr(f)));
+  }
+
+  iter(): AsyncIterableIterator<Awaited<T>, Awaited<T>, void> {
+    const promise = settleResult(this.#promise);
+    let isConsumed = false;
+
+    return {
+      async next(): Promise<IteratorResult<Awaited<T>, Awaited<T>>> {
+        return promise.then((self) => {
+          if (isConsumed || self.isErr()) {
+            // according to the specification (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#value)
+            // `value` can be omitted if `done` is true
+            return { done: true } as IteratorResult<Awaited<T>, Awaited<T>>;
+          }
+
+          isConsumed = true;
+
+          return { done: false, value: self.value };
+        });
+      },
+      [Symbol.asyncIterator]() {
+        return this;
+      },
+    };
   }
 
   match<U, F = U>(

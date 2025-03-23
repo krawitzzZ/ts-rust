@@ -494,6 +494,41 @@ describe("PendingResult", () => {
     });
   });
 
+  describe("iter", () => {
+    it("returns an iterator that yields nothing if self resolves to `Err`", async () => {
+      const self = pendingErr(expectedErr);
+      const iter = self.iter();
+
+      expect(await iter.next()).toStrictEqual({ done: true });
+      expect(await iter.next()).toStrictEqual({ done: true });
+    });
+
+    it.each([one, true, { a: 2 }])(
+      "returns an iterator that yields '%s' only once if self resolves to `Ok`",
+      async (v) => {
+        const self = pendingOk(v);
+        const iter = self.iter();
+
+        expect(await iter.next()).toStrictEqual({ done: false, value: v });
+        expect(await iter.next()).toStrictEqual({ done: true });
+        expect(await iter.next()).toStrictEqual({ done: true });
+      },
+    );
+
+    it.each([pendingOk(one), pendingErr(expectedErr)])(
+      "works with await for .. of loop",
+      async (opt) => {
+        const iter = opt.iter();
+
+        for await (const x of iter) {
+          expect(x).toBe(one);
+        }
+
+        expect.assertions((await opt).isOk() ? 1 : 0);
+      },
+    );
+  });
+
   describe("match", () => {
     it("calls `ok` callback and returns its result if self is `Ok`", async () => {
       const self = pendingOk(one);

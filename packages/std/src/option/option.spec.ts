@@ -560,6 +560,45 @@ describe("Option", () => {
     });
   });
 
+  describe("iter", () => {
+    it("returns an iterator that yields nothing if self is `None`", () => {
+      const self = none();
+      const iter = self.iter();
+
+      expect(iter.next()).toStrictEqual({ done: true });
+      expect(iter.next()).toStrictEqual({ done: true });
+    });
+
+    it.each([one, true, { a: 2 }])(
+      "returns an iterator that yields '%s' only once if self is `Some`",
+      (v) => {
+        const self = some(v);
+        const iter = self.iter();
+
+        expect(iter.next()).toStrictEqual({ done: false, value: v });
+        expect(iter.next()).toStrictEqual({ done: true });
+        expect(iter.next()).toStrictEqual({ done: true });
+      },
+    );
+
+    it.each([some(one), none()])("works with spread operator", (opt) => {
+      const iter = opt.iter();
+
+      expect([...iter]).toStrictEqual(opt.isSome() ? [opt.unwrap()] : []);
+      expect(iter.next()).toStrictEqual({ done: true });
+    });
+
+    it.each([some(one), none()])("works with for .. of loop", (opt) => {
+      const iter = opt.iter();
+
+      for (const x of iter) {
+        expect(x).toBe(one);
+      }
+
+      expect.assertions(opt.isSome() ? 1 : 0);
+    });
+  });
+
   describe("map", () => {
     it("does not call provided callback and returns `None` if self is `None`", () => {
       const option = none();

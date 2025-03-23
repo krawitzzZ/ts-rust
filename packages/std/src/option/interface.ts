@@ -346,6 +346,32 @@ export interface Optional<T> {
   isSomeAnd(f: (x: T) => boolean): this is Some<T> & boolean;
 
   /**
+   * Returns an iterator over this option’s value, yielding it if {@link Some}
+   * or nothing if {@link None}.
+   *
+   * ### Notes
+   * - Yields exactly one item for {@link Some}, or zero items for {@link None}.
+   * - Compatible with `for...of` loops and spread operators.
+   *
+   * ### Example
+   * ```ts
+   * const x = some(42);
+   * const y = none<number>();
+   *
+   * const iterX = x.iter();
+   * expect(iterX.next()).toEqual({ value: 42, done: false });
+   * expect(iterX.next()).toEqual({ done: true });
+   *
+   * const iterY = y.iter();
+   * expect(iterY.next()).toEqual({ done: true });
+   *
+   * expect([...x.iter()]).toEqual([42]);
+   * expect([...y.iter()]).toEqual([]);
+   * ```
+   */
+  iter(): IterableIterator<T, T, void>;
+
+  /**
    * Maps the contained value with `f` if {@link Some}, returning a new {@link Option}; otherwise,
    * returns {@link None}.
    *
@@ -951,6 +977,38 @@ export interface PendingOption<T>
    * ```
    */
   inspect(f: (x: T) => unknown): PendingOption<T>;
+
+  /**
+   * Returns an async iterator over this pending option’s value, yielding it if
+   * it resolves to {@link Some} or nothing if it resolves to {@link None}.
+   *
+   * ### Notes
+   * - Yields exactly one item for a resolved {@link Some}, or zero items for
+   *   a resolved {@link None}.
+   * - Compatible with `for await...of` loops and async spread operators (with caution).
+   *
+   * ### Example
+   * ```ts
+   * const x = some(42).toPending();
+   * const y = none<number>().toPending();
+   *
+   * const iterX = x.iter();
+   * expect(await iterX.next()).toEqual({ value: 42, done: false });
+   * expect(await iterX.next()).toEqual({ done: true });
+   *
+   * const iterY = y.iter();
+   * expect(await iterY.next()).toEqual({ done: true });
+   *
+   * async function collect(iter) {
+   *   const result = [];
+   *   for await (const val of iter) result.push(val);
+   *   return result;
+   * }
+   * expect(await collect(x.iter())).toEqual([42]);
+   * expect(await collect(y.iter())).toEqual([]);
+   * ```
+   */
+  iter(): AsyncIterableIterator<Awaited<T>, Awaited<T>, void>;
 
   /**
    * Maps the resolved value with `f`, returning a {@link PendingOption} with the

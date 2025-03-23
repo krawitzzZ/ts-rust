@@ -652,6 +652,51 @@ describe("Result", () => {
     });
   });
 
+  describe("iter", () => {
+    it("returns an iterator that yields nothing if self is `Err`", () => {
+      const self = err(expectedErr);
+      const iter = self.iter();
+
+      expect(iter.next()).toStrictEqual({ done: true });
+      expect(iter.next()).toStrictEqual({ done: true });
+    });
+
+    it.each([one, true, { a: 2 }])(
+      "returns an iterator that yields '%s' only once if self is `Ok`",
+      (v) => {
+        const self = ok(v);
+        const iter = self.iter();
+
+        expect(iter.next()).toStrictEqual({ done: false, value: v });
+        expect(iter.next()).toStrictEqual({ done: true });
+        expect(iter.next()).toStrictEqual({ done: true });
+      },
+    );
+
+    it.each([ok<number, string>(one), err<number, string>(expectedErr)])(
+      "works with spread operator",
+      (res) => {
+        const iter = res.iter();
+
+        expect([...iter]).toStrictEqual(res.isOk() ? [res.unwrap()] : []);
+        expect(iter.next()).toStrictEqual({ done: true });
+      },
+    );
+
+    it.each([ok<number, string>(one), err<number, string>(expectedErr)])(
+      "works with for .. of loop",
+      (res) => {
+        const iter = res.iter();
+
+        for (const x of iter) {
+          expect(x).toBe(one);
+        }
+
+        expect.assertions(res.isOk() ? 1 : 0);
+      },
+    );
+  });
+
   describe("match", () => {
     it("calls `ok` callback and returns its result if self is `Ok`", () => {
       const self = ok(one);

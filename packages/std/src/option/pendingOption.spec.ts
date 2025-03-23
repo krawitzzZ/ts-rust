@@ -1,7 +1,15 @@
 import { createMock } from "@golevelup/ts-jest";
 import * as shared from "@ts-rust/shared";
 import { err, isPendingResult, ok, Result } from "../result";
-import { Option, isPendingOption, none, pendingOption, some } from "./index";
+import {
+  Option,
+  isPendingOption,
+  none,
+  pendingNone,
+  pendingOption,
+  pendingSome,
+  some,
+} from "./index";
 
 jest.mock("@ts-rust/shared", () => ({
   ...jest.requireActual("@ts-rust/shared"),
@@ -351,6 +359,41 @@ describe("PendingOption", () => {
       const awaited = await result;
       expect(awaited.isNone()).toBe(true);
     });
+  });
+
+  describe("iter", () => {
+    it("returns an iterator that yields nothing if self resolves to `None`", async () => {
+      const self = pendingNone();
+      const iter = self.iter();
+
+      expect(await iter.next()).toStrictEqual({ done: true });
+      expect(await iter.next()).toStrictEqual({ done: true });
+    });
+
+    it.each([one, true, { a: 2 }])(
+      "returns an iterator that yields '%s' only once if self resolves to `Some`",
+      async (v) => {
+        const self = pendingSome(v);
+        const iter = self.iter();
+
+        expect(await iter.next()).toStrictEqual({ done: false, value: v });
+        expect(await iter.next()).toStrictEqual({ done: true });
+        expect(await iter.next()).toStrictEqual({ done: true });
+      },
+    );
+
+    it.each([pendingSome(one), pendingNone()])(
+      "works with await for .. of loop",
+      async (opt) => {
+        const iter = opt.iter();
+
+        for await (const x of iter) {
+          expect(x).toBe(one);
+        }
+
+        expect.assertions((await opt).isSome() ? 1 : 0);
+      },
+    );
   });
 
   describe("map", () => {
