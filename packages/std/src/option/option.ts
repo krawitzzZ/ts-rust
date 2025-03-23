@@ -905,7 +905,7 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  tap(f: (opt: Option<T>) => void | Promise<void>): PendingOption<T> {
+  tap(f: (opt: Option<T>) => unknown): PendingOption<T> {
     return pendingOption(
       this.#promise.then(async (opt) => {
         try {

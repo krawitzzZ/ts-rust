@@ -1177,7 +1177,7 @@ export interface PendingOption<T>
    * expect(log).toBe("None");
    * ```
    */
-  tap(f: (opt: Option<T>) => void | Promise<void>): PendingOption<T>;
+  tap(f: (opt: Option<T>) => unknown): PendingOption<T>;
 
   /**
    * Transposes a {@link PendingOption} of a {@link Result} into a {@link PendingResult}
