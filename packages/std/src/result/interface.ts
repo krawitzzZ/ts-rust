@@ -461,6 +461,57 @@ export interface Resultant<T, E> {
   mapErr<F>(f: (e: E) => Awaited<F>): Result<T, F>;
 
   /**
+   * Returns `f` applied to the value if {@link Ok}, otherwise returns `def`.
+   *
+   * ### Notes
+   * - *Default*: If `f` throws, returns `def`.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.mapOr(0, n => n * 2)).toBe(4);
+   * expect(x.mapOr(0, () => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
+   * expect(y.mapOr(0, n => n * 2)).toBe(0);
+   * ```
+   */
+  mapOr<U>(
+    this: SettledResult<T, E>,
+    def: Awaited<U>,
+    f: (x: T) => Awaited<U>,
+  ): U;
+
+  /**
+   * Returns `f` applied to the contained value if {@link Ok}, otherwise
+   * returns the result of `mkDef`.
+   *
+   * ## Throws
+   * - {@link ResultError} if `mkDef` is called and throws an exception, with
+   *   the original error set as {@link ResultError.reason}.
+   *
+   * ### Notes
+   * - If `f` throws, the error is silently ignored, and the result of `mkDef`
+   *   is returned.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.mapOrElse(() => 0, n => n * 2)).toBe(4);
+   * expect(x.mapOrElse(() => 1, () => { throw new Error("boom") })).toBe(1);
+   * expect(() => y.mapOrElse(() => { throw new Error("boom") }, n => n * 2)).toThrow(ResultError);
+   * expect(y.mapOrElse(() => 0, n => n * 2)).toBe(0);
+   * ```
+   */
+  mapOrElse<U>(
+    this: SettledResult<T, E>,
+    mkDef: () => Awaited<U>,
+    f: (x: T) => Awaited<U>,
+  ): U;
+
+  /**
    * Matches this result, returning `f` applied to the value if {@link Ok},
    * or `g` applied to the {@link CheckedError} if {@link Err}.
    *

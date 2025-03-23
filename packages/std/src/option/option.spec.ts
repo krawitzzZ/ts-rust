@@ -776,7 +776,7 @@ describe("Option", () => {
       expect(mkDef).not.toHaveBeenCalled();
     });
 
-    it("ignores exception if provided `map` callback throws, calls provided `mkDef` callback and returns its result if self is `None`", () => {
+    it("ignores exception if provided `map` callback throws, calls provided `mkDef` callback and returns its result if self is `Some`", () => {
       const error = new Error("error");
       const option = some(one);
       const map = jest.fn(() => {

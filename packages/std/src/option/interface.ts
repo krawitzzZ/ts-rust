@@ -464,7 +464,7 @@ export interface Optional<T> {
    *
    * ## Throws
    * - {@link OptionError} if `mkDef` is called and throws an exception. Original
-   * error will be set as {@link OptionError.reason}.
+   *   error will be set as {@link OptionError.reason}.
    *
    * ### Notes
    * - *Default*: If `f` throws, the error is silently ignored and result of

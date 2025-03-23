@@ -787,6 +787,129 @@ describe("Result", () => {
     });
   });
 
+  describe("mapOr", () => {
+    it.each([expectedErr, unexpectedErr])(
+      "does not call provided callback and returns provided default if self is `Err { %p }`",
+      (e) => {
+        const self = err(e);
+        const callback = jest.fn();
+        const result = self.mapOr(two, callback);
+
+        expect(result).toBe(two);
+        expect(callback).not.toHaveBeenCalled();
+      },
+    );
+
+    it("calls provided callback with inner value and returns the result if self is `Ok`", () => {
+      const self = ok(one);
+      const fn = () => two;
+      const callback = jest.fn(fn);
+      const result = self.mapOr(zero, callback);
+
+      expect(result).toBe(two);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(one);
+    });
+
+    it("does not throw and returns provided default if self is `Ok` and provided callback throws", () => {
+      const self = ok(one);
+      const callback = jest.fn(() => {
+        throw syncError;
+      });
+      const result = self.mapOr(two, callback);
+
+      expect(result).toBe(two);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(one);
+    });
+  });
+
+  describe("mapOrElse", () => {
+    it.each([expectedErr, unexpectedErr])(
+      "calls provided `mkDef` callback and returns its result if self is `Err`",
+      (e) => {
+        const self = err(e);
+        const map = jest.fn(() => zero);
+        const mkDef = jest.fn(() => two);
+        const result = self.mapOrElse(mkDef, map);
+
+        expect(result).toBe(two);
+        expect(map).not.toHaveBeenCalled();
+        expect(mkDef).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it.each([expectedErr, unexpectedErr])(
+      "rethrows `ResultError` with original error set as reason if self is `Error` and `mkDef` callback throws",
+      (e) => {
+        const self = err(e);
+        const map = jest.fn(() => zero);
+        const mkDef = jest.fn(() => {
+          throw syncError;
+        });
+
+        expect(() => self.mapOrElse(mkDef, map)).toThrow(
+          new ResultError(
+            "`mapOrElse`: callback `mkDef` threw an exception",
+            ResultErrorKind.PredicateException,
+            syncError,
+          ),
+        );
+        expect(map).not.toHaveBeenCalled();
+        expect(mkDef).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it("calls provided `map` callback and returns its result if self is `Ok`", () => {
+      const self = ok(one);
+      const map = jest.fn(() => zero);
+      const mkDef = jest.fn(() => two);
+      const result = self.mapOrElse(mkDef, map);
+
+      expect(result).toBe(zero);
+      expect(map).toHaveBeenCalledTimes(1);
+      expect(map).toHaveBeenCalledWith(one);
+      expect(mkDef).not.toHaveBeenCalled();
+    });
+
+    it("ignores exception if provided `map` callback throws, calls provided `mkDef` callback and returns its result if self is `Ok`", () => {
+      const self = ok(one);
+      const map = jest.fn(() => {
+        throw syncError;
+      });
+      const mkDef = jest.fn(() => two);
+      const result = self.mapOrElse(mkDef, map);
+
+      expect(result).toBe(two);
+      expect(map).toHaveBeenCalledTimes(1);
+      expect(map).toHaveBeenCalledWith(one);
+      expect(mkDef).toHaveBeenCalledTimes(1);
+    });
+
+    it("rethrows `ResultError` with original error set as reason if self is `Ok` and provided `mkDef` callback throws", () => {
+      const mapError = new Error("map");
+      const mkDefError = new Error("make default error");
+      const self = ok(one);
+      const map = jest.fn(() => {
+        throw mapError;
+      });
+      const mkDef = jest.fn(() => {
+        throw mkDefError;
+      });
+
+      expect(() => self.mapOrElse(mkDef, map)).toThrow(
+        new ResultError(
+          "`mapOrElse`: callback `mkDef` threw an exception",
+          ResultErrorKind.PredicateException,
+          mkDefError,
+        ),
+      );
+      expect(map).toHaveBeenCalledTimes(1);
+      expect(map).toHaveBeenCalledWith(one);
+      expect(mkDef).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("match", () => {
     it("calls `ok` callback and returns its result if self is `Ok`", () => {
       const self = ok(one);

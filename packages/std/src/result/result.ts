@@ -593,6 +593,50 @@ class _Result<T, E> implements Resultant<T, E> {
     );
   }
 
+  mapOr<U>(
+    this: SettledResult<T, E>,
+    def: Awaited<U>,
+    f: (x: T) => Awaited<U>,
+  ): U {
+    if (this.isErr()) {
+      return def;
+    }
+
+    try {
+      return f(this.value);
+    } catch {
+      return def;
+    }
+  }
+
+  mapOrElse<U>(
+    this: SettledResult<T, E>,
+    mkDef: () => Awaited<U>,
+    f: (x: T) => Awaited<U>,
+  ): U {
+    const makeDefault = () => {
+      try {
+        return mkDef();
+      } catch (e) {
+        throw new ResultError(
+          "`mapOrElse`: callback `mkDef` threw an exception",
+          ResultErrorKind.PredicateException,
+          e,
+        );
+      }
+    };
+
+    if (this.isErr()) {
+      return makeDefault();
+    }
+
+    try {
+      return f(this.value);
+    } catch {
+      return makeDefault();
+    }
+  }
+
   match<U, F = U>(
     this: SettledResult<T, E>,
     f: (x: T) => Awaited<U>,
