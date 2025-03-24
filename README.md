@@ -21,7 +21,8 @@ utilities used across the monorepo’s packages.
 
 - `@ts-rust/std`: The core library, providing Rust’s std-like functionality for TypeScript.
 
-  - Key exports: `Option`, `some`, `none`, `PendingOption`, `pendingOption`, `Result`, `ok`, `err`.
+  - Key exports: `Option`, `some`, `none`, `PendingOption`, `pendingOption`, `Result`, `ok`, `err`,
+    `PendingResult`, `pendingResult`. See [README.md](./packages/std/README.md) for more details
   - Location: `packages/std`.
 
 - `@ts-rust/shared`: Internal shared utilities supporting `@ts-rust/std` and future packages.
@@ -31,10 +32,11 @@ utilities used across the monorepo’s packages.
 
 ## License
 
-This project is licensed under the MIT License — see the LICENSE file for details.
+This project is licensed under the MIT License — see the [LICENSE](./LICENSE) file for details.
 
 ## Acknowledgements
 
 Inspired by Rust’s std library and its focus on safety and performance.
 
-Built with ❤️ using TypeScript, pnpm, and Rollup.
+Built with ❤️ using [TypeScript](https://www.typescriptlang.org/),
+[pnpm](https://pnpm.io/), and [Rollup](https://rollupjs.org/).
