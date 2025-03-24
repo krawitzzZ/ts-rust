@@ -1110,20 +1110,6 @@ const settleResult = <T, E>(
     r.isOk() ? awaitOk(r.value) : awaitErr(r.error),
   );
 
-// const settleOk = <T, E>(
-//   resultOrPromise: MaybePromise<Result<T, E>>,
-// ): Promise<Result<Awaited<T>, E>> =>
-//   toSafePromise(resultOrPromise, defaultCatchMessage).then((r) =>
-//     r.isErr() ? err(r.error) : awaitOk(r.value),
-//   );
-
-// const settleErr = <T, E>(
-//   resultOrPromise: MaybePromise<Result<T, E>>,
-// ): Promise<Result<T, Awaited<E>>> =>
-//   toSafePromise(resultOrPromise, defaultCatchMessage).then((r) =>
-//     r.isOk() ? ok(r.value) : awaitErr(r.error),
-//   );
-
 const awaitOk = <T, E>(
   v: T,
   errMsg = "PendingResult's `Ok` value rejected unexpectedly",
