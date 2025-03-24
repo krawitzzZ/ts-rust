@@ -737,6 +737,26 @@ export interface Resultant<T, E> {
   toString(): string;
 
   /**
+   * Transposes a {@link Result} of an {@link Option} into an {@link Option}
+   * of a {@link Result}.
+   *
+   * Maps `Ok(None)` to `None`, `Ok(Some(_))` to `Some(Ok(_))` and
+   * `Err(_)` to `Some(Err(_))`.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<Option<number>, string>(none());
+   * const y = ok<Option<number>, string>(some(2));
+   * const z = err<Option<number>, string>("error");
+   *
+   * expect(x.transpose()).toStrictEqual(none());
+   * expect(y.transpose()).toStrictEqual(some(ok(2)));
+   * expect(z.transpose()).toStrictEqual(some(err("error")));
+   * ```
+   */
+  transpose<U, F>(this: Result<Option<U>, F>): Option<Result<U, F>>;
+
+  /**
    * Extracts this result’s state, returning a tuple with a success flag, error,
    * and value.
    *
@@ -1200,6 +1220,27 @@ export interface PendingResult<T, E>
    * ```
    */
   tap(f: (x: Result<T, E>) => unknown): PendingResult<T, E>;
+
+  /**
+   * Transposes a {@link PendingResult} of an {@link Option} into
+   * a {@link PendingOption} containing a {@link Result}.
+   *
+   * This is the asynchronous version of {@link Resultant.transpose | transpose}.
+   *
+   * ### Example
+   * ```ts
+   * const x = pendingOption(some(ok(2)));
+   * const y = pendingOption(some(err("error")));
+   * const z = pendingOption(none<Result<number, string>>());
+   *
+   * expect(await x.transpose()).toStrictEqual(ok(some(2)));
+   * expect(await y.transpose()).toStrictEqual(err("error"));
+   * expect(await z.transpose()).toStrictEqual(ok(none()));
+   * ```
+   */
+  transpose<U, F>(
+    this: PendingResult<Option<U>, F>,
+  ): PendingOption<Result<U, F>>;
 
   /**
    * Extracts this {@link PendingResult}’s state, returning a promise of a tuple

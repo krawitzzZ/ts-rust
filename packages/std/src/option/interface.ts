@@ -739,21 +739,21 @@ export interface Optional<T> {
   toString(): string;
 
   /**
-   * Transposes an {@link Option} of a {@link Result} into a {@link Result} of an {@link Option}.
+   * Transposes an {@link Option} of a {@link Result} into a {@link Result}
+   * of an {@link Option}.
    *
-   * Maps {@link None} to {@link Ok}({@link None}), {@link Some}({@link Ok | Ok(v)}) to
-   * {@link Ok}({@link Some | Some(v)}), and {@link Some}({@link Err | Err(e)}) to
-   * {@link Err | Err(e)}.
+   * Maps `None` to `Ok(None)`, `Some(Ok(_))` to `Ok(Some(_))`,
+   * and `Some(Err(_))` to `Err(_)`.
    *
    * ### Example
    * ```ts
-   * const x = some(ok(2));
-   * const y = some(err("error"));
-   * const z = none<Result<number, string>>();
+   * const x = none<Result<number, string>>();
+   * const y = some<Result<number, string>>(ok(2));
+   * const z = some<Result<number, string>>(err("error"));
    *
-   * expect(x.transpose()).toStrictEqual(ok(some(2)));
-   * expect(y.transpose()).toStrictEqual(err("error"));
-   * expect(z.transpose()).toStrictEqual(ok(none()));
+   * expect(x.transpose()).toStrictEqual(ok(none()));
+   * expect(y.transpose()).toStrictEqual(ok(some(2)));
+   * expect(z.transpose()).toStrictEqual(err("error"));
    * ```
    */
   transpose<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E>;
@@ -1189,20 +1189,19 @@ export interface PendingOption<T>
 
   /**
    * Transposes a {@link PendingOption} of a {@link Result} into a {@link PendingResult}
-   * containing an {@link Option}. Resolves to {@link Ok}({@link None})
-   * if this option is {@link None}, or propagates the error if the result is {@link Err}.
+   * containing an {@link Option}.
    *
    * This is the asynchronous version of {@link Optional.transpose | transpose}.
    *
    * ### Example
    * ```ts
-   * const x = pendingOption(some(ok(2)));
-   * const y = pendingOption(some(err("error")));
-   * const z = pendingOption(none<Result<number, string>>());
+   * const x = pendingOption(none<Result<number, string>>());
+   * const y = pendingOption(some<Result<number, string>>(ok(2)));
+   * const z = pendingOption(some<Result<number, string>>(err("error")));
    *
-   * expect(await x.transpose()).toStrictEqual(ok(some(2)));
-   * expect(await y.transpose()).toStrictEqual(err("error"));
-   * expect(await z.transpose()).toStrictEqual(ok(none()));
+   * expect(await x.transpose()).toStrictEqual(ok(none()));
+   * expect(await y.transpose()).toStrictEqual(ok(some(2)));
+   * expect(await z.transpose()).toStrictEqual(err("error"));
    * ```
    */
   transpose<U, E>(

@@ -1,3 +1,4 @@
+import { none, Option, some } from "../option";
 import { Clone } from "../types";
 import { ResultError, expectedError, unexpectedError } from "./error";
 import {
@@ -1389,6 +1390,44 @@ describe("Result", () => {
 
       expect(self.toString()).toBe(`Ok { ${one} }`);
     });
+  });
+
+  describe("transpose", () => {
+    it("returns `None` if self is `Ok { None }`", () => {
+      const self = ok(none());
+      const result = self.transpose();
+
+      expect(result.isNone()).toBe(true);
+    });
+
+    it("returns `Some { Ok { value } }` if self is `Ok { Some { value } }`", () => {
+      const self = ok(some(one));
+      const result = self.transpose();
+
+      expect(result.isSome()).toBe(true);
+      expect(result.unwrap()).toStrictEqual(ok(one));
+      expect(result.unwrap().unwrap()).toBe(one);
+    });
+
+    it("returns `None` if self is `Ok`, but inner value is not an `Option`", () => {
+      const self = ok(one);
+      // @ts-expect-error -- for testing
+      const result = self.transpose();
+
+      expect(result.isNone()).toBe(true);
+    });
+
+    it.each([expectedErr, unexpectedErr])(
+      "returns `Some { Err { %s } }` if self is `Err`",
+      (e) => {
+        const self: Result<Option<number>, string> = err(e);
+        const result = self.transpose();
+
+        expect(result.isSome()).toBe(true);
+        expect(result.unwrap()).toStrictEqual(err(e));
+        expect(result.unwrap().unwrapErr()).toStrictEqual(e);
+      },
+    );
   });
 
   describe("try", () => {

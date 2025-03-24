@@ -1,4 +1,4 @@
-import { isPendingOption } from "../option";
+import { isPendingOption, Option, some } from "../option";
 import { expectedError, ResultError, unexpectedError } from "./error";
 import {
   Result,
@@ -1125,6 +1125,46 @@ describe("PendingResult", () => {
       expect(awaited.isOk()).toBe(true);
       expect(awaited.unwrap()).toBe(one);
       expect(callback).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("transpose", () => {
+    it("calls `transpose` on inner `Result` and returns its result", async () => {
+      const inner = ok(some(one));
+      const transposed = some(ok(one));
+      const self = pendingResult(inner);
+      const spy = jest
+        .spyOn(inner, "transpose")
+        .mockReturnValueOnce(transposed);
+      const result = self.transpose();
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isSome()).toBe(true);
+      expect(awaited.unwrap()).toStrictEqual(ok(one));
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns `PendingOption` that resolves to `Ok(Err(unexpected error))` if self rejects", async () => {
+      const self: PendingResult<Option<number>, string> = pendingResult(
+        Promise.reject(asyncError),
+      );
+      const result = self.transpose();
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isSome()).toBe(true);
+      expect(awaited.unwrap().unwrapErr()).toStrictEqual(
+        unexpectedError(
+          "Pending result rejected unexpectedly",
+          ResultErrorKind.ResultRejection,
+          asyncError,
+        ),
+      );
     });
   });
 

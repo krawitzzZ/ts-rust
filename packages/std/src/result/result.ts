@@ -8,6 +8,7 @@ import {
   pendingOption,
   pendingSome,
   some,
+  isOption,
 } from "../option";
 import { isPrimitive } from "../types.utils";
 import {
@@ -739,6 +740,14 @@ class _Result<T, E> implements Resultant<T, E> {
       : `Err { ${stringify(this.#state.error, true)} }`;
   }
 
+  transpose<U, F>(this: Result<Option<U>, F>): Option<Result<U, F>> {
+    if (this.isErr()) {
+      return some(err(this.error));
+    }
+
+    return isOption(this.value) ? this.value.map((x) => ok(x)) : none();
+  }
+
   try(
     this: SettledResult<T, E>,
   ): this extends Ok<T, E>
@@ -1026,6 +1035,12 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
 
   tap(f: (x: Result<T, E>) => unknown): PendingResult<T, E> {
     return pendingResult(this.#promise.then((self) => self.tap(f)));
+  }
+
+  transpose<U, F>(
+    this: PendingResult<Option<U>, F>,
+  ): PendingOption<Result<U, F>> {
+    return pendingOption(toPromise(this.then((self) => self.transpose())));
   }
 
   try(): Promise<
