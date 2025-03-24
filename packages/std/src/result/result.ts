@@ -782,6 +782,10 @@ class _Result<T, E> implements Resultant<T, E> {
 
     return this.#state.error;
   }
+
+  unwrapOr(this: SettledResult<T, E>, def: Awaited<T>): T {
+    return this.isErr() ? def : this.value;
+  }
 }
 
 /**

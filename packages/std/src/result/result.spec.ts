@@ -1489,4 +1489,22 @@ describe("Result", () => {
       );
     });
   });
+
+  describe("unwrapOr", () => {
+    it("returns inner `Ok` value if self is `Ok`", () => {
+      const self = ok(one);
+      const result = self.unwrapOr(two);
+
+      expect(result).toBe(one);
+    });
+
+    it.each([expectedErr, unexpectedErr])(
+      "returns provided default if self is `Err { %s }`",
+      (e) => {
+        const self = err(e);
+
+        expect(self.unwrapOr(zero)).toBe(zero);
+      },
+    );
+  });
 });

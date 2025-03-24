@@ -819,6 +819,20 @@ export interface Resultant<T, E> {
    * ```
    */
   unwrapErr(this: SettledResult<T, E>): CheckedError<E>;
+
+  /**
+   * Returns the contained value if {@link Ok}, or `def` if {@link Err}.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.unwrapOr(0)).toBe(2);
+   * expect(y.unwrapOr(0)).toBe(0);
+   * ```
+   */
+  unwrapOr(this: SettledResult<T, E>, def: Awaited<T>): T;
 }
 
 /**
