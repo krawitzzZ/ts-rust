@@ -125,7 +125,7 @@ try {
 
 ### map and andThen
 
-**Note**: If the callback `f` throws an exception, both methods return `None`.
+> **Note**: If the callback `f` throws an exception, both methods return `None`.
 
 - `map(f)`: Transforms the value with `f` if `Some`, otherwise returns `None`.
 - `andThen(f)`: Applies `f` (which returns an `Option`) to the value if `Some`,
@@ -249,8 +249,8 @@ console.log(
 - `isNoneOr(f)`: Returns `true` if the option is `None` or if the predicate `f`
   returns `true` for the value.
 
-**Note**: For `isSomeAnd(f)` and `isNoneOr(f)`, if the predicate `f` throws
-an exception, the method returns `false`.
+> **Note**: For `isSomeAnd(f)` and `isNoneOr(f)`, if the predicate `f` throws
+> an exception, the method returns `false`.
 
 ```typescript
 import { some, none } from "@ts-rust/std";
@@ -323,14 +323,14 @@ optional values with the same ergonomic methods as `Option<T>`.
 `PendingOption<T>` mirrors some of the `Option<T>` methods but returns async
 results.
 
-**Note**: If the underlying promise of a `PendingOption<T>` rejects, it resolves
-to `None` by default. This ensures that errors in the asynchronous resolution
-are handled gracefully without requiring explicit error handling for the promise
-itself. Below are examples of key methods:
+> **Note**: If the underlying promise of a `PendingOption<T>` rejects, it resolves
+> to `None` by default. This ensures that errors in the asynchronous resolution
+> are handled gracefully without requiring explicit error handling for the promise
+> itself. Below are examples of key methods:
 
 ### async map and andThen
 
-**Note**: If the callback f throws an exception or returns a rejected Promise, both methods return a PendingOption resolving to None.
+> **Note**: If the callback f throws an exception or returns a rejected Promise, both methods return a PendingOption resolving to None.
 
 ```typescript
 import { pendingOption, some, none } from "@ts-rust/std";
