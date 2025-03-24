@@ -833,6 +833,26 @@ export interface Resultant<T, E> {
    * ```
    */
   unwrapOr(this: SettledResult<T, E>, def: Awaited<T>): T;
+
+  /**
+   * Returns the contained value if {@link Ok}, or the result of `mkDef`
+   * if {@link Err}.
+   *
+   * ## Throws
+   * - {@link ResultError} if `mkDef` throws, with the original error set as
+   *   {@link ResultError.reason}.
+   *
+   * ### Example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.unwrapOrElse(() => 0)).toBe(2);
+   * expect(y.unwrapOrElse(() => 0)).toBe(0);
+   * expect(() => y.unwrapOrElse(() => { throw new Error("boom") })).toThrow(ResultError);
+   * ```
+   */
+  unwrapOrElse(this: SettledResult<T, E>, mkDef: () => Awaited<T>): T;
 }
 
 /**

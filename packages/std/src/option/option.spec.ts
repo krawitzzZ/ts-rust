@@ -1330,7 +1330,7 @@ describe("Option", () => {
   });
 
   describe("unwrapOrElse", () => {
-    it("does not call provided callback and  returns inner value if self is `Some`", () => {
+    it("does not call provided callback and returns inner value if self is `Some`", () => {
       const option = some(one);
       const callback = jest.fn(() => two);
       const result = option.unwrapOrElse(callback);

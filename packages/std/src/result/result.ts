@@ -786,6 +786,18 @@ class _Result<T, E> implements Resultant<T, E> {
   unwrapOr(this: SettledResult<T, E>, def: Awaited<T>): T {
     return this.isErr() ? def : this.value;
   }
+
+  unwrapOrElse(this: SettledResult<T, E>, mkDef: () => Awaited<T>): T {
+    try {
+      return this.isOk() ? this.value : mkDef();
+    } catch (e) {
+      throw new ResultError(
+        "`unwrapOrElse`: callback `mkDef` threw an exception",
+        ResultErrorKind.PredicateException,
+        e,
+      );
+    }
+  }
 }
 
 /**

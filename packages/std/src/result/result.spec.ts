@@ -1507,4 +1507,42 @@ describe("Result", () => {
       },
     );
   });
+
+  describe("unwrapOrElse", () => {
+    it("does not call provided callback and returns inner `Ok` value if self is `Ok`", () => {
+      const self = ok(one);
+      const callback = jest.fn(() => two);
+      const result = self.unwrapOrElse(callback);
+
+      expect(result).toBe(one);
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it.each([expectedErr, unexpectedErr])(
+      "returns result of provided callback if self is `Err { %s }`",
+      (e) => {
+        const self = err(e);
+        const callback = jest.fn(() => two);
+        const result = self.unwrapOrElse(callback);
+
+        expect(result).toBe(two);
+      },
+    );
+
+    it("rethrows `ResultError` if self is `Err` and provided callback throws", () => {
+      const self = err();
+      const callback = jest.fn(() => {
+        throw syncError;
+      });
+
+      expect(() => self.unwrapOrElse(callback)).toThrow(
+        new ResultError(
+          "`unwrapOrElse`: callback `mkDef` threw an exception",
+          ResultErrorKind.PredicateException,
+          syncError,
+        ),
+      );
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+  });
 });
