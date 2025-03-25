@@ -1,6 +1,6 @@
 {
   "name": "@ts-rust/shared",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Internal shared utilities for @ts-rust packages",
   "author": "Nikita Demin",
   "license": "MIT",

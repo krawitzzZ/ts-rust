@@ -1,9 +1,10 @@
 {
   "name": "@ts-rust/std",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A TypeScript adaptation of Rust's standard library, bringing Rust-inspired utilities and patterns to JavaScript environments",
   "author": "Nikita Demin",
   "license": "MIT",
+  "homepage": "https://github.com/krawitzzZ/ts-rust/blob/main/packages/std/README.md",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/krawitzzZ/ts-rust.git"
