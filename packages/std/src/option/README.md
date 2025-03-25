@@ -219,6 +219,8 @@ y.inspect((opt) => console.log(opt)); // None
 
 Pattern match on the `Option` to handle both `Some` and `None` cases:
 
+> **Throws**: A `OptionError` if either `f` or `g` throws an exception.
+
 ```typescript
 import { some, none } from "@ts-rust/std";
 
@@ -238,6 +240,15 @@ console.log(
     () => 0, // 0
   ),
 );
+
+console.log(() =>
+  x.match(
+    () => {
+      throw new Error("Failed");
+    },
+    () => 0,
+  ),
+); // Throws OptionError
 ```
 
 ### isSome, isNone, isSomeAnd, and isNoneOr
@@ -326,7 +337,7 @@ results.
 > **Note**: If the underlying promise of a `PendingOption<T>` rejects, it resolves
 > to `None` by default. This ensures that errors in the asynchronous resolution
 > are handled gracefully without requiring explicit error handling for the promise
-> itself. Below are examples of key methods:
+> itself. Below are examples of key methods.
 
 ### async map and andThen
 
