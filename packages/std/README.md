@@ -31,8 +31,8 @@ Ensure you have TypeScript installed in your project, as this library relies on 
 
 Here are some quick examples to get you started. For detailed documentation, see:
 
-- [Option README](./option/README.md)
-- [Result README](./result/README.md)
+- [Option README](./src/option/README.md)
+- [Result README](./src/result/README.md)
 
 ### Handling Optional Values with `Option<T>`
 
