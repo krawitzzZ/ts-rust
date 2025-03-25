@@ -1,19 +1,75 @@
 # @ts-rust/std
 
-A TypeScript library inspired by Rust’s `Option<T>` and `Result<T, E>` types, designed to bring type-safe, ergonomic, and robust value and error handling to JavaScript projects. Built with TypeScript, `@ts-rust/std` ensures no runtime errors are thrown by leveraging static typing and functional programming patterns.
+A TypeScript library inspired by Rust’s
+[`Option<T>`](https://doc.rust-lang.org/std/option/enum.Option.html) and
+[`Result<T, E>`](https://doc.rust-lang.org/std/result/enum.Result.html) types,
+designed to bring type-safe, ergonomic, and robust value and error handling to
+JavaScript projects. Built with TypeScript, `@ts-rust/std` ensures no runtime
+errors are thrown by leveraging static typing and functional programming patterns.
 
-This package is part of the `@ts-rust` monorepo, which adapts Rust’s standard library concepts into idiomatic TypeScript.
+This package is part of the `@ts-rust` monorepo, which adapts Rust’s standard
+library concepts into idiomatic TypeScript.
 
 ## Philosophy
 
-In JavaScript, handling optional values and errors often relies on `null`, `undefined`, or throwing exceptions—approaches that can lead to runtime errors and untyped code. Inspired by Rust’s `Option` and `Result` types, `@ts-rust/std` offers a safer alternative:
+JavaScript often handles optional values and errors using `null`, `undefined`,
+or thrown exceptions—approaches that can lead to runtime errors and untyped,
+unpredictable code. In contrast, modern languages like [Go](https://go.dev/) and
+[Rust](https://www.rust-lang.org/) take a different approach: instead of throwing
+exceptions, they return errors as values, forcing the caller to explicitly handle
+or ignore them. Inspired by Rust’s `Option` and `Result` types, `@ts-rust/std`
+brings this disciplined error-handling model to JavaScript and TypeScript,
+offering a safer and more explicit way to manage errors and optional values.
 
-- **Type Safety**: Catch errors at compile time with TypeScript’s type system.
-- **No Runtime Errors**: Avoid `undefined is not a function` or similar surprises.
-- **Ergonomic Design**: Chain operations with methods like `map`, `andThen`, and `unwrapOr`.
-- **Async Support**: Handle asynchronous operations with `PendingOption` and `PendingResult`.
+In Rust, error handling is deeply integrated into the language. Functions either
+return a `Result` (or `Option`) to indicate success or failure, or they panic to
+signal an unrecoverable error. JavaScript, however, operates differently: errors
+can be thrown synchronously (caught with `try/catch`) or asynchronously (via
+rejected promises). While handling both cases is straightforward in theory,
+real-world applications often result in "messy" and "noisy" code, especially
+when dealing with asynchronous operations like unhandled promise rejections.
+`@ts-rust/std` addresses this by providing `Option` and `Result` types—along with
+their asynchronous counterparts, `PendingOption` and `PendingResult`—to simplify
+error handling, making it explicit, predictable, and safe.
 
-Think of this library as a bridge between Rust’s disciplined approach to safety and TypeScript’s flexibility, making your code more predictable and maintainable.
+The core philosophy of this library is to ensure "safe options and results."
+Once execution enters a method of `Option`, `Result`, or their pending variants,
+no synchronous or asynchronous exceptions will be thrown or rejected unless
+explicitly documented. For example, methods like `unwrap` and `expect` are
+designed to throw (or reject, in async contexts) when called inappropriately,
+mirroring Rust’s behavior where a method would panic. In all other cases, errors
+are handled gracefully by returning `None` or `Err`, preventing unexpected runtime
+failures. This design makes the library’s behavior predictable and aligns with
+Rust’s safety guarantees, adapted for JavaScript’s single-threaded, asynchronous
+nature.
+
+JavaScript’s single-threaded model eliminates concerns like race conditions and
+unsafe multi-threaded operations (common in Rust’s async runtimes), but it
+introduces challenges like properly handling asynchronous behavior—think
+"unhandled promise rejection" errors. To address this, `@ts-rust/std` clearly
+separates synchronous and asynchronous APIs. For instance, many methods on
+`Result` and `Option` restrict their `this` type to `SettledResult<T, E>` or
+`SettledOption<T>`, ensuring that the inner value is `Awaited<T>` before
+operations like `unwrap` or `check` can be called. The library provides a variety
+of methods to help settle promises safely, making async workflows seamless and
+type-safe.
+
+Key features of `@ts-rust/std` include:
+
+- **Type Safety**: Leverage TypeScript’s type system to catch errors at
+  compile time.
+- **No Runtime Surprises**: Avoid issues like `undefined is not a function` or
+  `unhandled promise rejection`.
+- **Ergonomic Design**: Chain operations with methods like `map`, `andThen`,
+  and `unwrapOr` for a fluent API.
+- **Async Support**: Handle asynchronous operations effortlessly with
+  `PendingOption` and `PendingResult`.
+
+This library acts as a bridge between Rust’s disciplined approach to safety and
+TypeScript’s flexibility, helping you write more predictable, maintainable, and
+error-resistant code. Whether you’re handling optional values or managing errors
+in synchronous or asynchronous contexts, `@ts-rust/std` empowers you to do so
+with confidence and clarity.
 
 ## Installation
 
