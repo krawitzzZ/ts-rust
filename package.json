@@ -1,6 +1,6 @@
 {
   "name": "ts-rust",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Monorepo for @ts-rust packages",
   "author": "Nikita Demin",
   "license": "MIT",
