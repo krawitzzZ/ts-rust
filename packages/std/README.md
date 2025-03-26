@@ -87,6 +87,7 @@ Ensure you have TypeScript installed in your project, as this library relies on 
 
 Here are some quick examples to get you started. For detailed documentation, see:
 
+- [TypeDoc documentation](https://krawitzzz.github.io/ts-rust/)
 - [Option README](./src/option/README.md)
 - [Result README](./src/result/README.md)
 
