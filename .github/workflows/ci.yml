@@ -41,6 +41,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Check changesets
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: pnpm changeset status
+
       - name: Build
         run: pnpm run build
 
