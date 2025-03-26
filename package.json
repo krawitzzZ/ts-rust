@@ -27,8 +27,9 @@
     "clean:deps": "rm -rf ./node_modules && pnpm run --recursive --parallel --stream clean:deps",
     "prebuild": "pnpm run clean",
     "build": "pnpm run --recursive --stream --filter \"!@ts-rust/shared\" --filter \"@ts-rust/*...\" build",
+    "build:docs": "pnpm run --recursive --stream --filter \"!@ts-rust/shared\" --filter \"@ts-rust/*...\" build:docs",
     "build:examples": "pnpm run --recursive --stream --filter \"@examples/*\" build",
-    "build:all": "pnpm run build && pnpm run build:examples"
+    "build:all": "pnpm run build && pnpm run build:docs && pnpm run build:examples"
   },
   "devDependencies": {
     "@changesets/cli": "2.28.1",

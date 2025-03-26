@@ -35,6 +35,7 @@
     "clean:deps": "rm -rf ./node_modules",
     "prebuild": "pnpm run --stream --filter \"@ts-rust/shared...\" build",
     "build": "pnpm run typecheck && rollup --config --failAfterWarnings",
+    "build:docs": "typedoc",
     "prepack": "pnpm run build",
     "changeset": "changeset",
     "release": "changeset publish",
@@ -45,5 +46,11 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "docusaurus-plugin-typedoc": "1.2.3",
+    "typedoc": "0.28.1",
+    "typedoc-plugin-markdown": "4.6.0",
+    "typedoc-plugin-mdn-links": "5.0.1"
   }
 }
