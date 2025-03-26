@@ -1,0 +1,57 @@
+name: Continuous Integration
+
+on:
+  workflow_dispatch:
+
+  pull_request:
+    branches:
+      - main
+      - v**
+
+  push:
+    branches:
+      - main
+      - v**
+
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Format
+        run: pnpm run format
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm run test:cov
