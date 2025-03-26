@@ -128,7 +128,7 @@ For asynchronous workflows, use `PendingOption` and `PendingResult`,
 which wrap promises and provide similar methods for chaining operations:
 
 ```typescript
-import { pendingResult } from "@ts-rust/std";
+import { pendingResult, ok, err } from "@ts-rust/std";
 
 function fetchData(id: number): PendingResult<string, Error> {
   return pendingResult(async () => {
@@ -144,10 +144,10 @@ function fetchData(id: number): PendingResult<string, Error> {
       );
     }
   })
+    .map((data) => data.name)
     .inspectErr((error) => {
       console.error(`Failed to fetch data: ${error.get()}`);
-    })
-    .map((data) => data.name);
+    });
 }
 
 fetchData(1).then((result) => console.log(result.unwrapOr("Unknown")));
