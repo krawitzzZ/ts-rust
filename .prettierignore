@@ -1,0 +1,14 @@
+**/node_modules/**
+**/dist/**
+**/docs/**
+**/.vscode/**
+**/.changeset/**
+**/.gitignore
+**/*.md
+**/.github/**
+**/package-lock.json
+package-lock.json
+pnpm-lock.yaml
+**/pnpm-lock.yaml
+**/coverage/**
+**/examples/**

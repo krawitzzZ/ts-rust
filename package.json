@@ -15,6 +15,7 @@
     "url": "git+https://github.com/krawitzzZ/ts-rust.git"
   },
   "scripts": {
+    "commitlint": "commitlint --config commitlint.config.js --edit",
     "lint": "pnpm run --recursive --parallel --stream lint",
     "lint:fix": "pnpm run --recursive --parallel --stream lint:fix",
     "format": "pnpm run --recursive --parallel --stream format",
@@ -29,10 +30,14 @@
     "build": "pnpm run --recursive --stream --filter \"!@ts-rust/shared\" --filter \"@ts-rust/*...\" build",
     "build:docs": "pnpm run --recursive --stream --filter \"!@ts-rust/shared\" --filter \"@ts-rust/*...\" build:docs",
     "build:examples": "pnpm run --recursive --stream --filter \"@examples/*\" build",
-    "build:all": "pnpm run build && pnpm run build:docs && pnpm run build:examples"
+    "build:all": "pnpm run build && pnpm run build:docs && pnpm run build:examples",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@changesets/cli": "2.28.1",
+    "@commitlint/cli": "19.8.0",
+    "@commitlint/config-conventional": "19.8.0",
+    "@commitlint/types": "19.8.0",
     "@golevelup/ts-jest": "0.6.2",
     "@rollup/plugin-node-resolve": "16.0.0",
     "@rollup/plugin-typescript": "12.1.2",
@@ -42,6 +47,7 @@
     "eslint-config-prettier": "10.0.2",
     "eslint-plugin-import": "2.31.0",
     "globals": "16.0.0",
+    "husky": "9.1.7",
     "jest": "29.7.0",
     "prettier": "3.5.2",
     "rollup": "4.34.8",

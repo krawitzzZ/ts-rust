@@ -1,0 +1,21 @@
+#!/bin/sh
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+
+if [ -z "$STAGED_FILES" ]; then
+  echo "No staged files to check. Skipping format check."
+  exit 0
+fi
+
+# Run Prettier check only on staged files
+# pnpm format -- "$STAGED_FILES"
+pnpm format
+FORMAT_EXIT_CODE=$?
+
+if [ $FORMAT_EXIT_CODE -ne 0 ]; then
+  echo "❌ Code formatting check failed. Please run 'pnpm format' and stage the changes."
+  exit 1
+fi
+
+echo "✅ Code formatting is correct."
+exit 0
