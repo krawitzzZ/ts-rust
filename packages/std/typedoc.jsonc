@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "plugin": ["typedoc-plugin-markdown", "typedoc-plugin-mdn-links"],
+  "plugin": ["typedoc-plugin-mdn-links"],
   "entryPointStrategy": "resolve",
   "entryPoints": ["src/index.ts", "src/error", "src/option", "src/result"],
   "out": "docs",
