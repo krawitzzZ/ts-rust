@@ -36,10 +36,7 @@
     "prebuild": "pnpm run --stream --filter \"@ts-rust/shared...\" build",
     "build": "pnpm run typecheck && rollup --config --failAfterWarnings",
     "build:docs": "typedoc",
-    "prepack": "pnpm run build",
-    "changeset": "changeset",
-    "release": "changeset publish",
-    "version": "changeset version"
+    "prepack": "pnpm run build"
   },
   "dependencies": {
     "@ts-rust/shared": "workspace:*"
