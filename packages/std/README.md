@@ -130,18 +130,24 @@ which wrap promises and provide similar methods for chaining operations:
 ```typescript
 import { pendingResult } from "@ts-rust/std";
 
-async function fetchData(id: number): Result<string, Error> {
-  const res = pendingResult(async () => {
+function fetchData(id: number): PendingResult<string, Error> {
+  return pendingResult(async () => {
     try {
       const response = await fetch(
         `https://jsonplaceholder.typicode.com/users/${id}`,
       );
-      return ok<{ name: string }, Error>(response.json());
+      const data = await response.json();
+      return ok<{ name: string }, Error>(data as { name: string });
     } catch (error) {
-      return err<{ name: string }, Error>(error);
+      return err<{ name: string }, Error>(
+        error instanceof Error ? error : new Error(`unknown error: ${error}`),
+      );
     }
-  });
-  return res.map((data) => data.name);
+  })
+    .inspectErr((error) => {
+      console.error(`Failed to fetch data: ${error.get()}`);
+    })
+    .map((data) => data.name);
 }
 
 fetchData(1).then((result) => console.log(result.unwrapOr("Unknown")));
