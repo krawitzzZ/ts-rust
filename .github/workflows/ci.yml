@@ -6,15 +6,10 @@ on:
   pull_request:
     branches:
       - main
-      - v**
 
   push:
     branches:
       - main
-      - v**
-
-    tags:
-      - "v*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.repository }}-${{ github.ref }}
@@ -72,4 +67,4 @@ jobs:
               ref: 'main',
             });
         env:
-          GITHUB_TOKEN: ${{ secrets.CHANGESET_TOKEN }} # Use the same token as in release.yml
+          GITHUB_TOKEN: ${{ secrets.CHANGESETS_PAT }}
