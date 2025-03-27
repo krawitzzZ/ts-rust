@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 0
 
       - name: Init
-        uses: ./.github/actions/init/action.yml
+        uses: ./.github/actions/init
 
       - name: Create Release Pull Request or Publish
         id: changesets
