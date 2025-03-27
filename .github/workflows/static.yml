@@ -5,7 +5,7 @@ on:
   # Runs on pushes to tags
   push:
     tags:
-      - "v*"
+      - "@ts-rust/std*"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
