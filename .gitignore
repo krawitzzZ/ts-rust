@@ -2,7 +2,6 @@ node_modules
 tmp
 build
 dist
-docs
 coverage
 sandbox.dev.ts
 tsconfig.tsbuildinfo
