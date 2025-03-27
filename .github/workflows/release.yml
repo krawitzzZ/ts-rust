@@ -17,24 +17,10 @@ jobs:
     name: Release
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Init
+        uses: ./.github/actions/init/action.yml
         with:
-          fetch-depth: 0
-
-      - uses: pnpm/action-setup@v4
-        name: Install pnpm
-        with:
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "pnpm"
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+          deep-fetch: "true"
 
       - name: Create Release Pull Request or Publish
         id: changesets
