@@ -30,6 +30,9 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Init
         uses: ./.github/actions/init/action.yml
 

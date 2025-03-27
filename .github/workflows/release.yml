@@ -17,10 +17,13 @@ jobs:
     name: Release
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Init
         uses: ./.github/actions/init/action.yml
-        with:
-          deep-fetch: "true"
 
       - name: Create Release Pull Request or Publish
         id: changesets

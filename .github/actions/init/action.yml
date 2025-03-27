@@ -2,27 +2,11 @@ name: "Init @ts-rust monorepo"
 
 description: |
   This action initializes @ts-rust monorepo by installing nodejs,
-  pnpm and npm packages and builds the project.
-
-inputs:
-  deep-fetch:
-    description: "Whether if deep-fetch:0 has to be set during checkout. false by default"
-    required: false
-    default: "false"
+  pnpm, npm packages and builds the project.
 
 runs:
   using: "composite"
   steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      if: inputs.deep-fetch == 'true'
-      with:
-        fetch-depth: 0
-
-    - name: Checkout
-      uses: actions/checkout@v4
-      if: inputs.deep-fetch == 'false'
-
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
