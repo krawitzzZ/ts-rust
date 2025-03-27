@@ -11,6 +11,11 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  actions: write
+  checks: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.repository }}-${{ github.ref }}
   cancel-in-progress: true
