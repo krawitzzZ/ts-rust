@@ -55,3 +55,21 @@ jobs:
 
       - name: Test
         run: pnpm run test:cov
+
+  trigger-release:
+    needs: [ci-check]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Trigger Release Workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'release.yml',
+              ref: 'main',
+            });
+        env:
+          GITHUB_TOKEN: ${{ secrets.CHANGESET_TOKEN }} # Use the same token as in release.yml
