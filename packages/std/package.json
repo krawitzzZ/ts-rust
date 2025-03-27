@@ -1,6 +1,6 @@
 {
   "name": "@ts-rust/std",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A TypeScript adaptation of Rust's standard library, bringing Rust-inspired utilities and patterns to JavaScript environments",
   "author": "Nikita Demin",
   "license": "MIT",
