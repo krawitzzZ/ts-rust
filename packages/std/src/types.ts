@@ -1,4 +1,16 @@
 /**
+ * The `Types` module defines common utility types used throughout
+ * the `@ts-rust/std` package. It exports foundational types such as `Primitive`,
+ * `Cloneable`, `Clone`, `Recoverable`, and `MaybePromise`, which provide building
+ * blocks for type-safe programming in TypeScript. Inspired by Rust's type system,
+ * these types enable better handling of cloning, error recovery, and
+ * synchronous/asynchronous value interoperability. Use this module to leverage
+ * these utility types in your TypeScript applications for more robust and
+ * predictable code.
+ * @module Types
+ */
+
+/**
  * Defines a type `T` that is **cloneable**, capable of being duplicated either
  * implicitly as a {@link Primitive} or explicitly via a {@link Clone} implementation.
  *
