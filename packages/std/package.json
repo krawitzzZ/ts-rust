@@ -1,10 +1,10 @@
 {
   "name": "@ts-rust/std",
   "version": "0.0.4",
-  "description": "A TypeScript adaptation of Rust's standard library, bringing Rust-inspired utilities and patterns to JavaScript environments",
+  "description": "Rust-inspired utilities for TypeScript: Option, Result, and error handling for safer, more predictable code.",
   "author": "Nikita Demin",
   "license": "MIT",
-  "homepage": "https://github.com/krawitzzZ/ts-rust/blob/main/packages/std/README.md",
+  "homepage": "https://krawitzzz.github.io/ts-rust/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/krawitzzZ/ts-rust.git"
@@ -49,5 +49,17 @@
     "typedoc": "0.28.1",
     "typedoc-plugin-markdown": "4.6.0",
     "typedoc-plugin-mdn-links": "5.0.1"
-  }
+  },
+  "keywords": [
+    "typescript",
+    "rust",
+    "option",
+    "result",
+    "error-handling",
+    "functional-programming",
+    "type-safety",
+    "safety",
+    "utilities",
+    "std"
+  ]
 }
