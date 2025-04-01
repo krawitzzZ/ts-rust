@@ -1,5 +1,12 @@
 # @examples/react-std
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [7919e98]
+  - @ts-rust/std@0.0.5
+
 ## 0.0.5
 
 ### Patch Changes
