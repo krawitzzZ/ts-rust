@@ -1,6 +1,6 @@
 {
   "name": "@ts-rust/std",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Rust-inspired utilities for TypeScript: Option, Result, and error handling for safer, more predictable code.",
   "author": "Nikita Demin",
   "license": "MIT",
