@@ -20,6 +20,7 @@ const config: Config = {
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: "/ts-rust/",
+  trailingSlash: false,
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
@@ -36,6 +37,34 @@ const config: Config = {
     defaultLocale: "en",
     locales: ["en"],
   },
+
+  presets: [
+    [
+      "classic",
+      {
+        blog: false,
+        sitemap: false,
+        docs: {
+          // Remove this to remove the "edit this page" links.
+          // editUrl: "https://github.com/krawitzzz/ts-rust/",
+          sidebarPath: "./sidebars.ts",
+          routeBasePath: "/",
+          path: "docs",
+          breadcrumbs: true,
+          includeCurrentVersion: true,
+          sidebarCollapsible: true,
+          versions: {
+            current: {
+              label: "Latest",
+            },
+          },
+        },
+        theme: {
+          customCss: "./src/css/custom.css",
+        },
+      } satisfies Preset.Options,
+    ],
+  ],
 
   plugins: [
     [
@@ -97,34 +126,6 @@ const config: Config = {
             typescript: true;
           };
         },
-    ],
-  ],
-
-  presets: [
-    [
-      "classic",
-      {
-        blog: false,
-        sitemap: false,
-        docs: {
-          // Remove this to remove the "edit this page" links.
-          // editUrl: "https://github.com/krawitzzz/ts-rust/",
-          sidebarPath: "./sidebars.ts",
-          routeBasePath: "/",
-          path: "docs",
-          breadcrumbs: true,
-          includeCurrentVersion: true,
-          sidebarCollapsible: true,
-          versions: {
-            current: {
-              label: "Next",
-            },
-          },
-        },
-        theme: {
-          customCss: "./src/css/custom.css",
-        },
-      } satisfies Preset.Options,
     ],
   ],
 
