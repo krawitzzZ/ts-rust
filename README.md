@@ -34,6 +34,16 @@ utilities used across the monorepo’s packages.
 
 This project is licensed under the MIT License — see the [LICENSE](./LICENSE) file for details.
 
+## Contributing
+
+We welcome contributions! If you find a bug or have a feature request:
+
+1. Check the [issue tracker](https://github.com/krawitzzZ/ts-rust/issues) to see if it’s already reported.
+2. Open a new issue with a clear title, description, and reproduction steps (if applicable).
+3. For code contributions, fork the repo, create a branch, and submit a pull request.
+
+Please follow the [code of conduct](./CODE_OF_CONDUCT.md) when interacting with the project.
+
 ## Acknowledgements
 
 Inspired by Rust’s std library and its focus on safety and performance.
