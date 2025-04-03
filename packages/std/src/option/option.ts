@@ -31,7 +31,7 @@ import { phantom } from "./interface";
  * @param value - The value to wrap in {@link Some}.
  * @returns An {@link Option} containing the value as {@link Some}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = some(42);
  *
@@ -52,7 +52,7 @@ export function some<T>(value: T): Option<T> {
  * @template T - The type of the absent value.
  * @returns An {@link Option} representing {@link None}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = none<number>();
  *
@@ -75,7 +75,7 @@ export function none<T>(): Option<T> {
  * @param value - The value or promise to wrap in {@link Some}.
  * @returns A {@link PendingOption} resolving to {@link Some} with the awaited value.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingSome(42);
  * const y = pendingSome(Promise.resolve("hello"));
@@ -99,7 +99,7 @@ export function pendingSome<T>(
  * @template T - The type of the absent value.
  * @returns A {@link PendingOption} resolving to {@link None}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingNone<number>();
  *
@@ -123,7 +123,7 @@ export function pendingNone<T>(): PendingOption<Awaited<T>> {
  * @param optionOrFactory - The {@link Option}, promise, or factory function producing an {@link Option}.
  * @returns A {@link PendingOption} resolving to the provided or produced option.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingOption(some(42));
  * const y = pendingOption(() => Promise.resolve(none<string>()));
@@ -156,7 +156,7 @@ export function pendingOption<T>(
  * @param x - The value to check.
  * @returns `true` if the value is an {@link Option}, narrowing to `Option<unknown>`.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = some(42);
  * const y = none<number>();
@@ -186,7 +186,7 @@ export function isOption(x: unknown): x is Option<unknown> {
  * @param x - The value to check.
  * @returns `true` if the value is a {@link PendingOption}, narrowing to `PendingOption<unknown>`.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingOption(some(42));
  * const y = pendingOption(none<number>());
@@ -280,7 +280,7 @@ class _Option<T> implements Optional<T> {
    * Only {@link Some} instances have a value, so accessing this property on
    * {@link None} will throw an {@link OptionError}.
    *
-   * ## Throws
+   * @throws
    * - {@link OptionError} if {@link value} is accessed on {@link None}.
    */
   get value(): T {

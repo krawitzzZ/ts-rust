@@ -33,7 +33,7 @@
  * though the depth of the copy (shallow or deep) depends on the implementation.
  *
  *
- * ### Example
+ * @example
  * ```ts
  * // Primitive satisfies Cloneable<number>
  * const num: Cloneable<number> = 42;
@@ -78,7 +78,7 @@ export type Cloneable<T> = T extends Primitive
  * Typically, this is the class or type itself (e.g., a class `MyType` would
  * implement `Clone<MyType>`).
  *
- * ### Example
+ * @example
  * ```ts
  * class MyType implements Clone<MyType> {
  *   constructor(public value: number) {}
@@ -117,7 +117,7 @@ export interface Clone<T> {
  * if no error occurs. The `R` type parameter in the `catch` method represents the
  * type that will be produced by the error handler when an error is caught.
  *
- * ### Example
+ * @example
  * ```ts
  * class Result<T> implements Recoverable<T> {
  *   constructor(private value: T | Error) {}

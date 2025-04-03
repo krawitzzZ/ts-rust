@@ -27,7 +27,7 @@ export type Right<T, U> = IEither<T, U> & { get(): U; readonly right: U };
  * exceptions or null checks, with {@link IEither.isLeft | isLeft} and
  * {@link IEither.isRight | isRight} methods for type narrowing.
  *
- * ### Example
+ * @example
  * ```ts
  * const error: Either<string, number> = left("failed");
  * const success: Either<string, number> = right(42);
@@ -48,7 +48,7 @@ export type Either<T, U> = Left<T, U> | Right<T, U>;
  * Use this function to construct a {@link Left} variant, typically representing an error or
  * alternative outcome.
  *
- * ### Example
+ * @example
  * ```ts
  * const e = left<string, number>("error");
  * expect(e.isLeft()).toBe(true);
@@ -65,7 +65,7 @@ export function left<T, U>(value: T): Either<T, U> {
  * Use this function to construct a {@link Right} variant, typically representing a successful
  * or primary outcome.
  *
- * ### Example
+ * @example
  * ```ts
  * const e = right<string, number>(42);
  * expect(e.isRight()).toBe(true);
@@ -95,7 +95,7 @@ export type IEither<T, U> = {
    * of type `R`. Inspired by Haskell’s `either` function, it eliminates the need for explicit
    * type checking with {@link IEither.isLeft | isLeft} or {@link IEither.isRight | isRight}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const err: Either<string, number> = left("error");
    * const val: Either<string, number> = right(42);

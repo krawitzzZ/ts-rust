@@ -1,5 +1,5 @@
 import { themes as prismThemes } from "prism-react-renderer";
-import type { TypeDocOptions } from "typedoc";
+import { OptionDefaults, type TypeDocOptions } from "typedoc";
 import type { PluginOptions } from "typedoc-plugin-markdown";
 import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
@@ -73,7 +73,6 @@ const config: Config = {
       {
         id: "std-api",
         tsconfig: "../packages/std/tsconfig.json",
-        // entryPoints: ["../packages/std/src/index.ts"],
         entryPoints: [
           "../packages/std/src/error/index.ts",
           "../packages/std/src/result/index.ts",
@@ -87,6 +86,7 @@ const config: Config = {
         excludePrivate: true,
         excludeInternal: true,
         readme: "none",
+        blockTags: [...OptionDefaults.blockTags, "@notes"],
 
         // https://typedoc-plugin-markdown.org/docs/options
         fileExtension: ".mdx",

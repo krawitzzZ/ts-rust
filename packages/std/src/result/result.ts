@@ -40,7 +40,7 @@ import type {
  * @param value - The `void` value (typically omitted or `undefined`).
  * @returns A {@link Result} containing `undefined` as {@link Ok}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = ok<string>();
  *
@@ -60,7 +60,7 @@ export function ok<E>(value: void): Result<void, E>;
  * @param value - The value to wrap in {@link Ok}.
  * @returns A {@link Result} containing the value as {@link Ok}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = ok<number, string>(42);
  *
@@ -83,7 +83,7 @@ export function ok<T, E>(value: T): Result<T, E> {
  * @param error - The `void` error (typically omitted or `undefined`).
  * @returns A {@link Result} containing `undefined` as {@link Err}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = err<number>();
  *
@@ -108,7 +108,7 @@ export function err<T>(error: void): Result<T, void>;
  * @param error - The error to wrap in {@link Err}, as a raw `E`, {@link ResultError}, or {@link CheckedError}.
  * @returns A {@link Result} containing the error as {@link Err}.
  *
- * ### Example
+ * @example
  * ```ts
  * const oops = new ResultError("err", ResultErrorKind.Unexpected);
  * const x = err<number, string>("failure");
@@ -136,7 +136,7 @@ export function err<T, E>(error: E | CheckedError<E>): Result<T, E> {
  * @param value - The value or promise to wrap in {@link Ok}.
  * @returns A {@link PendingResult} resolving to {@link Ok} with the awaited value.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingOk<number, string>(42);
  * const y = pendingOk<string, number>(Promise.resolve("hello"));
@@ -163,7 +163,7 @@ export function pendingOk<T, E>(
  * @param error - The error or promise to wrap in {@link Err}.
  * @returns A {@link PendingResult} resolving to {@link Err} with the awaited error.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingErr<number, string>("failure");
  * const y = pendingErr<string, number>(Promise.resolve(42));
@@ -193,7 +193,7 @@ export function pendingErr<T, E>(
  * @param resultOrFactory - The {@link Result}, promise, or factory function producing a {@link Result}.
  * @returns A {@link PendingResult} resolving to the provided or produced result.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingResult(ok<number, string>(42));
  * const y = pendingResult(() => Promise.resolve(err<string, number>(42)));
@@ -227,7 +227,7 @@ export function pendingResult<T, E>(
  * @param x - The value to check.
  * @returns `true` if the value is a {@link Result}, narrowing to `Result<unknown, unknown>`.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = ok<number, string>(42);
  * const y = err<number, string>("failure");
@@ -257,7 +257,7 @@ export function isResult(x: unknown): x is Result<unknown, unknown> {
  * @param x - The value to check.
  * @returns `true` if the value is a {@link PendingResult}, narrowing to `PendingResult<unknown, unknown>`.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingResult(ok<number, string>(42));
  * const y = pendingResult(err<number, string>("failure"));
@@ -322,7 +322,7 @@ class _Result<T, E> implements Resultant<T, E> {
    * Only {@link Ok} instances have a value, so accessing this property on {@link Err}
    * will throw a {@link ResultError}.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if `value` is accessed on {@link Err}, with
    *   {@link ResultErrorKind.ValueAccessedOnErr}.
    */
@@ -343,7 +343,7 @@ class _Result<T, E> implements Resultant<T, E> {
    * Only {@link Err} instances have an error, so accessing this property on {@link Ok}
    * will throw a {@link ResultError}.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if `error` is accessed on {@link Ok}, with
    *   {@link ResultErrorKind.ErrorAccessedOnOk}.
    */

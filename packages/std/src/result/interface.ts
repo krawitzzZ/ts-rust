@@ -115,7 +115,7 @@ export interface Resultant<T, E> {
    * Returns `x` if this result is {@link Ok}, otherwise returns the {@link Err}
    * value of self.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(1);
    * const y = ok<number, string>(2);
@@ -132,7 +132,7 @@ export interface Resultant<T, E> {
    * Applies `f` to the value if this result is {@link Ok} and returns its result,
    * otherwise returns the {@link Err} value of self.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -146,13 +146,13 @@ export interface Resultant<T, E> {
   /**
    * Inspects this result’s state, returning a tuple indicating success and either the value or error.
    *
-   * ### Notes
+   * @notes
    * - Returns `[true, T]` if this is an {@link Ok}, or `[false, CheckedError<E>]`
    *   if this is an {@link Err}.
    * - Never throws, providing a safe way to access the result’s state without
    *   unwrapping.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42);
    * const y = err<number, string>("failure");
@@ -172,7 +172,7 @@ export interface Resultant<T, E> {
    *
    * Only available on {@link Result}s with {@link Cloneable} value and error.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok(1);
    * const y = ok({ a: 1, clone: () => ({ a: 0 }) });
@@ -188,7 +188,7 @@ export interface Resultant<T, E> {
   /**
    * Returns a shallow copy of the {@link Result}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const value = { a: 1 };
    * const x = ok<{ a: number }, string>(value);
@@ -207,11 +207,11 @@ export interface Resultant<T, E> {
    * Returns {@link Some} with the error value if this is an {@link Err}, or
    * {@link None} if this is an {@link Ok}.
    *
-   * ### Notes
+   * @notes
    * - Extracts the error from {@link CheckedError} if it’s an {@link ExpectedError};
    *   returns {@link None} for {@link UnexpectedError}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(1);
    * const y = err<number, string>("failure");
@@ -226,10 +226,10 @@ export interface Resultant<T, E> {
    * Retrieves the value if this result is an {@link Ok}, or throws a
    * {@link ResultError} with an optional message if it’s an {@link Err}.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if this result is an {@link Err}
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42);
    * const y = err<number, string>("failure");
@@ -244,10 +244,10 @@ export interface Resultant<T, E> {
    * Retrieves the error if this result is an {@link Err}, or throws a
    * {@link ResultError} with an optional message if it’s an {@link Ok}.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if this result is an {@link Ok}
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42);
    * const y = err<number, string>("failure");
@@ -263,7 +263,7 @@ export interface Resultant<T, E> {
    * Flattens a nested result (`Result<Result<T, E>, E>`) into a single result
    * (`Result<T, E>`).
    *
-   * ### Example
+   * @example
    * ```ts
    * const x: Result<Result<Result<number, string>, string>, string> = ok(ok(ok(6)));
    * const y: Result<Result<number, string>, string> = x.flatten();
@@ -280,11 +280,11 @@ export interface Resultant<T, E> {
    * Calls `f` with the value if this result is an {@link Ok}, then returns
    * a copy of this result.
    *
-   * ### Notes
+   * @notes
    * - Returns a new {@link Result} instance, not the original reference.
    * - If `f` throws or returns a `Promise` that rejects, the error is ignored.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -303,11 +303,11 @@ export interface Resultant<T, E> {
    * Calls `f` with the value if this result is an {@link Err}, then returns
    * a copy of this result.
    *
-   * ### Notes
+   * @notes
    * - Returns a new {@link Result} instance, not the original reference.
    * - If `f` throws or returns a `Promise` that rejects, the error is ignored.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -327,7 +327,7 @@ export interface Resultant<T, E> {
    * Checks if this result is an {@link Err}, narrowing its type to
    * {@link Err} if true.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -342,10 +342,10 @@ export interface Resultant<T, E> {
    * Returns `true` if the result is {@link Err} and `f` returns `true`
    * for the contained error.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, `false` is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -361,7 +361,7 @@ export interface Resultant<T, E> {
    * Checks if this result is an {@link Ok}, narrowing its type to
    * {@link Ok} if true.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -376,10 +376,10 @@ export interface Resultant<T, E> {
    * Returns `true` if the result is {@link Ok} and `f` returns `true`
    * for the contained value.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, `false` is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -395,12 +395,12 @@ export interface Resultant<T, E> {
    * Returns an iterator over this result’s value, yielding it if {@link Ok}
    * or nothing if {@link Err}.
    *
-   * ### Notes
+   * @notes
    * - Yields exactly one item for {@link Ok}, or zero items for {@link Err}.
    * - Compatible with `for...of` loops and spread operators.
    * - Ignores the error value in {@link Err} cases, focusing only on the success case.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42);
    * const y = err<number, string>("failure");
@@ -422,11 +422,11 @@ export interface Resultant<T, E> {
    * Transforms this result by applying `f` to the value if it’s an {@link Ok},
    * or preserves the {@link Err} unchanged.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws, returns an {@link Err} with an {@link UnexpectedError}
    *   containing the original error.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -446,10 +446,10 @@ export interface Resultant<T, E> {
    * for {@link Ok}, this method always calls `f`, passing the entire {@link Result}
    * as its argument.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws an {@link Err} with an {@link UnexpectedError} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const okRes = ok<number, string>(42);
    * const errRes = err<number, string>("failure");
@@ -470,11 +470,11 @@ export interface Resultant<T, E> {
    * for {@link Ok}, this method always calls `f`, passing the entire
    * {@link Result} as its argument.
    *
-   * ### Notes
+   * @notes
    * - If `f` returns a `Promise` that rejects, the resulting {@link PendingResult}
    *   resolves to an {@link Err} with an {@link UnexpectedError}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const okRes = ok<number, string>(42);
    * const errRes = err<number, string>("failure");
@@ -500,13 +500,13 @@ export interface Resultant<T, E> {
    * Transforms this result by applying `f` to the error if it’s an {@link Err}
    * with an expected error, or preserves the {@link Ok} unchanged.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws, returns an {@link Err} with an {@link UnexpectedError}
    *   containing the original error.
    * - If this is an {@link Err} with an {@link UnexpectedError}, `f` is not called,
    *   and the original error is preserved.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -521,10 +521,10 @@ export interface Resultant<T, E> {
   /**
    * Returns `f` applied to the value if {@link Ok}, otherwise returns `def`.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, returns `def`.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -544,15 +544,15 @@ export interface Resultant<T, E> {
    * Returns `f` applied to the contained value if {@link Ok}, otherwise
    * returns the result of `mkDef`.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if `mkDef` is called and throws an exception, with
    *   the original error set as {@link ResultError.reason}.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws, the error is silently ignored, and the result of `mkDef`
    *   is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -573,15 +573,15 @@ export interface Resultant<T, E> {
    * Matches this result, returning `f` applied to the value if {@link Ok},
    * or `g` applied to the {@link CheckedError} if {@link Err}.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if `f` or `g` throws an exception, with the original
    *   error set as {@link ResultError.reason}.
    *
-   * ### Notes
+   * @notes
    * - If `f` or `g` return a `Promise` that rejects, the caller is responsible
    *   for handling the rejection.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -604,7 +604,7 @@ export interface Resultant<T, E> {
    * Maps {@link Ok | Ok(v)} to {@link Some | Some(v)} and {@link Err | Err(e)}
    * to {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -618,7 +618,7 @@ export interface Resultant<T, E> {
   /**
    * Returns the current result if it is {@link Ok}, otherwise returns `x`.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -634,11 +634,11 @@ export interface Resultant<T, E> {
   /**
    * Returns the current result if {@link Ok}, otherwise returns the result of `f`.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws, returns an {@link Err} with an {@link UnexpectedError}
    *   containing the original error.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -656,11 +656,11 @@ export interface Resultant<T, E> {
    *
    * Useful for side-effects like logging, works with both {@link Ok} and {@link Err}.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws or rejects, the error is silently ignored.
    * - If `f` returns a promise, the promise is not awaited before returning.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42);
    * const y = err<number, string>("failure");
@@ -678,11 +678,11 @@ export interface Resultant<T, E> {
    * Converts this result to a {@link PendingResult} using a shallow
    * {@link Resultant.copy | copy} of its current state.
    *
-   * ### Notes
+   * @notes
    * - Useful for transposing a result with a `PromiseLike` value to
    *   a {@link PendingResult} with an `Awaited` value.
    *
-   * ### Example
+   * @example
    * ```ts
    * const value = { a: 1 };
    * const x = ok<{ a: number }, string>(value);
@@ -700,12 +700,12 @@ export interface Resultant<T, E> {
    * Converts this result to a {@link PendingResult} using a deep
    * {@link Resultant.clone | clone} of its current state.
    *
-   * ### Notes
+   * @notes
    * - Useful for transposing a result with a `PromiseLike` value to
    *   a {@link PendingResult} with an `Awaited` value, preserving independence
    *   from the original data.
    *
-   * ### Example
+   * @example
    * ```ts
    * const value = { a: 1, clone: () => ({ a: 0 }) };
    * const x = ok(value);
@@ -725,7 +725,7 @@ export interface Resultant<T, E> {
    * Generates a string representation of this result,
    * reflecting its current state.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("error");
@@ -743,7 +743,7 @@ export interface Resultant<T, E> {
    * Maps `Ok(None)` to `None`, `Ok(Some(_))` to `Some(Ok(_))` and
    * `Err(_)` to `Some(Err(_))`.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<Option<number>, string>(none());
    * const y = ok<Option<number>, string>(some(2));
@@ -763,13 +763,13 @@ export interface Resultant<T, E> {
    * Inspired by the {@link https://github.com/arthurfiorette/proposal-try-operator Try Operator}
    * proposal.
    *
-   * ### Notes
+   * @notes
    * - Returns `[true, undefined, T]` if this is an {@link Ok}, or
    *   `[false, CheckedError<E>, undefined]` if this is an {@link Err}.
    * - Never throws, offering a safe way to inspect the result’s state with
    *   explicit success indication.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42);
    * const y = err<number, string>("failure");
@@ -788,10 +788,10 @@ export interface Resultant<T, E> {
    * Retrieves the value if this result is an {@link Ok}, or throws
    * a {@link ResultError} if it’s an {@link Err}.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if this result is an {@link Err}
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42);
    * const y = err<number, string>("failure");
@@ -806,10 +806,10 @@ export interface Resultant<T, E> {
    * Retrieves the {@link CheckedError} if this result is an {@link Err}, or
    * throws a {@link ResultError} if it’s an {@link Ok}.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if this result is an {@link Ok}
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42);
    * const y = err<number, string>("failure");
@@ -823,7 +823,7 @@ export interface Resultant<T, E> {
   /**
    * Returns the contained value if {@link Ok}, or `def` if {@link Err}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -838,11 +838,11 @@ export interface Resultant<T, E> {
    * Returns the contained value if {@link Ok}, or the result of `mkDef`
    * if {@link Err}.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if `mkDef` throws, with the original error set as
    *   {@link ResultError.reason}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
@@ -873,7 +873,7 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.and | and}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(1).toPending();
    * const y = ok<number, string>(2);
@@ -895,7 +895,7 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.andThen | andThen}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -915,12 +915,12 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.check | check}.
    *
-   * ### Notes
+   * @notes
    * - Resolves to `[true, Awaited<T>]` if this is an {@link Ok}, or to
    *   `[false, CheckedError<Awaited<E>>]` if this is an {@link Err}.
    * - Never rejects, providing a safe way to await the result’s state.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -942,7 +942,7 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.err | err}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(1).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -959,12 +959,12 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.flatten | flatten}.
    *
-   * ### Notes
+   * @notes
    * - Handles cases like `PendingResult<Result<T, E>, E>` or
    *   `PendingResult<PendingResult<T, E>, E>`, resolving to
    *   `PendingResult<Awaited<T>, Awaited<E>>`.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok(ok(6)).toPending();
    * const y = ok(err<number, string>("oops")).toPending();
@@ -988,12 +988,12 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.inspect | inspect}.
    *
-   * ### Notes
+   * @notes
    * - Returns a new {@link PendingResult} instance, not the original reference.
    * - If `f` throws or returns a `Promise` that rejects, the error is ignored,
    *   and the returned promise still resolves to the original state.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -1014,12 +1014,12 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.inspectErr | inspectErr}.
    *
-   * ### Notes
+   * @notes
    * - Returns a new {@link PendingResult} instance, not the original reference.
    * - If `f` throws or returns a `Promise` that rejects, the error is ignored,
    *   and the returned promise still resolves to the original state.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -1039,13 +1039,13 @@ export interface PendingResult<T, E>
    * Returns an async iterator over this pending result’s value, yielding it if
    * it resolves to {@link Ok} or nothing if it resolves to {@link Err}.
    *
-   * ### Notes
+   * @notes
    * - Yields exactly one item for a resolved {@link Ok}, or zero items
    *   for a resolved {@link Err}.
    * - Compatible with `for await...of` loops and async spread operators (with caution).
    * - Ignores the error value in {@link Err} cases, focusing only on the success case.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -1074,11 +1074,11 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.map | map}.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws or returns a rejected promise, returns a {@link PendingResult}
    *   with an {@link Err} containing an {@link UnexpectedError}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -1100,12 +1100,12 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.mapAll | mapAll}.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws or returns a `Promise` that rejects, the newly created
    *   {@link PendingResult} will resolve to an {@link Err} with
    *   an {@link UnexpectedError}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const okRes = ok<number, string>(42).toPending();
    * const errRes = err<number, string>("failure").toPending();
@@ -1130,13 +1130,13 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.mapErr | mapErr}.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws or returns a rejected promise, returns a {@link PendingResult}
    *   with an {@link Err} containing an {@link UnexpectedError}.
    * - If this resolves to an {@link Err} with an {@link UnexpectedError}, `f`
    *   is not called, and the original error is preserved.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -1159,12 +1159,12 @@ export interface PendingResult<T, E>
    * - With {@link ResultError} if `f` or `g` throws an exception or rejects,
    *   original error will be set as {@link OptionError.reason}.
    *
-   * ### Notes
+   * @notes
    * - If `f` or `g` throws or returns a rejected `Promise`, the returned promise
    *   rejects with the original error. In this case the caller is responsible
    *   for handling the rejection.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -1184,12 +1184,12 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.or | or}.
    *
-   * ### Notes
+   * @notes
    * - If this result resolves to an {@link Err} and `x` is a `Promise` that
    *   rejects, the resulting {@link PendingResult} resolves to an {@link Err}
    *   with an {@link UnexpectedError}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -1211,12 +1211,12 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.orElse | orElse}.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws or returns a rejected promise, the resulting
    *   {@link PendingResult} resolves to an {@link Err} with
    *   an {@link UnexpectedError}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(2).toPending();
    * const y = err<number, string>("failure").toPending();
@@ -1237,11 +1237,11 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.tap | tap}.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws or rejects, the error is ignored
    * - If `f` returns a promise, the promise is not awaited before returning
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingResult(ok<number, string>(42));
    * const y = pendingResult(err<number, string>("failure"));
@@ -1261,7 +1261,7 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.transpose | transpose}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(ok(2)));
    * const y = pendingOption(some(err("error")));
@@ -1285,13 +1285,13 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.try | try}.
    *
-   * ### Notes
+   * @notes
    * - Resolves to `[true, undefined, Awaited<T>]` if this is an {@link Ok}, or
    *   `[false, CheckedError<Awaited<E>>, undefined]` if this is an {@link Err}.
    * - Never rejects, offering a safe way to await the result’s state with
    *   explicit success indication.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = ok<number, string>(42).toPending();
    * const y = err<number, string>("failure").toPending();

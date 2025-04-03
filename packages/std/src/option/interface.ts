@@ -59,7 +59,7 @@ export interface Optional<T> {
   /**
    * Returns {@link None} if this option is {@link None}, otherwise returns `x`.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none();
@@ -76,10 +76,10 @@ export interface Optional<T> {
    * Applies `f` to the value if {@link Some}, returning its result; otherwise,
    * returns {@link None}. Also known as `flatMap`.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, returns {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -97,7 +97,7 @@ export interface Optional<T> {
    *
    * Only available on {@link Option}s with {@link Cloneable} values.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(1);
    * const y = some({ a: 1, clone: () => ({ a: 1 }) });
@@ -113,7 +113,7 @@ export interface Optional<T> {
   /**
    * Returns a **shallow** copy of the {@link Option}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const value = { a: 1 };
    * const x = some(value);
@@ -131,10 +131,10 @@ export interface Optional<T> {
    * Returns the value if {@link Some}, or throws an {@link OptionError} with `msg`
    * (or a default message) if {@link None}.
    *
-   * ## Throws
+   * @throws
    * - {@link OptionError} if this is {@link None}
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(42);
    * const y = none<number>();
@@ -150,10 +150,10 @@ export interface Optional<T> {
    * Returns the option if {@link Some} and `f` returns `true`, otherwise
    * returns {@link None}.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, {@link None} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -169,7 +169,7 @@ export interface Optional<T> {
   /**
    * Flattens an {@link Option} of an {@link Option} into a single {@link Option}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x: Option<Option<Option<number>>> = some(some(some(6)));
    * const y: Option<Option<number>> = x.flatten();
@@ -189,10 +189,10 @@ export interface Optional<T> {
    * See also {@link insert} method, which updates the value even if the option
    * already contains {@link Some}.
    *
-   * ### Notes
+   * @notes
    * - *Mutation*: This method mutates the {@link Option}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -208,15 +208,15 @@ export interface Optional<T> {
    * Returns the value if {@link Some}, or inserts and returns the result of `f`
    * if {@link None}.
    *
-   * ## Throws
+   * @throws
    * - {@link OptionError} if `f` throws, with the original error as
    *   {@link OptionError.reason}
    *
-   * ### Notes
+   * @notes
    * - *Mutation*: Mutates this option to {@link Some} with `f`’s result if {@link None}.
    *   If `f` throws, the option remains unchanged.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -237,10 +237,10 @@ export interface Optional<T> {
    * See also {@link getOrInsert} method, which doesn’t update the value if the
    * option already contains {@link Some}.
    *
-   * ### Notes
+   * @notes
    * - *Mutation*: This method mutates the {@link Option}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -258,10 +258,10 @@ export interface Optional<T> {
    *
    * If `f` throws or returns a `Promise` that rejects, the error is ignored.
    *
-   * ### Notes
+   * @notes
    * - Returns a new {@link Option} instance, not the original reference.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -279,7 +279,7 @@ export interface Optional<T> {
   /**
    * Returns `true` if the option is {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -293,10 +293,10 @@ export interface Optional<T> {
   /**
    * Returns `true` if the option is {@link None} or if `f` returns `true` for the contained value.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, `false` is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -312,7 +312,7 @@ export interface Optional<T> {
   /**
    * Returns `true` if the option is {@link Some}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -327,10 +327,10 @@ export interface Optional<T> {
    * Returns `true` if the option is {@link Some} and `f` returns `true`
    * for the contained value.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, `false` is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -347,11 +347,11 @@ export interface Optional<T> {
    * Returns an iterator over this option’s value, yielding it if {@link Some}
    * or nothing if {@link None}.
    *
-   * ### Notes
+   * @notes
    * - Yields exactly one item for {@link Some}, or zero items for {@link None}.
    * - Compatible with `for...of` loops and spread operators.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(42);
    * const y = none<number>();
@@ -373,10 +373,10 @@ export interface Optional<T> {
    * Maps the contained value with `f` if {@link Some}, returning a new
    * {@link Option}; otherwise, returns {@link None}.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, {@link None} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -395,11 +395,11 @@ export interface Optional<T> {
    * Unlike {@link andThen}, which only invokes the callback for {@link Some},
    * this method always calls `f`, passing the entire {@link Option} as its argument.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, the error is silently ignored and {@link None}
    *   is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const someOpt = some(42);
    * const noneOpt = none<number>();
@@ -418,11 +418,11 @@ export interface Optional<T> {
    * Unlike {@link andThen}, which only invokes the callback for {@link Some},
    * this method always calls `f`, passing the entire {@link Option} as its argument.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` returns a `Promise` that rejects, the resulting
    *   {@link PendingOption} resolves to {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const someOpt = some(42);
    * const noneOpt = none<number>();
@@ -441,10 +441,10 @@ export interface Optional<T> {
   /**
    * Returns `f` applied to the value if {@link Some}, otherwise returns `def`.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, returns `def`.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -460,15 +460,15 @@ export interface Optional<T> {
    * Returns `f` applied to the contained value if {@link Some}, otherwise
    * returns the result of `mkDef`.
    *
-   * ## Throws
+   * @throws
    * - {@link OptionError} if `mkDef` is called and throws an exception. Original
    *   error will be set as {@link OptionError.reason}.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, the error is silently ignored and result of
    *   `mkDef` is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -489,15 +489,15 @@ export interface Optional<T> {
    * Matches the option, returning `f` applied to the value if {@link Some},
    * or `g` if {@link None}.
    *
-   * ## Throws
+   * @throws
    * - {@link OptionError} if `f` or `g` throws an exception, original error will be
    *   set as {@link OptionError.reason}.
    *
-   * ### Notes
+   * @notes
    * - If `f` or `g` return a `Promise` that rejects, the caller is responsible
    *   for handling the rejection.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -520,7 +520,7 @@ export interface Optional<T> {
    * {@link Some | Some(v)} is mapped to {@link Ok | Ok(v)} and {@link None} to
    * {@link Err | Err(y)}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -538,7 +538,7 @@ export interface Optional<T> {
    * {@link Some | Some(v)} is mapped to {@link Ok | Ok(v)} and {@link None}
    * to {@link Err | Err(mkErr())}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -552,7 +552,7 @@ export interface Optional<T> {
   /**
    * Returns the current option if it is {@link Some}, otherwise returns `x`.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -568,10 +568,10 @@ export interface Optional<T> {
   /**
    * Returns the current option if {@link Some}, otherwise returns the result of `f`.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws, {@link None} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -587,10 +587,10 @@ export interface Optional<T> {
   /**
    * Replaces the current value with `x` and returns the old {@link Option}.
    *
-   * ### Notes
+   * @notes
    * - *Mutation*: This method mutates the {@link Option}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -606,10 +606,10 @@ export interface Optional<T> {
   /**
    * Takes the value out of the option, leaving {@link None} in its place.
    *
-   * ### Notes
+   * @notes
    * - *Mutation*: This method mutates the {@link Option}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -626,12 +626,12 @@ export interface Optional<T> {
    * Takes the value out of the {@link Option}, but only if `f` returns `true`.
    * Similar to {@link take}, but conditional.
    *
-   * ### Notes
+   * @notes
    * - *Mutation*: This method mutates the {@link Option}.
    * - *Default*: If `f` throws, {@link None} is returned and the original
    *   value **remains unchanged**.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -652,11 +652,11 @@ export interface Optional<T> {
    *
    * Useful for side-effects like logging, works with both {@link Some} and {@link None}.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws, the error is ignored.
    * - If `f` returns a promise, the promise is not awaited before returning.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(42);
    * const y = none<number>();
@@ -677,11 +677,11 @@ export interface Optional<T> {
    * Useful for transposing an option with `PromiseLike` value to a
    * {@link PendingOption} with `Awaited` value.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If inner `T` is a promise-like that rejects, maps to a
    *   {@link PendingOption} with {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const value = { a: 1 };
    * const x = some(value);
@@ -704,11 +704,11 @@ export interface Optional<T> {
    * Useful for transposing an option with `PromiseLike` value to a
    * {@link PendingOption} with `Awaited` value.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If inner `T` is a promise-like that rejects, maps to a
    *   {@link PendingOption} with {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const value = { a: 0, clone: () => ({ a: 0 })};
    * const x = some(value);
@@ -727,7 +727,7 @@ export interface Optional<T> {
   /**
    * Returns a string representation of the {@link Option}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -745,7 +745,7 @@ export interface Optional<T> {
    * Maps `None` to `Ok(None)`, `Some(Ok(_))` to `Ok(Some(_))`,
    * and `Some(Err(_))` to `Err(_)`.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = none<Result<number, string>>();
    * const y = some<Result<number, string>>(ok(2));
@@ -761,10 +761,10 @@ export interface Optional<T> {
   /**
    * Returns the value if {@link Some}, or throws an {@link OptionError} if {@link None}.
    *
-   * ## Throws
+   * @throws
    * - {@link OptionError} if this is {@link None}
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -778,7 +778,7 @@ export interface Optional<T> {
   /**
    * Returns the contained value if {@link Some}, or `def` if {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -792,11 +792,11 @@ export interface Optional<T> {
   /**
    * Returns the contained value if {@link Some}, or the result of `mkDef` if {@link None}.
    *
-   * ## Throws
+   * @throws
    * - {@link OptionError} if `mkDef` throws, original error will be set as
    *   {@link OptionError.reason}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -811,7 +811,7 @@ export interface Optional<T> {
   /**
    * Returns {@link Some} if exactly one of `this` or `y` is {@link Some}, otherwise returns {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -827,7 +827,7 @@ export interface Optional<T> {
    * Returns a {@link PendingOption} with {@link Some} if exactly one of `this` or `y` is
    * {@link Some}, otherwise with {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(2);
    * const y = none<number>();
@@ -859,10 +859,10 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.and | and}.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `x` is a `Promise` and rejects, {@link None} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());
@@ -883,10 +883,10 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.andThen | andThen}.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` rejects or throws, {@link None} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());
@@ -909,10 +909,10 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.filter | filter}.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` rejects or throws, {@link None} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());
@@ -930,11 +930,11 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.flatten | flatten}.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If inner {@link Option} is wrapped in a `Promise` and rejects,
    * flattened {@link PendingOption} with {@link None} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const option1: PendingOption<Option<number>> = getPendingOption();
    * option1.flatten(); // PendingOption<number>
@@ -959,12 +959,12 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.inspect | inspect}.
    *
-   * ### Notes
+   * @notes
    * - Returns a new {@link PendingOption} instance with the same value as the original,
    *   rather than the exact same reference. The returned option is a distinct object,
    *   preserving the original value.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());
@@ -982,12 +982,12 @@ export interface PendingOption<T>
    * Returns an async iterator over this pending option’s value, yielding it if
    * it resolves to {@link Some} or nothing if it resolves to {@link None}.
    *
-   * ### Notes
+   * @notes
    * - Yields exactly one item for a resolved {@link Some}, or zero items for
    *   a resolved {@link None}.
    * - Compatible with `for await...of` loops and async spread operators (with caution).
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = some(42).toPending();
    * const y = none<number>().toPending();
@@ -1016,10 +1016,10 @@ export interface PendingOption<T>
    *
    * This is the async version of {@link Optional.map | map}.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws or rejects, returns {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());
@@ -1038,11 +1038,11 @@ export interface PendingOption<T>
    * Unlike {@link andThen}, which only invokes the callback for {@link Some},
    * this method always calls `f`, passing the entire {@link Option} as its argument.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws or returns a `Promise` that rejects, the newly
    *   created {@link PendingOption} will resolve to a {@link None}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const someOpt = pendingOption(some(42));
    * const noneOpt = pendingOption(none<number>());
@@ -1068,12 +1068,12 @@ export interface PendingOption<T>
    * - With {@link OptionError} if `f` or `g` throws an exception or rejects,
    *   original error will be set as {@link OptionError.reason}.
    *
-   * ### Notes
+   * @notes
    * - If `f` or `g` throws or returns a rejected `Promise`, the returned promise
    *   rejects with the original error. In this case the caller is responsible
    *   for handling the rejection.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());
@@ -1092,7 +1092,7 @@ export interface PendingOption<T>
    * This is the asynchronous version of {@link Optional.okOr | okOr},
    * check it for more details.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());
@@ -1109,7 +1109,7 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.okOrElse | okOrElse}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());
@@ -1126,10 +1126,10 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.or | or}.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `x` is a `Promise` that rejects, {@link None} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());
@@ -1148,10 +1148,10 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.orElse | orElse}.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `f` throws or rejects, {@link None} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());
@@ -1169,11 +1169,11 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.tap | tap}.
    *
-   * ### Notes
+   * @notes
    * - If `f` throws or rejects, the error is ignored.
    * - If `f` returns a promise, the promise is not awaited before returning.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(42));
    * const y = pendingOption(none<number>());
@@ -1193,7 +1193,7 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.transpose | transpose}.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(none<Result<number, string>>());
    * const y = pendingOption(some<Result<number, string>>(ok(2)));
@@ -1215,10 +1215,10 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.xor | xor}.
    *
-   * ### Notes
+   * @notes
    * - *Default*: If `y` is a `Promise` that rejects, {@link None} is returned.
    *
-   * ### Example
+   * @example
    * ```ts
    * const x = pendingOption(some(2));
    * const y = pendingOption(none<number>());

@@ -12,7 +12,7 @@ import { Primitive } from "../types";
  *
  * @template T - The type of the error `kind`, constrained to {@link Primitive} (e.g., string, number, enum).
  *
- * ### Example
+ * @example
  * ```ts
  * const err1 = new AnyError("Invalid input", "ValidationError");
  * const err2 = new AnyError("File not found", 404, new Error("ENOENT"));
