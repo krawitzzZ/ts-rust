@@ -45,4 +45,8 @@ export {
   pendingErr,
   ok,
   err,
+  run,
+  runAsync,
+  runResult,
+  runPendingResult,
 } from "./result";

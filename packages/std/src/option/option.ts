@@ -765,7 +765,7 @@ class _PendingOption<T> implements PendingOption<T> {
     return this.#promise.catch(onrejected);
   }
 
-  and<U>(x: MaybePromise<Option<U>>): PendingSettledOpt<U> {
+  and<U>(x: MaybePromise<Option<U>> | PendingOption<U>): PendingSettledOpt<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
         const r = option.and(await x);
@@ -774,7 +774,9 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingSettledOpt<U> {
+  andThen<U>(
+    f: (x: T) => MaybePromise<Option<U>> | PendingOption<U>,
+  ): PendingSettledOpt<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
         if (option.isNone()) {
@@ -858,7 +860,7 @@ class _PendingOption<T> implements PendingOption<T> {
   }
 
   mapAll<U>(
-    f: (x: Option<T>) => MaybePromise<Option<U>>,
+    f: (x: Option<T>) => MaybePromise<Option<U>> | PendingOption<U>,
   ): PendingSettledOpt<U> {
     return pendingOption(settleOption(this.#promise.then(f)));
   }
@@ -891,7 +893,7 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  or(x: MaybePromise<Option<T>>): PendingSettledOpt<T> {
+  or(x: MaybePromise<Option<T>> | PendingOption<T>): PendingSettledOpt<T> {
     return pendingOption(
       settleOption(
         this.#promise.then((option) =>
@@ -901,7 +903,9 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  orElse(f: () => MaybePromise<Option<T>>): PendingSettledOpt<T> {
+  orElse(
+    f: () => MaybePromise<Option<T>> | PendingOption<T>,
+  ): PendingSettledOpt<T> {
     return pendingOption(
       settleOption(
         this.#promise.then((option) =>
@@ -925,7 +929,7 @@ class _PendingOption<T> implements PendingOption<T> {
     return pendingResult(toPromise(this.then((option) => option.transpose())));
   }
 
-  xor(y: MaybePromise<Option<T>>): PendingSettledOpt<T> {
+  xor(y: MaybePromise<Option<T>> | PendingOption<T>): PendingSettledOpt<T> {
     return pendingOption(
       settleOption(this.#promise.then(async (option) => option.xor(await y))),
     );

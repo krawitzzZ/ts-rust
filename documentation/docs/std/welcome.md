@@ -1,11 +1,11 @@
 ---
 id: index
 slug: /std
-title: Introduction
+title: Welcome
 sidebar_label: Welcome
 ---
 
-## Welcome
+## Introduction
 
 **@ts-rust/std** is a TypeScript library inspired by Rust’s
 [`Option<T>`](https://doc.rust-lang.org/std/option/enum.Option.html) and
@@ -17,7 +17,7 @@ errors are thrown by leveraging static typing and functional programming pattern
 This package is part of the [@ts-rust](https://github.com/krawitzzZ/ts-rust)
 monorepo, which adapts Rust’s standard library concepts into idiomatic TypeScript.
 
-## Philosophy behind
+## Philosophy
 
 JavaScript often handles optional values and errors using `null`, `undefined`,
 or thrown exceptions—approaches that can lead to runtime errors and untyped,

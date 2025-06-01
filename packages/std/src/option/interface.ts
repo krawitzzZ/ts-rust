@@ -62,7 +62,7 @@ export interface Optional<T> {
    * @example
    * ```ts
    * const x = some(2);
-   * const y = none();
+   * const y = none<number>();
    *
    * expect(x.and(some(3))).toStrictEqual(some(3));
    * expect(x.and(none())).toStrictEqual(none());
@@ -141,7 +141,7 @@ export interface Optional<T> {
    *
    * expect(x.expect("Missing value")).toBe(42);
    * expect(() => y.expect("Missing value")).toThrow("Missing value");
-   * expect(() => y.expect()).toThrow("`Option.expect` - called on `None`");
+   * expect(() => y.expect()).toThrow("`expect`: called on `None`");
    * ```
    */
   expect(this: SettledOption<T>, msg?: string): T;
@@ -382,7 +382,7 @@ export interface Optional<T> {
    * const y = none<number>();
    *
    * expect(x.map(n => n * 2)).toStrictEqual(some(4));
-   * expect(x.map(n => { throw new Error() })).toStrictEqual(none());
+   * expect(x.map(_ => { throw new Error() })).toStrictEqual(none());
    * expect(y.map(n => n * 2)).toStrictEqual(none());
    * ```
    */
@@ -494,7 +494,7 @@ export interface Optional<T> {
    *   set as {@link OptionError.reason}.
    *
    * @notes
-   * - If `f` or `g` return a `Promise` that rejects, the caller is responsible
+   * - If `f` or `g` returns a `Promise` that rejects, the caller is responsible
    *   for handling the rejection.
    *
    * @example
@@ -604,7 +604,7 @@ export interface Optional<T> {
   replace(x: T): Option<T>;
 
   /**
-   * Takes the value out of the option, leaving {@link None} in its place.
+   * Takes the value out of the {@link Option}, leaving {@link None} in its place.
    *
    * @notes
    * - *Mutation*: This method mutates the {@link Option}.
@@ -653,7 +653,7 @@ export interface Optional<T> {
    * Useful for side-effects like logging, works with both {@link Some} and {@link None}.
    *
    * @notes
-   * - If `f` throws, the error is ignored.
+   * - If `f` throws or rejects, the error is ignored.
    * - If `f` returns a promise, the promise is not awaited before returning.
    *
    * @example
@@ -770,7 +770,7 @@ export interface Optional<T> {
    * const y = none<number>();
    *
    * expect(x.unwrap()).toBe(2);
-   * expect(() => y.unwrap()).toThrow("`Option.unwrap` - called on `None`");
+   * expect(() => y.unwrap()).toThrow("`unwrap`: called on `None`");
    * ```
    */
   unwrap(this: SettledOption<T>): T;
@@ -875,7 +875,9 @@ export interface PendingOption<T>
    * expect(await y.and(Promise.resolve(none()))).toStrictEqual(none());
    * ```
    */
-  and<U>(x: Option<U> | Promise<Option<U>>): PendingOption<Awaited<U>>;
+  and<U>(
+    x: Option<U> | PendingOption<U> | Promise<Option<U>>,
+  ): PendingOption<Awaited<U>>;
 
   /**
    * Returns a {@link PendingOption} with {@link None} if this {@link Option} resolves
@@ -898,7 +900,7 @@ export interface PendingOption<T>
    * ```
    */
   andThen<U>(
-    f: (x: T) => Option<U> | Promise<Option<U>>,
+    f: (x: T) => Option<U> | PendingOption<U> | Promise<Option<U>>,
   ): PendingOption<Awaited<U>>;
 
   /**
@@ -919,7 +921,7 @@ export interface PendingOption<T>
    *
    * expect(await x.filter(n => n > 0)).toStrictEqual(some(2));
    * expect(await x.filter(n => Promise.resolve(n < 0))).toStrictEqual(none());
-   * expect(await y.filter(n => true)).toStrictEqual(none());
+   * expect(await y.filter(_ => true)).toStrictEqual(none());
    * ```
    */
   filter(f: (x: T) => boolean | Promise<boolean>): PendingOption<T>;
@@ -1038,6 +1040,8 @@ export interface PendingOption<T>
    * Unlike {@link andThen}, which only invokes the callback for {@link Some},
    * this method always calls `f`, passing the entire {@link Option} as its argument.
    *
+   * This is the asynchronous version of {@link Optional.mapAll | mapAll}.
+   *
    * @notes
    * - *Default*: If `f` throws or returns a `Promise` that rejects, the newly
    *   created {@link PendingOption} will resolve to a {@link None}.
@@ -1055,7 +1059,7 @@ export interface PendingOption<T>
    * ```
    */
   mapAll<U>(
-    f: (x: Option<T>) => Option<U> | Promise<Option<U>>,
+    f: (x: Option<T>) => Option<U> | PendingOption<U> | Promise<Option<U>>,
   ): PendingOption<Awaited<U>>;
 
   /**
@@ -1064,8 +1068,8 @@ export interface PendingOption<T>
    *
    * This is the asynchronous version of {@link Optional.match | match}.
    *
-   * ## Rejects
-   * - With {@link OptionError} if `f` or `g` throws an exception or rejects,
+   * @throws
+   * - Rejects with {@link OptionError} if `f` or `g` throws an exception or rejects,
    *   original error will be set as {@link OptionError.reason}.
    *
    * @notes
@@ -1140,7 +1144,9 @@ export interface PendingOption<T>
    * expect(await y.or(Promise.resolve(none()))).toStrictEqual(none());
    * ```
    */
-  or(x: Option<T> | Promise<Option<T>>): PendingOption<Awaited<T>>;
+  or(
+    x: Option<T> | PendingOption<T> | Promise<Option<T>>,
+  ): PendingOption<Awaited<T>>;
 
   /**
    * Returns this {@link PendingOption} if it resolves to {@link Some}, otherwise
@@ -1158,10 +1164,12 @@ export interface PendingOption<T>
    *
    * expect(await x.orElse(() => some(3))).toStrictEqual(some(2));
    * expect(await y.orElse(() => Promise.resolve(some(3)))).toStrictEqual(some(3));
-   * expect(await y.orElse(() => none())).toStrictEqual(none());
+   * expect(await y.orElse(() => some(1))).toStrictEqual(some(1));
    * ```
    */
-  orElse(f: () => Option<T> | Promise<Option<T>>): PendingOption<Awaited<T>>;
+  orElse(
+    f: () => Option<T> | PendingOption<T> | Promise<Option<T>>,
+  ): PendingOption<Awaited<T>>;
 
   /**
    * Executes `f` with the resolved option, then returns a new {@link PendingOption}
@@ -1229,7 +1237,9 @@ export interface PendingOption<T>
    * expect(await y.xor(Promise.resolve(none()))).toStrictEqual(none());
    * ```
    */
-  xor(y: Option<T> | Promise<Option<T>>): PendingOption<Awaited<T>>;
+  xor(
+    y: Option<T> | PendingOption<T> | Promise<Option<T>>,
+  ): PendingOption<Awaited<T>>;
 }
 
 /**

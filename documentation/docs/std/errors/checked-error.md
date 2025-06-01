@@ -9,7 +9,7 @@ The main idea behind the `Result` implementation in `@ts-rust/std` library, is
 that it is completely safe and expectable. Due to dynamic nature of JavaScript,
 it is impossible to guarantee that `Result<T, E>` will hold an error of type `E`
 at all times, because, technically, any kind of error may happen, for example,
-if you call a `map` method on `Result`, the predicate function may throw and these
+if you call a `map` method on `Result`, the predicate function may throw and there
 is no way to provide an error of type `E` when this happens.
 
 The `CheckedError` type in the `@ts-rust/std` library represents an error that

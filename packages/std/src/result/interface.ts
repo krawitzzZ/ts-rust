@@ -43,7 +43,13 @@ export type SettledResult<T, E> =
  * Represents an expected error of type `E` within a {@link CheckedError}.
  */
 export type ExpectedError<E> = EitherError<E> & {
+  /**
+   * The expected error value of type `E`.
+   */
   readonly expected: E;
+  /**
+   * Always `undefined`
+   */
   readonly unexpected: undefined;
   /**
    * Retrieves the contained error value, either an expected error of type `E` or
@@ -57,7 +63,13 @@ export type ExpectedError<E> = EitherError<E> & {
  * {@link CheckedError}.
  */
 export type UnexpectedError<E> = EitherError<E> & {
+  /**
+   * Always `undefined`.
+   */
   readonly expected: undefined;
+  /**
+   * The unexpected error value of type {@link ResultError}.
+   */
   readonly unexpected: ResultError;
   /**
    * Retrieves the contained error value, either an expected error of type `E` or
@@ -168,7 +180,7 @@ export interface Resultant<T, E> {
     : readonly [false, CheckedError<E>];
 
   /**
-   * Returns a deep copy of the {@link Result}.
+   * Returns a clone of the {@link Result}.
    *
    * Only available on {@link Result}s with {@link Cloneable} value and error.
    *
@@ -186,7 +198,7 @@ export interface Resultant<T, E> {
   clone<U, F>(this: Result<Cloneable<U>, Cloneable<F>>): Result<U, F>;
 
   /**
-   * Returns a shallow copy of the {@link Result}.
+   * Returns a **shallow** copy of the {@link Result}.
    *
    * @example
    * ```ts
@@ -300,7 +312,7 @@ export interface Resultant<T, E> {
   inspect(f: (x: T) => unknown): Result<T, E>;
 
   /**
-   * Calls `f` with the value if this result is an {@link Err}, then returns
+   * Calls `f` with the error if this result is an {@link Err}, then returns
    * a copy of this result.
    *
    * @notes
@@ -386,7 +398,7 @@ export interface Resultant<T, E> {
    *
    * expect(x.isOkAnd(n => n > 0)).toBe(true);
    * expect(x.isOkAnd(n => n < 0)).toBe(false);
-   * expect(y.isOkAnd(n => true)).toBe(false);
+   * expect(y.isOkAnd(_ => true)).toBe(false);
    * ```
    */
   isOkAnd(f: (x: T) => boolean): this is Ok<T, E> & boolean;
@@ -498,7 +510,7 @@ export interface Resultant<T, E> {
 
   /**
    * Transforms this result by applying `f` to the error if it’s an {@link Err}
-   * with an expected error, or preserves the {@link Ok} unchanged.
+   * with an expected error, or preserves the result unchanged.
    *
    * @notes
    * - If `f` throws, returns an {@link Err} with an {@link UnexpectedError}
@@ -530,7 +542,7 @@ export interface Resultant<T, E> {
    * const y = err<number, string>("failure");
    *
    * expect(x.mapOr(0, n => n * 2)).toBe(4);
-   * expect(x.mapOr(0, () => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
+   * expect(x.mapOr(0, () => { throw new Error("boom"); })).toBe(0);
    * expect(y.mapOr(0, n => n * 2)).toBe(0);
    * ```
    */
@@ -588,7 +600,7 @@ export interface Resultant<T, E> {
    *
    * expect(x.match(n => n * 2, () => 0)).toBe(4);
    * expect(() => x.match(_ => { throw new Error() }, () => 0)).toThrow(ResultError);
-   * expect(y.match(n => n * 2, e => e.expected.length)).toBe(7);
+   * expect(y.match(n => n * 2, e => e.expected?.length)).toBe(7);
    * expect(() => y.match(n => n * 2, () => { throw new Error() })).toThrow(ResultError);
    * ```
    */
@@ -626,7 +638,7 @@ export interface Resultant<T, E> {
    * expect(x.or(ok(3))).toStrictEqual(ok(2));
    * expect(x.or(err("failure"))).toStrictEqual(ok(2));
    * expect(y.or(ok(3))).toStrictEqual(ok(3));
-   * expect(y.or(err("another one"))).toStrictEqual(err("failure"));
+   * expect(y.or(err("another one"))).toStrictEqual(err("another one"));
    * ```
    */
   or<F>(x: Result<T, F>): Result<T, F>;
@@ -704,6 +716,8 @@ export interface Resultant<T, E> {
    * - Useful for transposing a result with a `PromiseLike` value to
    *   a {@link PendingResult} with an `Awaited` value, preserving independence
    *   from the original data.
+   * - If inner `T` or `E` is a promise-like that rejects, maps to a {@link PendingResult}
+   *   that resolves to {@link Err} with {@link UnexpectedError}.
    *
    * @example
    * ```ts
@@ -885,7 +899,7 @@ export interface PendingResult<T, E>
    * ```
    */
   and<U>(
-    x: Result<U, E> | Promise<Result<U, E>>,
+    x: Result<U, E> | PendingResult<U, E> | Promise<Result<U, E>>,
   ): PendingResult<Awaited<U>, Awaited<E>>;
 
   /**
@@ -902,11 +916,11 @@ export interface PendingResult<T, E>
    *
    * expect(await x.andThen(n => ok(n * 2))).toStrictEqual(ok(4));
    * expect(await x.andThen(_ => err("oops"))).toStrictEqual(err("oops"));
-   * expect(await y.andThen(n => err("oops"))).toStrictEqual(err("failure"));
+   * expect(await y.andThen(_ => err("oops"))).toStrictEqual(err("failure"));
    * ```
    */
   andThen<U>(
-    f: (x: T) => Result<U, E> | Promise<Result<U, E>>,
+    f: (x: T) => Result<U, E> | PendingResult<U, E> | Promise<Result<U, E>>,
   ): PendingResult<Awaited<U>, Awaited<E>>;
 
   /**
@@ -968,11 +982,9 @@ export interface PendingResult<T, E>
    * ```ts
    * const x = ok(ok(6)).toPending();
    * const y = ok(err<number, string>("oops")).toPending();
-   * const z = err<string, string>("outer").toPending();
    *
    * expect(await x.flatten()).toStrictEqual(ok(6));
    * expect(await y.flatten()).toStrictEqual(err("oops"));
-   * expect(await z.flatten()).toStrictEqual(err("outer"));
    * ```
    */
   flatten<U, F>(
@@ -1023,14 +1035,14 @@ export interface PendingResult<T, E>
    * ```ts
    * const x = ok<number, string>(2).toPending();
    * const y = err<number, string>("failure").toPending();
-   * let sideEffect = 0;
+   * let sideEffect: CheckedError<string> | null = null;
    *
    * expect(await x.inspectErr(n => (sideEffect = n))).toStrictEqual(ok(2));
    * expect(await x.inspectErr(_ => { throw new Error() })).toStrictEqual(ok(2));
-   * expect(sideEffect).toBe(0);
+   * expect(sideEffect).toBeNull();
    * expect(await y.inspectErr(n => (sideEffect = n))).toStrictEqual(err("failure"));
    * expect(await y.inspectErr(_ => { throw new Error() })).toStrictEqual(err("failure"));
-   * expect(sideEffect).toBe(2);
+   * expect(isCheckedError(sideEffect)).toBe(true);
    * ```
    */
   inspectErr(f: (x: CheckedError<E>) => unknown): PendingResult<T, E>;
@@ -1084,7 +1096,7 @@ export interface PendingResult<T, E>
    * const y = err<number, string>("failure").toPending();
    *
    * expect(await x.map(n => n * 2)).toStrictEqual(ok(4));
-   * expect(await x.map(() => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
+   * expect((await x.map(() => { throw new Error("boom") })).unwrapErr().unexpected).toBeDefined();
    * expect(await y.map(n => n * 2)).toStrictEqual(err("failure"));
    * ```
    */
@@ -1117,11 +1129,13 @@ export interface PendingResult<T, E>
    * expect(await errMapped).toStrictEqual(ok(1));
    *
    * const throwMapped = okRes.mapAll(() => { throw new Error("boom") });
-   * expect(await throwMapped.unwrapErr().unexpected).toBeDefined();
+   * expect((await throwMapped).unwrapErr().unexpected).toBeDefined();
    * ```
    */
   mapAll<U, F>(
-    f: (x: Result<T, E>) => Result<U, F> | Promise<Result<U, F>>,
+    f: (
+      x: Result<T, E>,
+    ) => Result<U, F> | PendingResult<U, F> | Promise<Result<U, F>>,
   ): PendingResult<Awaited<U>, Awaited<F>>;
 
   /**
@@ -1143,7 +1157,7 @@ export interface PendingResult<T, E>
    *
    * expect(await x.mapErr(e => e.length)).toStrictEqual(ok(2));
    * expect(await y.mapErr(e => e.length)).toStrictEqual(err(7));
-   * expect(await y.mapErr(() => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
+   * expect((await y.mapErr(() => { throw new Error("boom") })).unwrapErr().unexpected).toBeDefined();
    * ```
    */
   mapErr<F>(f: (x: E) => F): PendingResult<Awaited<T>, Awaited<F>>;
@@ -1155,9 +1169,9 @@ export interface PendingResult<T, E>
    *
    * This is the asynchronous version of {@link Resultant.match | match}.
    *
-   * ## Rejects
-   * - With {@link ResultError} if `f` or `g` throws an exception or rejects,
-   *   original error will be set as {@link OptionError.reason}.
+   * @throws
+   * - Rejects {@link ResultError} if `f` or `g` throws an exception or rejects,
+   *   original error will be set as {@link ResultError.reason}.
    *
    * @notes
    * - If `f` or `g` throws or returns a rejected `Promise`, the returned promise
@@ -1170,7 +1184,7 @@ export interface PendingResult<T, E>
    * const y = err<number, string>("failure").toPending();
    *
    * expect(await x.match(n => n * 2, () => 0)).toBe(4);
-   * expect(await y.match(n => n * 2, e => e.expected.length)).toBe(7);
+   * expect(await y.match(n => n * 2, e => e.expected?.length)).toBe(7);
    * ```
    */
   match<U, F = U>(
@@ -1198,11 +1212,11 @@ export interface PendingResult<T, E>
    * expect(await x.or(err("another one"))).toStrictEqual(ok(2));
    * expect(await y.or(ok(3))).toStrictEqual(ok(3));
    * expect(await y.or(err("another one"))).toStrictEqual(err("failure"));
-   * expect(await y.or(Promise.reject(new Error("boom"))).unwrapErr().unexpected).toBeDefined();
+   * expect((await y.or(Promise.reject(new Error("boom")))).unwrapErr().unexpected).toBeDefined();
    * ```
    */
   or<F>(
-    x: Result<T, F> | Promise<Result<T, F>>,
+    x: Result<T, F> | PendingResult<T, F> | Promise<Result<T, F>>,
   ): PendingResult<Awaited<T>, Awaited<F>>;
 
   /**
@@ -1223,12 +1237,12 @@ export interface PendingResult<T, E>
    *
    * expect(await x.orElse(() => ok(3))).toStrictEqual(ok(2));
    * expect(await y.orElse(() => Promise.resolve(ok(3)))).toStrictEqual(ok(3));
-   * expect(await y.orElse(() => { throw new Error("boom") }).unwrapErr().unexpected).toBeDefined();
+   * expect((await y.orElse(() => { throw new Error("boom") })).unwrapErr().unexpected).toBeDefined();
    * expect(await y.orElse(() => err("another one"))).toStrictEqual(err("another one"));
    * ```
    */
   orElse<F>(
-    f: () => Result<T, F> | Promise<Result<T, F>>,
+    f: () => Result<T, F> | PendingResult<T, F> | Promise<Result<T, F>>,
   ): PendingResult<Awaited<T>, Awaited<F>>;
 
   /**

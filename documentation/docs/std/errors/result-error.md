@@ -39,7 +39,7 @@ const result: Result<number, string> = ok(0).map(() => {
 });
 
 if (result.isErr()) {
-  const error = _.unwrapErr();
+  const error = result.unwrapErr();
 
   if (error.isUnexpected()) {
     console.log(error.unexpected.message); // "[PredicateException] `map`: callback `f` threw an exception. Reason: Error: oops"

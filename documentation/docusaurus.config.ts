@@ -53,11 +53,6 @@ const config: Config = {
           breadcrumbs: true,
           includeCurrentVersion: true,
           sidebarCollapsible: true,
-          versions: {
-            current: {
-              label: "Latest",
-            },
-          },
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -144,11 +139,6 @@ const config: Config = {
           sidebarId: "stdSidebar",
           position: "left",
           label: "@ts-rust/std",
-        },
-        {
-          type: "docsVersionDropdown",
-          position: "right",
-          dropdownActiveClassDisabled: true,
         },
         {
           href: "https://github.com/krawitzzz/ts-rust",
