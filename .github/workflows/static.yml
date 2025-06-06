@@ -36,10 +36,6 @@ jobs:
       - name: Init
         uses: ./.github/actions/init
 
-      - name: Build Docs
-        working-directory: ./documentation
-        run: pnpm run build
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
