@@ -31,7 +31,7 @@ import { phantom } from "./interface";
  * @param value - The value to wrap in {@link Some}.
  * @returns An {@link Option} containing the value as {@link Some}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = some(42);
  *
@@ -52,7 +52,7 @@ export function some<T>(value: T): Option<T> {
  * @template T - The type of the absent value.
  * @returns An {@link Option} representing {@link None}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = none<number>();
  *
@@ -68,14 +68,14 @@ export function none<T>(): Option<T> {
  * Creates a {@link PendingOption | PendingOption\<T>} that resolves to
  * {@link Some} containing the awaited value.
  *
- * Takes a value or promise and wraps its resolved result in a {@link Some},
+ * Takes a value or a promise and wraps its resolved result in a {@link Some},
  * ensuring the value type is `Awaited` to handle any `PromiseLike` input.
  *
  * @template T - The type of the input value or promise.
  * @param value - The value or promise to wrap in {@link Some}.
  * @returns A {@link PendingOption} resolving to {@link Some} with the awaited value.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingSome(42);
  * const y = pendingSome(Promise.resolve("hello"));
@@ -99,7 +99,7 @@ export function pendingSome<T>(
  * @template T - The type of the absent value.
  * @returns A {@link PendingOption} resolving to {@link None}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingNone<number>();
  *
@@ -123,7 +123,7 @@ export function pendingNone<T>(): PendingOption<Awaited<T>> {
  * @param optionOrFactory - The {@link Option}, promise, or factory function producing an {@link Option}.
  * @returns A {@link PendingOption} resolving to the provided or produced option.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingOption(some(42));
  * const y = pendingOption(() => Promise.resolve(none<string>()));
@@ -156,11 +156,11 @@ export function pendingOption<T>(
  * @param x - The value to check.
  * @returns `true` if the value is an {@link Option}, narrowing to `Option<unknown>`.
  *
- * ### Example
+ * @example
  * ```ts
- * const x = some(42);
- * const y = none<number>();
- * const z = "not an option";
+ * const x: unknown = some(42);
+ * const y: unknown = none<number>();
+ * const z: unknown = "not an option";
  *
  * expect(isOption(x)).toBe(true);
  * expect(isOption(y)).toBe(true);
@@ -186,11 +186,11 @@ export function isOption(x: unknown): x is Option<unknown> {
  * @param x - The value to check.
  * @returns `true` if the value is a {@link PendingOption}, narrowing to `PendingOption<unknown>`.
  *
- * ### Example
+ * @example
  * ```ts
- * const x = pendingOption(some(42));
- * const y = pendingOption(none<number>());
- * const z = some(42); // Not a PendingOption
+ * const x: unknown = pendingOption(some(42));
+ * const y: unknown = pendingOption(none<number>());
+ * const z: unknown = some(42); // Not a PendingOption
  *
  * expect(isPendingOption(x)).toBe(true);
  * expect(isPendingOption(y)).toBe(true);
@@ -280,7 +280,7 @@ class _Option<T> implements Optional<T> {
    * Only {@link Some} instances have a value, so accessing this property on
    * {@link None} will throw an {@link OptionError}.
    *
-   * ## Throws
+   * @throws
    * - {@link OptionError} if {@link value} is accessed on {@link None}.
    */
   get value(): T {
@@ -765,7 +765,7 @@ class _PendingOption<T> implements PendingOption<T> {
     return this.#promise.catch(onrejected);
   }
 
-  and<U>(x: MaybePromise<Option<U>>): PendingSettledOpt<U> {
+  and<U>(x: MaybePromise<Option<U>> | PendingOption<U>): PendingSettledOpt<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
         const r = option.and(await x);
@@ -774,7 +774,9 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  andThen<U>(f: (x: T) => MaybePromise<Option<U>>): PendingSettledOpt<U> {
+  andThen<U>(
+    f: (x: T) => MaybePromise<Option<U>> | PendingOption<U>,
+  ): PendingSettledOpt<U> {
     return pendingOption(
       this.#promise.then(async (option) => {
         if (option.isNone()) {
@@ -858,7 +860,7 @@ class _PendingOption<T> implements PendingOption<T> {
   }
 
   mapAll<U>(
-    f: (x: Option<T>) => MaybePromise<Option<U>>,
+    f: (x: Option<T>) => MaybePromise<Option<U>> | PendingOption<U>,
   ): PendingSettledOpt<U> {
     return pendingOption(settleOption(this.#promise.then(f)));
   }
@@ -891,7 +893,7 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  or(x: MaybePromise<Option<T>>): PendingSettledOpt<T> {
+  or(x: MaybePromise<Option<T>> | PendingOption<T>): PendingSettledOpt<T> {
     return pendingOption(
       settleOption(
         this.#promise.then((option) =>
@@ -901,7 +903,9 @@ class _PendingOption<T> implements PendingOption<T> {
     );
   }
 
-  orElse(f: () => MaybePromise<Option<T>>): PendingSettledOpt<T> {
+  orElse(
+    f: () => MaybePromise<Option<T>> | PendingOption<T>,
+  ): PendingSettledOpt<T> {
     return pendingOption(
       settleOption(
         this.#promise.then((option) =>
@@ -925,7 +929,7 @@ class _PendingOption<T> implements PendingOption<T> {
     return pendingResult(toPromise(this.then((option) => option.transpose())));
   }
 
-  xor(y: MaybePromise<Option<T>>): PendingSettledOpt<T> {
+  xor(y: MaybePromise<Option<T>> | PendingOption<T>): PendingSettledOpt<T> {
     return pendingOption(
       settleOption(this.#promise.then(async (option) => option.xor(await y))),
     );

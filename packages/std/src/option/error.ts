@@ -37,7 +37,7 @@ export function isOptionError(e: unknown): e is OptionError {
  * failures gracefully in a type-safe manner, inspecting the {@link OptionErrorKind} to
  * determine the cause.
  *
- * ### Example
+ * @example
  * ```ts
  * const opt = none<number>();
  * try {

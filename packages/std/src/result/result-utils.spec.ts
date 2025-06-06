@@ -1,5 +1,7 @@
 import { ResultError, expectedError, unexpectedError } from "./error";
 import {
+  PendingResult,
+  Result,
   ResultErrorKind,
   err,
   isPendingResult,
@@ -8,6 +10,10 @@ import {
   pendingErr,
   pendingOk,
   pendingResult,
+  run,
+  runAsync,
+  runPendingResult,
+  runResult,
 } from "./index";
 
 describe("Result utils", () => {
@@ -224,6 +230,165 @@ describe("Result utils", () => {
 
     it.each(oks)("returns false if called with %s", (result) => {
       expect(isPendingResult(result)).toBe(false);
+    });
+  });
+
+  describe("run", () => {
+    const runError = new Error("run error");
+
+    it("returns ok", () => {
+      const action = jest.fn(() => 1);
+      const onError = jest.fn(() => runError);
+      const res = run(action, onError);
+
+      expect(res.isOk()).toBe(true);
+      expect(res.unwrap()).toBe(1);
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("does not throw and returns expected err", () => {
+      const action = jest.fn(() => {
+        throw new Error("oi");
+      });
+      const onError = jest.fn(() => runError);
+      const res = run(action, onError);
+
+      expect(res.isOk()).toBe(false);
+      expect(res.unwrapErr().expected).toBe(runError);
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not throw and returns unexpected err if mkErr function throws", () => {
+      const action = jest.fn(() => {
+        throw new Error("oi");
+      });
+      const onError = jest.fn(() => {
+        throw new Error("oops");
+      });
+      const res = run(action, onError);
+
+      expect(res.isOk()).toBe(false);
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+      expect(res.unwrapErr().unexpected?.kind).toBe(
+        ResultErrorKind.PredicateException,
+      );
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("runAsync", () => {
+    const runError = new Error("runAsync error");
+
+    it("returns ok", async () => {
+      const action = jest.fn(async () => 1);
+      const onError = jest.fn(() => runError);
+      const res = await runAsync(action, onError);
+
+      expect(res.isOk()).toBe(true);
+      expect(res.unwrap()).toBe(1);
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("does not throw and returns expected err", async () => {
+      const action = jest.fn(() => {
+        throw new Error("oi");
+      });
+      const onError = jest.fn(() => runError);
+      const res = await runAsync(action, onError);
+
+      expect(res.isOk()).toBe(false);
+      expect(res.unwrapErr().expected).toBe(runError);
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not throw and returns unexpected err if mkErr function throws", async () => {
+      const action = jest.fn(() => {
+        throw new Error("oi");
+      });
+      const onError = jest.fn(() => {
+        throw new Error("oops");
+      });
+      const res = await runAsync(action, onError);
+
+      expect(res.isOk()).toBe(false);
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+      expect(res.unwrapErr().unexpected?.kind).toBe(
+        ResultErrorKind.PredicateException,
+      );
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("runResult", () => {
+    it.each([ok<number, string>(1), err<number, string>("oi")])(
+      "returns %s",
+      (result) => {
+        const getResult = jest.fn(() => result);
+        const res = runResult(getResult);
+
+        expect(res.isOk()).toBe(result.isOk());
+        expect(res.isErr()).toBe(result.isErr());
+        expect(getResult).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it("does not throw and returns unexpected err if `getResult` function throws", () => {
+      const getResult: () => Result<number, string> = jest.fn(() => {
+        throw new Error("oi");
+      });
+      const res = runResult(getResult);
+
+      expect(res.isErr()).toBe(true);
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+      expect(res.unwrapErr().unexpected?.kind).toBe(ResultErrorKind.Unexpected);
+      expect(getResult).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("runPendingResult", () => {
+    it.each([
+      ok<number, string>(1),
+      err<number, string>("oi"),
+      pendingOk<number, string>(1),
+      pendingErr<number, string>("oi"),
+      Promise.resolve(ok<number, string>(1)),
+      Promise.resolve(err<number, string>("oi")),
+    ])("returns awaited %s", async (result) => {
+      const getResult = jest.fn(() => result);
+      const res = runPendingResult(getResult);
+
+      expect(isPendingResult(res)).toBe(true);
+      expect(getResult).toHaveBeenCalledTimes(1);
+
+      const awaited = await res;
+      const awaitedExpected = await result;
+
+      expect(awaited.isOk()).toBe(awaitedExpected.isOk());
+      expect(awaited.isErr()).toBe(awaitedExpected.isErr());
+    });
+
+    it("does not throw and returns unexpected err if `getResult` function throws", async () => {
+      const getResult: () => PendingResult<number, string> = jest.fn(() => {
+        throw new Error("oi");
+      });
+      const res = runPendingResult(getResult);
+
+      expect(isPendingResult(res)).toBe(true);
+      expect(getResult).toHaveBeenCalledTimes(1);
+
+      const awaited = await res;
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr().isUnexpected()).toBe(true);
+      expect(awaited.unwrapErr().unexpected?.kind).toBe(
+        ResultErrorKind.Unexpected,
+      );
     });
   });
 });

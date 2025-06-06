@@ -20,6 +20,7 @@ import {
 } from "./error";
 import type {
   ExpectedError,
+  UnexpectedError,
   CheckedError,
   PendingResult,
   SettledResult,
@@ -40,7 +41,7 @@ import type {
  * @param value - The `void` value (typically omitted or `undefined`).
  * @returns A {@link Result} containing `undefined` as {@link Ok}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = ok<string>();
  *
@@ -60,7 +61,7 @@ export function ok<E>(value: void): Result<void, E>;
  * @param value - The value to wrap in {@link Ok}.
  * @returns A {@link Result} containing the value as {@link Ok}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = ok<number, string>(42);
  *
@@ -83,7 +84,7 @@ export function ok<T, E>(value: T): Result<T, E> {
  * @param error - The `void` error (typically omitted or `undefined`).
  * @returns A {@link Result} containing `undefined` as {@link Err}.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = err<number>();
  *
@@ -98,17 +99,17 @@ export function err<T>(error: void): Result<T, void>;
  *
  * Wraps the provided error in a {@link CheckedError} within an {@link Err},
  * indicating a failed outcome for a checked {@link Result}. This function accepts
- * raw errors, {@link ResultError}, or {@link CheckedError}.
+ * raw error value or {@link CheckedError}.
  *
  * - If called with an error of type `E`, it creates an {@link ExpectedError} variant.
  * - If called with a {@link CheckedError}, it uses the error as is.
  *
  * @template T - The type of the potential value.
  * @template E - The type of the expected error.
- * @param error - The error to wrap in {@link Err}, as a raw `E`, {@link ResultError}, or {@link CheckedError}.
+ * @param error - The error to wrap in {@link Err}, as a raw `E` or {@link CheckedError}.
  * @returns A {@link Result} containing the error as {@link Err}.
  *
- * ### Example
+ * @example
  * ```ts
  * const oops = new ResultError("err", ResultErrorKind.Unexpected);
  * const x = err<number, string>("failure");
@@ -125,6 +126,231 @@ export function err<T, E>(error: E | CheckedError<E>): Result<T, E> {
 }
 
 /**
+ * Executes a synchronous action and wraps the outcome in a {@link Result},
+ * handling errors with a custom error mapper.
+ *
+ * The {@link run} function attempts to execute the provided `action` function,
+ * which returns a value of type `T`. If the action succeeds, it returns an
+ * {@link Ok} variant containing the result. If the action fails (throws an error),
+ * the error is passed to the `mkErr` function to create an error of type `E`,
+ * which is then wrapped in an {@link Err} variant.
+ *
+ * This function is useful for safely executing operations that might fail,
+ * ensuring errors are handled in a type-safe way using the {@link Result} type.
+ *
+ * @param action - A function that performs the operation, returning a value of type `T`.
+ * @param mkErr - A function that converts an error (of type `unknown`) into an error of type `E`.
+ * @returns A `Result<T, E>` containing either the successful result (`Ok<T>`) or the mapped error (`Err<E>`).
+ *
+ * @example
+ * ```ts
+ * import { run, Result } from "@ts-rust/std";
+ *
+ * const result: Result<{ key: string }, Error> = run(
+ *   (): { key: string } => JSON.parse('{ key: "value" }'),
+ *   (e) => new Error(`Operation failed: ${JSON.stringify(e)}`),
+ * );
+ * if (result.isOk()) {
+ *   console.log(result.unwrap()); // { key: "value" }
+ * }
+ * ```
+ */
+export function run<T, E>(
+  action: () => Awaited<T>,
+  mkErr: (error: unknown) => Awaited<E>,
+): Result<T, E> {
+  const errorResult = (error: unknown): Result<T, E> => {
+    try {
+      return err(mkErr(error));
+    } catch (e) {
+      return err(
+        unexpectedError<E>(
+          "`run`: callback `mkErr` threw an exception",
+          ResultErrorKind.PredicateException,
+          e,
+        ),
+      );
+    }
+  };
+
+  try {
+    return ok(action());
+  } catch (error) {
+    return errorResult(error);
+  }
+}
+
+/**
+ * Executes an asynchronous action and wraps the outcome in a {@link PendingResult},
+ * handling errors with a custom error mapper.
+ *
+ * The {@link runAsync} function attempts to execute the provided `action` function,
+ * which returns a value of type `Promise<T>`. If the action succeeds, it returns a
+ * {@link PendingResult} that resolves to {@link Ok} variant containing the value.
+ * If the action fails (throws an error), the error is passed to the `mkErr` function
+ * to create an error of type `E`, which is then wrapped in an {@link Err} variant.
+ *
+ * This function is useful for safely executing operations that might fail,
+ * ensuring errors are handled in a type-safe way using the {@link Result} type.
+ *
+ * @param action - A function that performs the operation, returning a `Promise` resolving to `T`.
+ * @param mkErr - A function that converts an error (of type `unknown`) into an error of type `E`.
+ * @returns A `PendingResult<T, E>` that resolves to either a value (`Ok<T>`) or the mapped error (`Err<E>`).
+ *
+ * @example
+ * ```ts
+ * import { run, PendingResult, Result } from "@ts-rust/std";
+ *
+ * const pendingRes: PendingResult<string, Error> = runAsync(
+ *   (): Promise<string> => fetch("https://api.example.com/text").then(res => res.text()),
+ *   (e) => new Error(`Fetch failed: ${JSON.stringify(e)}`),
+ * );
+ *
+ * const res: Result<string, Error> = await pendingRes;
+ *
+ * if (res.isErr()) {
+ *   console.log(res.unwrapErr().message); // Fetch failed: ...
+ * }
+ * ```
+ */
+export function runAsync<T, E>(
+  action: () => Promise<T>,
+  mkErr: (error: unknown) => Awaited<E>,
+): PendingResult<T, E> {
+  const errorResult = (error: unknown): PendingResult<T, E> => {
+    try {
+      return pendingErr(mkErr(error));
+    } catch (e) {
+      return pendingErr(
+        unexpectedError<E>(
+          "`runAsync`: callback `mkErr` threw an exception",
+          ResultErrorKind.PredicateException,
+          e,
+        ),
+      );
+    }
+  };
+
+  try {
+    return pendingOk(action());
+  } catch (error) {
+    return errorResult(error);
+  }
+}
+
+/**
+ * Safely executes an action that returns a {@link Result}, capturing thrown
+ * synchronous errors as an {@link Err} variant.
+ *
+ * The {@link runResult} function executes the provided `resultAction` function,
+ * which returns a `Result<T, E>`. If the action succeeds, it returns the {@link Result}
+ * as-is (either `Ok<T>` or `Err<E>`). If the action throws an error, it is
+ * captured and wrapped in an {@link Err} variant returning {@link UnexpectedError} with a
+ * `ResultErrorKind.Unexpected` kind.
+ *
+ * This function is useful for safely running synchronous `Result`-producing actions,
+ * if you are not 100% sure that the action will not throw an error, ensuring that any
+ * thrown errors are converted into an {@link Err} variant in a type-safe way.
+ *
+ * @param getResult - A function that returns a `Result<T, E>`.
+ * @returns A `Result<T, E>` containing either the original `Result` from `resultAction` or an `Err<E>` if the action throws an error.
+ *
+ * @example
+ * ```ts
+ * import { runResult, ok, err } from "@ts-rust/std";
+ *
+ * // Successful Result
+ * const success = runResult(() => ok(42));
+ * console.log(success.unwrap()); // 42
+ *
+ * // Failed Result
+ * const failure = runResult(() => err(new Error("Already failed")));
+ * // "Expected error occurred: Error: Already failed"
+ * console.log(failure.unwrapErr().expected?.message);
+ *
+ * // Action throws an error
+ * const thrown = runResult(() => { throw new Error("Oops"); });
+ * // "Unexpected error occurred: ResultError: [Unexpected] `runResult`: result action threw an exception. Reason: Error: Oops"
+ * console.log(thrown.unwrapErr().unexpected?.message);
+ * ```
+ */
+export function runResult<T, E>(getResult: () => Result<T, E>): Result<T, E> {
+  try {
+    return getResult();
+  } catch (e) {
+    return err(
+      unexpectedError<E>(
+        "`runResult`: result action threw an exception",
+        ResultErrorKind.Unexpected,
+        e,
+      ),
+    );
+  }
+}
+
+/**
+ * Safely executes an action that returns a {@link PendingResult}, capturing
+ * thrown synchronous errors as an {@link Err} variant.
+ *
+ * The {@link runPendingResult} function executes the provided `resultAction`
+ * function, which returns a `PendingResult<T, E>`. If the action succeeds, it
+ * returns the {@link PendingResult} as-is. If the action throws an error synchronously,
+ * the error is captured and wrapped in a resolved {@link Err} variant returning
+ * {@link UnexpectedError} with a `ResultErrorKind.Unexpected` kind.
+ *
+ * This overload is useful for safely running asynchronous `PendingResult`-producing actions,
+ * if you are not 100% sure that the action will not throw an error, ensuring that any
+ * synchronous errors are converted into an {@link Err} variant in a type-safe way.
+ *
+ * @param getResult - A function that returns a `Result<T, E>`, `PendingResult<T, E>` or a `Promise<Result<T, E>>`.
+ * @returns A `PendingResult<T, E>` containing either the original `PendingResult` from `resultAction` or a resolved `Promise` with an `Err<E>` if the action throws synchronously.
+ *
+ * @example
+ * ```ts
+ * import { runPendingResult, pendingOk, pendingErr } from "@ts-rust/std";
+ *
+ * // Successful Result
+ * const success = await runPendingResult(() => pendingOk(42));
+ * console.log(success.unwrap()); // 42
+ *
+ * // Failed Result
+ * const failure = await runPendingResult(() => pendingErr(new Error("Already failed")));
+ * // "Expected error occurred: Error: Already failed"
+ * console.log(failure.unwrapErr().expected?.message);
+ *
+ * // Action throws an error
+ * const thrown = await runPendingResult(() => { throw new Error("Oops"); });
+ * // "Unexpected error occurred: ResultError: [Unexpected] `runPendingResult`: result action threw an exception. Reason: Error: Oops"
+ * console.log(thrown.unwrapErr().unexpected?.message);
+ * ```
+ */
+export function runPendingResult<T, E>(
+  getResult: () => Result<T, E> | PendingResult<T, E> | Promise<Result<T, E>>,
+): PendingResult<T, E> {
+  try {
+    const result = getResult();
+
+    if (isResult(result)) {
+      return result.toPending();
+    }
+
+    if (isPendingResult(result)) {
+      return result;
+    }
+
+    return pendingResult(result);
+  } catch (e) {
+    return pendingErr(
+      unexpectedError<E>(
+        "`runPendingResult`: result action threw an exception",
+        ResultErrorKind.Unexpected,
+        e,
+      ),
+    );
+  }
+}
+
+/**
  * Creates a {@link PendingResult | PendingResult\<T, E>} that resolves to
  * {@link Ok} containing the awaited value.
  *
@@ -136,7 +362,7 @@ export function err<T, E>(error: E | CheckedError<E>): Result<T, E> {
  * @param value - The value or promise to wrap in {@link Ok}.
  * @returns A {@link PendingResult} resolving to {@link Ok} with the awaited value.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingOk<number, string>(42);
  * const y = pendingOk<string, number>(Promise.resolve("hello"));
@@ -163,7 +389,7 @@ export function pendingOk<T, E>(
  * @param error - The error or promise to wrap in {@link Err}.
  * @returns A {@link PendingResult} resolving to {@link Err} with the awaited error.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingErr<number, string>("failure");
  * const y = pendingErr<string, number>(Promise.resolve(42));
@@ -193,7 +419,7 @@ export function pendingErr<T, E>(
  * @param resultOrFactory - The {@link Result}, promise, or factory function producing a {@link Result}.
  * @returns A {@link PendingResult} resolving to the provided or produced result.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = pendingResult(ok<number, string>(42));
  * const y = pendingResult(() => Promise.resolve(err<string, number>(42)));
@@ -227,11 +453,11 @@ export function pendingResult<T, E>(
  * @param x - The value to check.
  * @returns `true` if the value is a {@link Result}, narrowing to `Result<unknown, unknown>`.
  *
- * ### Example
+ * @example
  * ```ts
- * const x = ok<number, string>(42);
- * const y = err<number, string>("failure");
- * const z = "not a result";
+ * const x: unknown = ok<number, string>(42);
+ * const y: unknown = err<number, string>("failure");
+ * const z: unknown = "not a result";
  *
  * expect(isResult(x)).toBe(true);
  * expect(isResult(y)).toBe(true);
@@ -257,11 +483,11 @@ export function isResult(x: unknown): x is Result<unknown, unknown> {
  * @param x - The value to check.
  * @returns `true` if the value is a {@link PendingResult}, narrowing to `PendingResult<unknown, unknown>`.
  *
- * ### Example
+ * @example
  * ```ts
- * const x = pendingResult(ok<number, string>(42));
- * const y = pendingResult(err<number, string>("failure"));
- * const z = ok(42); // Not a PendingResult
+ * const x: unknown = pendingResult(ok<number, string>(42));
+ * const y: unknown = pendingResult(err<number, string>("failure"));
+ * const z: unknown = ok(42); // Not a PendingResult
  *
  * expect(isPendingResult(x)).toBe(true);
  * expect(isPendingResult(y)).toBe(true);
@@ -322,7 +548,7 @@ class _Result<T, E> implements Resultant<T, E> {
    * Only {@link Ok} instances have a value, so accessing this property on {@link Err}
    * will throw a {@link ResultError}.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if `value` is accessed on {@link Err}, with
    *   {@link ResultErrorKind.ValueAccessedOnErr}.
    */
@@ -343,7 +569,7 @@ class _Result<T, E> implements Resultant<T, E> {
    * Only {@link Err} instances have an error, so accessing this property on {@link Ok}
    * will throw a {@link ResultError}.
    *
-   * ## Throws
+   * @throws
    * - {@link ResultError} if `error` is accessed on {@link Ok}, with
    *   {@link ResultErrorKind.ErrorAccessedOnOk}.
    */
@@ -835,7 +1061,9 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
     return this.#promise.catch(onrejected);
   }
 
-  and<U>(x: MaybePromise<Result<U, E>>): PendingSettledRes<U, E> {
+  and<U>(
+    x: MaybePromise<Result<U, E>> | PendingResult<U, E>,
+  ): PendingSettledRes<U, E> {
     return pendingResult(
       this.#promise.then((self) => {
         if (self.isErr()) {
@@ -850,7 +1078,7 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
   }
 
   andThen<U>(
-    f: (x: T) => Result<U, E> | Promise<Result<U, E>>,
+    f: (x: T) => Result<U, E> | PendingResult<U, E> | Promise<Result<U, E>>,
   ): PendingSettledRes<U, E> {
     return pendingResult(
       this.#promise.then((self) => {
@@ -977,7 +1205,9 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
   }
 
   mapAll<U, F>(
-    f: (x: Result<T, E>) => Result<U, F> | Promise<Result<U, F>>,
+    f: (
+      x: Result<T, E>,
+    ) => Result<U, F> | PendingResult<U, F> | Promise<Result<U, F>>,
   ): PendingResult<Awaited<U>, Awaited<F>> {
     return pendingResult(settleResult(this.#promise.then(f)));
   }
@@ -1017,7 +1247,9 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
     );
   }
 
-  or<F>(x: MaybePromise<Result<T, F>>): PendingResult<Awaited<T>, Awaited<F>> {
+  or<F>(
+    x: MaybePromise<Result<T, F>> | PendingResult<T, F>,
+  ): PendingResult<Awaited<T>, Awaited<F>> {
     const promise: Promise<Result<T, F>> = this.#promise.then((self) =>
       self.isOk() ? ok(self.value) : x,
     );
@@ -1026,7 +1258,7 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
   }
 
   orElse<F>(
-    f: () => Result<T, F> | Promise<Result<T, F>>,
+    f: () => Result<T, F> | PendingResult<T, F> | Promise<Result<T, F>>,
   ): PendingResult<Awaited<T>, Awaited<F>> {
     const promise: Promise<Result<T, F>> = this.#promise.then((self) => {
       if (self.isOk()) {
@@ -1104,7 +1336,10 @@ const catchUnexpected =
     );
 
 const settleResult = <T, E>(
-  resultOrPromise: MaybePromise<Result<T, E>> | PromiseLike<Result<T, E>>,
+  resultOrPromise:
+    | MaybePromise<Result<T, E>>
+    | PromiseLike<Result<T, E>>
+    | PendingResult<T, E>,
 ): Promise<SettledResult<T, E>> =>
   toSafePromise(resultOrPromise, defaultCatchMessage).then((r) =>
     r.isOk() ? awaitOk(r.value) : awaitErr(r.error),

@@ -12,7 +12,7 @@ import { id } from "./fp";
  * and `Promise.catch` but deferred. The executor runs exactly
  * once when first consumed, and the result is cached.
  *
- * ### Notes
+ * @notes
  * - *Executor Timing*: The `executor` is invoked only when the promise is first
  *   consumed, using the values of surrounding scope variables at that time.
  * - *Garbage Collection*: If never consumed, the executor does not run, and the
@@ -22,7 +22,7 @@ import { id } from "./fp";
  *   (if present) or propagate to the final `catch` handler.
  * - *Cancellation*: Not supported; the executor runs once triggered.
  *
- * ### Example
+ * @example
  * ```ts
  * const lp = new LazyPromise<string>((res) => setTimeout(() => res("hello"), 1000));
  * const transformed = lp.pipe((x) => x.length, () => 0).pipe((x) => x > 0);
@@ -95,11 +95,11 @@ export class LazyPromise<T> extends Promise<T> {
    * @param factory - A function that returns a `Promise<T>` to be resolved lazily.
    * @returns A {@link LazyPromise} resolved with the awaited value of type `Awaited<T>`.
    *
-   * ### Notes
+   * @notes
    * - *Error Handling*: Synchronous errors in the factory are caught and
    *   rejected lazily. Asynchronous errors propagate as usual.
    *
-   * ### Example
+   * @example
    * ```ts
    * const fetchData = () => Promise.resolve("data");
    * const lp = LazyPromise.fromFactory(fetchData);
@@ -267,12 +267,12 @@ export class LazyPromise<T> extends Promise<T> {
    * function `f` that maps `T` to `U` (or `PromiseLike<U>`), deferring execution until
    * the promise is consumed. An optional recovery function `g` can handle errors lazily.
    *
-   * ### Notes
+   * @notes
    * - *Execution*: Transformation and recovery are lazy and execute only when consumed.
    * - *Error Handling*: Errors are recovered by `g` if provided, else propagate.
    * - *Performance*: Creates a new instance, adding minor overhead.
    *
-   * ### Example
+   * @example
    * ```ts
    * const lp = new LazyPromise<string>((res) => res("hello"));
    * const transformed = lp.pipe((x) => x.length, () => 0);
@@ -296,11 +296,11 @@ export class LazyPromise<T> extends Promise<T> {
    * function `g` to map errors to `T` (or `PromiseLike<T>`), deferring execution until
    * consumed.
    *
-   * ### Notes
+   * @notes
    * - *Execution*: Recovery is lazy and runs only on error when consumed.
    * - *Difference from `pipe`*: Preserves type `T`, only handling errors.
    *
-   * ### Example
+   * @example
    * ```ts
    * const lp = new LazyPromise<string>((_, rej) => rej("error"));
    * const recovered = lp.recover((err) => `recovered: ${err}`);

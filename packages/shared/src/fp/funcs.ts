@@ -5,7 +5,7 @@
  * operation is required but no specific behavior is needed. It accepts any number
  * of arguments but ignores them entirely.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = noop();
  * expect(x).toBeUndefined(); // No return value
@@ -29,7 +29,7 @@ export function noop(..._: unknown[]): void {}
  * (where it’s `id`), it’s a simple yet powerful utility for maintaining
  * referential transparency.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = 42;
  * const y = "hello";
@@ -56,7 +56,7 @@ export function id<T>(x: T): T {
  * but ignores them. This is useful for predictable behavior in higher-order
  * functions, like defaults or stubs.
  *
- * ### Example
+ * @example
  * ```ts
  * const always42 = cnst(42);
  * const alwaysHello = cnst("hello");

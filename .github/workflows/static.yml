@@ -36,16 +36,13 @@ jobs:
       - name: Init
         uses: ./.github/actions/init
 
-      - name: Build Docs
-        run: pnpm run build:docs
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./packages/std/docs"
+          path: "./documentation/build"
 
       - name: Deploy to GitHub Pages
         id: deployment

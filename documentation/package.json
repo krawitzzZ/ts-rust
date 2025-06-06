@@ -1,0 +1,55 @@
+{
+  "name": "documentation",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "NODE_ENV=development pnpm clear:generated && docusaurus start --no-open --no-minify --host 0.0.0.0",
+    "build:dev": "pnpm clear:generated && docusaurus build --dev --no-minify",
+    "docusaurus": "docusaurus",
+    "build": "pnpm clear:generated && docusaurus build",
+    "swizzle": "docusaurus swizzle",
+    "deploy": "pnpm clear:generated && docusaurus deploy",
+    "clear": "docusaurus clear && pnpm clear:generated",
+    "clear:generated": "rm -rf ./docs/std/api",
+    "serve": "docusaurus serve --no-open --host 0.0.0.0",
+    "write-translations": "docusaurus write-translations",
+    "write-heading-ids": "docusaurus write-heading-ids",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@docusaurus/core": "3.8.0",
+    "@docusaurus/preset-classic": "3.8.0",
+    "@mdx-js/react": "3.1.0",
+    "clsx": "2.1.1",
+    "prism-react-renderer": "2.4.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "3.8.0",
+    "@docusaurus/tsconfig": "3.8.0",
+    "@docusaurus/types": "3.8.0",
+    "@types/react": "19.1.6",
+    "@types/react-dom": "19.1.5",
+    "docusaurus-plugin-typedoc": "1.4.0",
+    "typedoc": "0.28.5",
+    "typedoc-plugin-markdown": "4.6.3",
+    "typedoc-plugin-mdn-links": "5.0.2",
+    "typescript": "5.8.3"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0"
+  }
+}

@@ -15,7 +15,7 @@
  *
  * If `quoteString` is `true`, string values are wrapped in single quotes.
  *
- * ### Example
+ * @example
  * ```ts
  * expect(stringify(42)).toBe("42");
  * expect(stringify("hello")).toBe("hello");

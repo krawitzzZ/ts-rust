@@ -16,7 +16,7 @@ import { Primitive } from "./types";
  * Unlike objects, arrays, or functions, primitives are **copied by value** and
  * do not have reference-based mutations.
  *
- * ### Example
+ * @example
  * ```ts
  * expect(isPrimitive(42)).toBe(true);
  * expect(isPrimitive("hello")).toBe(true);

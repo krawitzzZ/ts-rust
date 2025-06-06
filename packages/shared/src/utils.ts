@@ -6,7 +6,7 @@ import { LazyPromise } from "./lazyPromise";
  * This type guard determines whether the input is an instance of the native
  * `Promise` class, indicating it is a standard JavaScript promise.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = Promise.resolve(42);
  * const y = new Promise((resolve) => resolve("hello"));
@@ -32,7 +32,7 @@ export function isPromise(x: unknown): x is Promise<unknown> {
  * This type guard determines whether the input is an instance of the
  * {@link LazyPromise} class.
  *
- * ### Example
+ * @example
  * ```ts
  * const x = LazyPromise.resolve(42);
  * const y = new Promise((resolve) => resolve("hello"));
@@ -59,7 +59,7 @@ export function isLazyPromise(x: unknown): x is LazyPromise<unknown> {
  * It ensures that the result is always a `Promise`, regardless of whether the
  * input is synchronous or asynchronous.
  *
- * ### Example
+ * @example
  * ```ts
  * const syncValue = 42;
  * const asyncValue = Promise.resolve("hello");
@@ -90,7 +90,7 @@ export const toPromise = <T>(
  * This ensures that the result is always a {@link LazyPromise}, regardless of whether the
  * input is synchronous or asynchronous.
  *
- * ### Example
+ * @example
  * ```ts
  * const syncValue = 42;
  * const asyncValue = Promise.resolve("hello");

@@ -45,13 +45,13 @@ export enum ResultErrorKind {
  * way to handle such failures by embedding a {@link ResultErrorKind} and an optional
  * `reason` for additional context.
  *
- * ### Example
+ * @example
  * ```ts
  * const res = err<number, string>("failure");
  * try {
  *   res.unwrap();
  * } catch (e) {
- *   if (e instanceof ResultError) {
+ *   if (isResultError(e)) {
  *     console.log(e.kind); // "UnwrapCalledOnErr"
  *     console.log(e.message); // "[UnwrapCalledOnErr] `unwrap`: called on `Err`."
  *   }
