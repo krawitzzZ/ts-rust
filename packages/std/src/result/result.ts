@@ -302,7 +302,7 @@ export function runResult<T, E>(getResult: () => Result<T, E>): Result<T, E> {
  * if you are not 100% sure that the action will not throw an error, ensuring that any
  * synchronous errors are converted into an {@link Err} variant in a type-safe way.
  *
- * @param getResult - A function that returns a `PendingResult<T, E>` (a `Promise<Result<T, E>>`).
+ * @param getResult - A function that returns a `Result<T, E>`, `PendingResult<T, E>` or a `Promise<Result<T, E>>`.
  * @returns A `PendingResult<T, E>` containing either the original `PendingResult` from `resultAction` or a resolved `Promise` with an `Err<E>` if the action throws synchronously.
  *
  * @example
@@ -325,10 +325,20 @@ export function runResult<T, E>(getResult: () => Result<T, E>): Result<T, E> {
  * ```
  */
 export function runPendingResult<T, E>(
-  getResult: () => PendingResult<T, E>,
+  getResult: () => Result<T, E> | PendingResult<T, E> | Promise<Result<T, E>>,
 ): PendingResult<T, E> {
   try {
-    return getResult();
+    const result = getResult();
+
+    if (isResult(result)) {
+      return result.toPending();
+    }
+
+    if (isPendingResult(result)) {
+      return result;
+    }
+
+    return pendingResult(result);
   } catch (e) {
     return pendingErr(
       unexpectedError<E>(
