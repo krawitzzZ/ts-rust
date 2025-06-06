@@ -34,6 +34,11 @@ const sidebars: SidebarsConfig = {
           id: "std/optional/pending-option",
           label: "PendingOption",
         },
+        {
+          type: "doc",
+          id: "std/optional/functions",
+          label: "functions",
+        },
       ],
     },
     {
@@ -53,6 +58,11 @@ const sidebars: SidebarsConfig = {
           type: "doc",
           id: "std/resultant/pending-result",
           label: "PendingResult",
+        },
+        {
+          type: "doc",
+          id: "std/resultant/functions",
+          label: "functions",
         },
       ],
     },

@@ -68,7 +68,7 @@ export function none<T>(): Option<T> {
  * Creates a {@link PendingOption | PendingOption\<T>} that resolves to
  * {@link Some} containing the awaited value.
  *
- * Takes a value or promise and wraps its resolved result in a {@link Some},
+ * Takes a value or a promise and wraps its resolved result in a {@link Some},
  * ensuring the value type is `Awaited` to handle any `PromiseLike` input.
  *
  * @template T - The type of the input value or promise.
@@ -158,9 +158,9 @@ export function pendingOption<T>(
  *
  * @example
  * ```ts
- * const x = some(42);
- * const y = none<number>();
- * const z = "not an option";
+ * const x: unknown = some(42);
+ * const y: unknown = none<number>();
+ * const z: unknown = "not an option";
  *
  * expect(isOption(x)).toBe(true);
  * expect(isOption(y)).toBe(true);
@@ -188,9 +188,9 @@ export function isOption(x: unknown): x is Option<unknown> {
  *
  * @example
  * ```ts
- * const x = pendingOption(some(42));
- * const y = pendingOption(none<number>());
- * const z = some(42); // Not a PendingOption
+ * const x: unknown = pendingOption(some(42));
+ * const y: unknown = pendingOption(none<number>());
+ * const z: unknown = some(42); // Not a PendingOption
  *
  * expect(isPendingOption(x)).toBe(true);
  * expect(isPendingOption(y)).toBe(true);

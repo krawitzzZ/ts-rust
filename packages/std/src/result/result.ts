@@ -99,14 +99,14 @@ export function err<T>(error: void): Result<T, void>;
  *
  * Wraps the provided error in a {@link CheckedError} within an {@link Err},
  * indicating a failed outcome for a checked {@link Result}. This function accepts
- * raw errors, {@link ResultError}, or {@link CheckedError}.
+ * raw error value or {@link CheckedError}.
  *
  * - If called with an error of type `E`, it creates an {@link ExpectedError} variant.
  * - If called with a {@link CheckedError}, it uses the error as is.
  *
  * @template T - The type of the potential value.
  * @template E - The type of the expected error.
- * @param error - The error to wrap in {@link Err}, as a raw `E`, {@link ResultError}, or {@link CheckedError}.
+ * @param error - The error to wrap in {@link Err}, as a raw `E` or {@link CheckedError}.
  * @returns A {@link Result} containing the error as {@link Err}.
  *
  * @example
@@ -146,12 +146,12 @@ export function err<T, E>(error: E | CheckedError<E>): Result<T, E> {
  * ```ts
  * import { run, Result } from "@ts-rust/std";
  *
- * const result: Result<string, Error> = run(
- *   (): string => JSON.stringify({ key: "value" }),
+ * const result: Result<{ key: string }, Error> = run(
+ *   (): { key: string } => JSON.parse('{ key: "value" }'),
  *   (e) => new Error(`Operation failed: ${JSON.stringify(e)}`),
  * );
  * if (result.isOk()) {
- *   console.log(result.unwrap()); // '{ key: "value" }'
+ *   console.log(result.unwrap()); // { key: "value" }
  * }
  * ```
  */
@@ -201,7 +201,7 @@ export function run<T, E>(
  * ```ts
  * import { run, PendingResult, Result } from "@ts-rust/std";
  *
- * const pendingRes: PendingResult<string, Error> = run(
+ * const pendingRes: PendingResult<string, Error> = runAsync(
  *   (): Promise<string> => fetch("https://api.example.com/text").then(res => res.text()),
  *   (e) => new Error(`Fetch failed: ${JSON.stringify(e)}`),
  * );
@@ -252,7 +252,7 @@ export function runAsync<T, E>(
  * if you are not 100% sure that the action will not throw an error, ensuring that any
  * thrown errors are converted into an {@link Err} variant in a type-safe way.
  *
- * @param resultAction - A function that returns a `Result<T, E>`.
+ * @param getResult - A function that returns a `Result<T, E>`.
  * @returns A `Result<T, E>` containing either the original `Result` from `resultAction` or an `Err<E>` if the action throws an error.
  *
  * @example
@@ -265,18 +265,18 @@ export function runAsync<T, E>(
  *
  * // Failed Result
  * const failure = runResult(() => err(new Error("Already failed")));
- * console.log(failure.unwrapErr().message); // "Expected error occurred: Error: Already failed"
+ * // "Expected error occurred: Error: Already failed"
+ * console.log(failure.unwrapErr().expected?.message);
  *
  * // Action throws an error
  * const thrown = runResult(() => { throw new Error("Oops"); });
- * console.log(thrown.unwrapErr().message); // "Unexpected error occurred: ResultError: [Unexpected] `runResult`: result action threw an exception. Reason: Error: Oops"
+ * // "Unexpected error occurred: ResultError: [Unexpected] `runResult`: result action threw an exception. Reason: Error: Oops"
+ * console.log(thrown.unwrapErr().unexpected?.message);
  * ```
  */
-export function runResult<T, E>(
-  resultAction: () => Result<T, E>,
-): Result<T, E> {
+export function runResult<T, E>(getResult: () => Result<T, E>): Result<T, E> {
   try {
-    return resultAction();
+    return getResult();
   } catch (e) {
     return err(
       unexpectedError<E>(
@@ -302,7 +302,7 @@ export function runResult<T, E>(
  * if you are not 100% sure that the action will not throw an error, ensuring that any
  * synchronous errors are converted into an {@link Err} variant in a type-safe way.
  *
- * @param resultAction - A function that returns a `PendingResult<T, E>` (a `Promise<Result<T, E>>`).
+ * @param getResult - A function that returns a `PendingResult<T, E>` (a `Promise<Result<T, E>>`).
  * @returns A `PendingResult<T, E>` containing either the original `PendingResult` from `resultAction` or a resolved `Promise` with an `Err<E>` if the action throws synchronously.
  *
  * @example
@@ -315,18 +315,20 @@ export function runResult<T, E>(
  *
  * // Failed Result
  * const failure = await runPendingResult(() => pendingErr(new Error("Already failed")));
- * console.log(failure.unwrapErr().message); // "Expected error occurred: Error: Already failed"
+ * // "Expected error occurred: Error: Already failed"
+ * console.log(failure.unwrapErr().expected?.message);
  *
  * // Action throws an error
  * const thrown = await runPendingResult(() => { throw new Error("Oops"); });
- * console.log(thrown.unwrapErr().message); // "Unexpected error occurred: ResultError: [Unexpected] `runPendingResult`: result action threw an exception. Reason: Error: Oops"
+ * // "Unexpected error occurred: ResultError: [Unexpected] `runPendingResult`: result action threw an exception. Reason: Error: Oops"
+ * console.log(thrown.unwrapErr().unexpected?.message);
  * ```
  */
 export function runPendingResult<T, E>(
-  resultAction: () => PendingResult<T, E>,
+  getResult: () => PendingResult<T, E>,
 ): PendingResult<T, E> {
   try {
-    return resultAction();
+    return getResult();
   } catch (e) {
     return pendingErr(
       unexpectedError<E>(
@@ -443,9 +445,9 @@ export function pendingResult<T, E>(
  *
  * @example
  * ```ts
- * const x = ok<number, string>(42);
- * const y = err<number, string>("failure");
- * const z = "not a result";
+ * const x: unknown = ok<number, string>(42);
+ * const y: unknown = err<number, string>("failure");
+ * const z: unknown = "not a result";
  *
  * expect(isResult(x)).toBe(true);
  * expect(isResult(y)).toBe(true);
@@ -473,9 +475,9 @@ export function isResult(x: unknown): x is Result<unknown, unknown> {
  *
  * @example
  * ```ts
- * const x = pendingResult(ok<number, string>(42));
- * const y = pendingResult(err<number, string>("failure"));
- * const z = ok(42); // Not a PendingResult
+ * const x: unknown = pendingResult(ok<number, string>(42));
+ * const y: unknown = pendingResult(err<number, string>("failure"));
+ * const z: unknown = ok(42); // Not a PendingResult
  *
  * expect(isPendingResult(x)).toBe(true);
  * expect(isPendingResult(y)).toBe(true);

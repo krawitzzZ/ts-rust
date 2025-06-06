@@ -37,7 +37,8 @@ jobs:
         uses: ./.github/actions/init
 
       - name: Build Docs
-        run: pnpm run build:docs
+        working-directory: ./documentation
+        run: pnpm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -45,7 +46,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./packages/std/docs"
+          path: "./documentation/build"
 
       - name: Deploy to GitHub Pages
         id: deployment
