@@ -2,7 +2,7 @@
 import type { Cloneable, Recoverable } from "../types";
 import type { Result, Ok, Err, PendingResult } from "../result";
 import type { OptionError } from "./error";
-import { SomeAwaitedValues, SomeValues } from "./types";
+import type { SomeAwaitedValues, SomeValues } from "./types";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**

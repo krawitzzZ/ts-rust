@@ -12,6 +12,7 @@ import type { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
 import { unexpectedError } from "../result/error";
 import { OptionError, OptionErrorKind } from "./error";
+import type { SomeAwaitedValues, SomeValues } from "./types";
 import type {
   Optional,
   Option,
@@ -21,7 +22,6 @@ import type {
   SettledOption,
 } from "./interface";
 import { phantom } from "./interface";
-import { SomeAwaitedValues, SomeValues } from "./types";
 
 /**
  * Creates a {@link Some} variant of an {@link Option} containing the given value.
