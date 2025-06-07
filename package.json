@@ -25,7 +25,7 @@
     "clean:deps": "rm -rf ./node_modules && pnpm run --recursive --parallel --stream clean:deps",
     "clean:all": "pnpm run clean && pnpm run clean:deps",
     "prebuild": "pnpm run clean",
-    "build": "pnpm run --recursive --stream --filter \"!@ts-rust/shared\" --filter \"@ts-rust/*...\" build",
+    "build": "pnpm run --recursive --stream --filter \"!@ts-rust/shared\" build",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm build && changeset publish"

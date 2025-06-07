@@ -25,8 +25,3 @@ runs:
     - name: Build
       shell: bash
       run: pnpm run build
-
-    - name: Build Docs
-      shell: bash
-      working-directory: ./documentation
-      run: pnpm run build
