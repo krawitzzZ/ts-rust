@@ -155,6 +155,44 @@ describe("Option", () => {
     });
   });
 
+  describe("combine", () => {
+    it("returns `None` if self is `None`", () => {
+      const self = none<number>();
+      const other = some(one);
+      const result = self.combine(other);
+
+      expect(result.isNone()).toBe(true);
+    });
+
+    it("returns `None` if self is `Some` and provided option is `None`", () => {
+      const self = some(one);
+      const other = none<number>();
+      const result = self.combine(other);
+
+      expect(result.isNone()).toBe(true);
+    });
+
+    it("returns `None` if self is `Some` and one of provided options is `None`", () => {
+      const self = some(one);
+      const other = some(two);
+      const another = none<number>();
+      const result = self.combine(other, another);
+
+      expect(result.isNone()).toBe(true);
+    });
+
+    it("returns `Some` if self is `Some` and provided options are all `Some`", () => {
+      const promiseTwo = Promise.resolve(two);
+      const self = some(one);
+      const other = some(promiseTwo);
+      const another = some(zero);
+      const result = self.combine(other, another);
+
+      expect(result.isSome()).toBe(true);
+      expect(result.unwrap()).toStrictEqual([one, promiseTwo, zero]);
+    });
+  });
+
   describe("copy", () => {
     it("returns a new `Option` with the same value but different reference if self is `Some`", () => {
       const value = { number: one };

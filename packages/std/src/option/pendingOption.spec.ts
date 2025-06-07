@@ -224,6 +224,51 @@ describe("PendingOption", () => {
     });
   });
 
+  describe("combine", () => {
+    it("returns `PendingOption` that resolves to `None` if self resolves to `None`", async () => {
+      const self = pendingNone<number>();
+      const other = some(one);
+      const result = self.combine(other);
+
+      expect(isPendingOption(result)).toBe(true);
+      expect(await result).toStrictEqual(none());
+    });
+
+    it("returns `PendingOption` that resolves to `None` if self resolves to `Some` and provided option resolves to `None`", async () => {
+      const self = pendingSome(one);
+      const other = pendingNone<number>();
+      const result = self.combine(other);
+
+      expect(isPendingOption(result)).toBe(true);
+      expect(await result).toStrictEqual(none());
+    });
+
+    it("returns `PendingOption` that resolves to `None` if self resolves to `Some` and one of the provided options resolves to `None`", async () => {
+      const self = pendingSome(one);
+      const other = pendingOption(some(two));
+      const another = pendingNone<number>();
+      const result = self.combine(other, another);
+
+      expect(isPendingOption(result)).toBe(true);
+      expect(await result).toStrictEqual(none());
+    });
+
+    it("returns `PendingOption` that resolves to `Some` with combined awaited values if self and provided options all resolve to `Some`", async () => {
+      const promiseTwo = Promise.resolve(two);
+      const self = pendingSome(one);
+      const other = some(promiseTwo);
+      const another = pendingSome(zero);
+      const result = self.combine(other, another);
+
+      expect(isPendingOption(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isSome()).toBe(true);
+      expect(awaited.unwrap()).toStrictEqual([one, two, zero]);
+    });
+  });
+
   describe("filter", () => {
     it("does not call provided callback and returns `None` if self is `None`", async () => {
       const inner = none();
