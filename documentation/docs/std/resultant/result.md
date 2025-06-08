@@ -47,11 +47,10 @@ We can use now `runResult` function to execute the function and handle the resul
 `runResult` will catch any errors thrown by the function and return an `Err<E>` variant if
 an error occurs.
 
-TODO(nikita): add link to `run` function documentation
-
 :::note
-For functions that return raw values instead of `Result`, you can use `run` function instead.
-`run` will return a `Result<T, E>` where `T` is the type of the value returned by the function
+For functions that return raw values instead of `Result`, you can use [`run`](./functions.md#run)
+function instead.  `run` will return a `Result<T, E>` where `T` is the type of
+the value returned by the function
 :::
 
 ```ts
@@ -69,11 +68,9 @@ if (result.isOk()) {
 }
 ```
 
-TODO(nikita.demin): add links to `isOk`, `isErr` documentation
-
 If the result is not `Ok<number>`, we can handle the error. Thanks to the type inference,
-typescript knows that `result` is of type `Err<string>` (due to the way how `isOk` and `isErr`
-are implemented).
+typescript knows that `result` is of type `Err<string>` (due to the way how [`isOk`](#isok)
+and [`isErr`](#iserr) are implemented).
 
 ```ts
 const { error } = result; // const error: CheckedError<string>
