@@ -2,6 +2,7 @@
 import type { Cloneable, Recoverable } from "../types";
 import type { Result, Ok, Err, PendingResult } from "../result";
 import type { OptionError } from "./error";
+import type { SomeAwaitedValues, SomeValues } from "./types";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**
@@ -109,6 +110,29 @@ export interface Optional<T> {
    * ```
    */
   clone<U>(this: Option<Cloneable<U>>): Option<U>;
+
+  /**
+   * Combines this {@link Option} with other `Option` instances into a single
+   * `Option` containing a tuple of values.
+   *
+   * The `combine` method takes an arbitrary number of `Option` instances,
+   * all sharing the same error-free structure. If all `Option` instances
+   * (including this one) are `Some`, it returns an `Option` with a tuple of
+   * their values in the order provided. If any `Option` is `None`, it returns
+   * `None`. The resulting tuple includes the value of this `Option` as the first
+   * element, followed by the values from the provided `Option` instances.
+   *
+   * @example
+   * ```ts
+   * const a = some(Promise.resolve(1));
+   * const b = some("hi");
+   * const c = none<Date>();
+   * const d = a.combine(b, c); // Option<[Promise<number>, string, Date]>
+   * ```
+   */
+  combine<U extends Option<unknown>[]>(
+    ...opts: U
+  ): Option<[T, ...SomeValues<U>]>;
 
   /**
    * Returns a **shallow** copy of the {@link Option}.
@@ -902,6 +926,30 @@ export interface PendingOption<T>
   andThen<U>(
     f: (x: T) => Option<U> | PendingOption<U> | Promise<Option<U>>,
   ): PendingOption<Awaited<U>>;
+
+  /**
+   * Combines this {@link PendingOption} with other {@link Option} or `PendingOption`
+   * instances into a single `PendingOption` containing a tuple of resolved values.
+   *
+   * The `combine` method takes an arbitrary number of `Option` or `PendingOption`
+   * instances. It resolves all inputs and returns a `PendingOption` that, when
+   * resolved, contains an `Option` with a tuple of their values if all resolve
+   * to `Some`. If any input resolves to `None`, the result resolves to `None`.
+   * The resulting tuple includes the resolved value of this `PendingOption` as
+   * the first element, followed by the resolved values from the provided instances.
+   *
+   * @example
+   * ```ts
+   * const a = pendingSome(1);
+   * const b = some(Promise.resolve("hi"));
+   * const c = none<Error>();
+   * const d = pendingNone<Promise<Date>>();
+   * const e = a.combine(b, c, d); // PendingOption<[number, string, Error, Date]>
+   * ```
+   */
+  combine<U extends (Option<unknown> | PendingOption<unknown>)[]>(
+    ...opts: U
+  ): PendingOption<[Awaited<T>, ...SomeAwaitedValues<U>]>;
 
   /**
    * Returns a {@link PendingOption} with {@link None} if this option resolves to

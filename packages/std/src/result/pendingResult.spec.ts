@@ -310,6 +310,50 @@ describe("PendingResult", () => {
     });
   });
 
+  describe("combine", () => {
+    it("returns `PendingResult` that resolves to `Err` if self resolves to `Err`", async () => {
+      const self = pendingErr<number, string>(expectedErrMsg);
+      const other = ok<number, string>(one);
+      const result = self.combine(other);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(await result).toStrictEqual(err(expectedErrMsg));
+    });
+
+    it("returns `PendingResult` that resolves to `Err` if self resolves to `Ok` and provided result resolves to `Err`", async () => {
+      const self = pendingOk<number, string>(one);
+      const other = err<number, string>(expectedErrMsg);
+      const result = self.combine(other);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(await result).toStrictEqual(err(expectedErrMsg));
+    });
+
+    it("returns `PendingResult` that resolves to `Err` if self resolves to `Ok` and one of the provided results resolves to `Err`", async () => {
+      const self = pendingOk<number, string>(one);
+      const other1 = ok<number, string>(two);
+      const other2 = pendingErr<number, string>(expectedErrMsg);
+      const result = self.combine(other1, other2);
+
+      expect(isPendingResult(result)).toBe(true);
+      expect(await result).toStrictEqual(err(expectedErrMsg));
+    });
+
+    it("returns `PendingResult` that resolves to `Ok` if self resolves to `Ok` and all provided results resolve to `Ok`", async () => {
+      const self = pendingOk<number, string>(one);
+      const other1 = ok<Promise<number>, string>(Promise.resolve(two));
+      const other2 = pendingOk<number, string>(zero);
+      const result = self.combine(other1, other2);
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap()).toStrictEqual([one, two, zero]);
+    });
+  });
+
   describe("err", () => {
     it("returns `PendingOption` that resolves to `None` if self resolves to `Ok`", async () => {
       const self = pendingOk(one);

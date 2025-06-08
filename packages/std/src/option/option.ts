@@ -12,6 +12,7 @@ import type { Cloneable, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
 import { unexpectedError } from "../result/error";
 import { OptionError, OptionErrorKind } from "./error";
+import type { SomeAwaitedValues, SomeValues } from "./types";
 import type {
   Optional,
   Option,
@@ -324,6 +325,26 @@ class _Option<T> implements Optional<T> {
     }
 
     return some(this.value.clone());
+  }
+
+  combine<U extends Option<unknown>[]>(
+    ...opts: U
+  ): Option<[T, ...SomeValues<U>]> {
+    if (this.isNone()) {
+      return none();
+    }
+
+    const acc = [this.value] as unknown as [T, ...SomeValues<U>];
+
+    for (const opt of opts) {
+      if (opt.isNone()) {
+        return none();
+      }
+
+      acc.push(opt.value as SomeValues<U>[number]);
+    }
+
+    return some(acc);
   }
 
   copy(): Option<T> {
@@ -785,6 +806,37 @@ class _PendingOption<T> implements PendingOption<T> {
 
         const r = await f(option.value);
         return r.isNone() ? none() : some(await r.value);
+      }),
+    );
+  }
+
+  combine<U extends (Option<unknown> | PendingOption<unknown>)[]>(
+    ...opts: U
+  ): PendingOption<[Awaited<T>, ...SomeAwaitedValues<U>]> {
+    return pendingOption(async () =>
+      this.then(async (option) => {
+        if (option.isNone()) {
+          return none();
+        }
+
+        const acc = [await option.value] as unknown as [
+          Awaited<T>,
+          ...SomeAwaitedValues<U>,
+        ];
+
+        for (const opt of opts) {
+          const awaitedOption = await opt;
+
+          if (awaitedOption.isNone()) {
+            return none();
+          }
+
+          const awaitedValue = await awaitedOption.value;
+
+          acc.push(awaitedValue as SomeAwaitedValues<U>[number]);
+        }
+
+        return some(acc);
       }),
     );
   }

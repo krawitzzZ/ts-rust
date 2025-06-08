@@ -276,6 +276,46 @@ describe("Result", () => {
     );
   });
 
+  describe("combine", () => {
+    it("returns `Err` if self is `Err`", () => {
+      const self = err<number, string>(errMsg);
+      const other = ok<number, string>(one);
+      const result = self.combine(other);
+
+      expect(result.isErr()).toBe(true);
+    });
+
+    it("returns `Err` if self is `Ok` and provided result is `Err`", () => {
+      const self = ok<number, string>(one);
+      const other = err<string, string>(errMsg);
+      const result = self.combine(other);
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr().expected).toBe(errMsg);
+    });
+
+    it("returns `Err` if self is `Ok` and one of the provided results is `Err`", () => {
+      const self = ok<number, string>(one);
+      const other1 = ok<number, string>(two);
+      const other2 = err<string, string>(errMsg);
+      const result = self.combine(other1, other2);
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr().expected).toBe(errMsg);
+    });
+
+    it("returns `Ok` with combined values if self is `Ok` and provided results are `Ok`", () => {
+      const promiseTwo = Promise.resolve(two);
+      const self = ok<number, string>(one);
+      const other1 = ok<Promise<number>, string>(promiseTwo);
+      const other2 = ok<number, string>(zero);
+      const result = self.combine(other1, other2);
+
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toStrictEqual([one, promiseTwo, zero]);
+    });
+  });
+
   describe("copy", () => {
     it("returns a new `Result` with the same value, but different reference if self is `Ok`", () => {
       const value = { number: one };

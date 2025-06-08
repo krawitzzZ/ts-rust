@@ -93,6 +93,27 @@ expect(y.clone()).toStrictEqual(cloneable);
 expect(y.clone()).not.toBe(cloneable);
 ```
 
+### combine
+
+[`combine<U extends Option<unknown>[]>(...opts: U): Option<[T, ...SomeValues<U>]>`](../api/Option/interfaces/Optional.mdx#combine)
+
+Combines this `Option` with other `Option` instances into a single
+`Option` containing a tuple of values.
+
+The `combine` method takes an arbitrary number of `Option` instances,
+all sharing the same error-free structure. If all `Option` instances
+(including this one) are `Some`, it returns an `Option` with a tuple of
+their values in the order provided. If any `Option` is `None`, it returns
+`None`. The resulting tuple includes the value of this `Option` as the first
+element, followed by the values from the provided `Option` instances.
+
+```ts
+const a = some(Promise.resolve(1));
+const b = some("hi");
+const c = none<Date>();
+const d = a.combine(b, c); // Option<[Promise<number>, string, Date]>
+```
+
 ### copy
 
 [`copy(): Option<T>`](../api/Option/interfaces/Optional.mdx#copy)

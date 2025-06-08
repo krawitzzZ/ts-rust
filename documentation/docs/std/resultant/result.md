@@ -47,11 +47,10 @@ We can use now `runResult` function to execute the function and handle the resul
 `runResult` will catch any errors thrown by the function and return an `Err<E>` variant if
 an error occurs.
 
-TODO(nikita): add link to `run` function documentation
-
 :::note
-For functions that return raw values instead of `Result`, you can use `run` function instead.
-`run` will return a `Result<T, E>` where `T` is the type of the value returned by the function
+For functions that return raw values instead of `Result`, you can use [`run`](./functions.md#run)
+function instead.  `run` will return a `Result<T, E>` where `T` is the type of
+the value returned by the function
 :::
 
 ```ts
@@ -69,11 +68,9 @@ if (result.isOk()) {
 }
 ```
 
-TODO(nikita.demin): add links to `isOk`, `isErr` documentation
-
 If the result is not `Ok<number>`, we can handle the error. Thanks to the type inference,
-typescript knows that `result` is of type `Err<string>` (due to the way how `isOk` and `isErr`
-are implemented).
+typescript knows that `result` is of type `Err<string>` (due to the way how [`isOk`](#isok)
+and [`isErr`](#iserr) are implemented).
 
 ```ts
 const { error } = result; // const error: CheckedError<string>
@@ -184,6 +181,27 @@ const y = err<CloneableClass, string>("oops");
 expect(x.clone()).not.toBe(x); // Different reference
 expect(x.clone()).toStrictEqual(cloneable);
 expect(y.clone().unwrapErr().expected).toBe("oops");
+```
+
+### combine
+
+[`combine<U extends Result<unknown, E>[]>(...results: U): Result<[T, ...OkValues<U>], E>`](../api/Result/interfaces/Resultant.mdx#combine)
+
+Combines this `Result` with other `Result` instances into a single
+`Result` containing a tuple of values.
+
+The `combine` method takes an arbitrary number of `Result` instances,
+all sharing the same `Err` type. If all `Result` instances
+(including this one) are `Ok`, it returns a `Result` with a tuple of
+their `Ok` values in the order provided. If any `Result` is `Err`, it returns
+that `Err`. The resulting tuple includes the value of this `Result` as the first
+element, followed by the values from the provided `Result` instances.
+
+```ts
+const a = ok<Promise<number>, string>(Promise.resolve(1));
+const b = ok<string, string>("hi");
+const c = err<Date, string>("no");
+const d = a.combine(b, c); // Result<[Promise<number>, string, Date], string>
 ```
 
 ### copy

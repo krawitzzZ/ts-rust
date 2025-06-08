@@ -90,6 +90,28 @@ expect(await x.check()).toEqual([true, 42]);
 expect(await y.check()).toEqual([false, expect.objectContaining({ expected: "failure" })]);
 ```
 
+### combine
+
+[`combine<U extends (Result<unknown, E> | PendingResult<unknown, E>)[]>(...opts: U): PendingResult<[Awaited<T>, ...OkAwaitedValues<U>], E>`](../api/Result/interfaces/PendingResult.mdx#combine)
+
+Combines this `PendingResult` with other `Result` or `PendingResult`
+instances into a single `PendingResult` containing a tuple of resolved values.
+
+The `combine` method takes an arbitrary number of `Result` or `PendingResult`
+instances. It resolves all inputs and returns a `PendingResult` that, when
+resolved, contains a `Result` with a tuple of their `Ok` values if all
+resolve to `Ok`. If any input resolves to `Err`, the result resolves to
+that `Err`. The resulting tuple includes the resolved value of this `PendingResult`
+as the first element, followed by the resolved values from the provided instances.
+
+```ts
+const a = pendingOk<number, Error>(1);
+const b = ok<Promise<string>, Error>(Promise.resolve("hi"));
+const c = err<symbol, Error>(new Error("An error occurred"));
+const d = pendingErr<Promise<Date>, Error>(new Error("not a date"));
+const e = a.combine(b, c, d); // PendingResult<[number, string, symbol, Date], Error>
+```
+
 ### err
 
 [`err(): PendingOption<Awaited<E>>`](../api/Result/interfaces/PendingResult.mdx#err)

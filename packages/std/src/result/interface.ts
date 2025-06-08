@@ -2,6 +2,7 @@
 import type { Option, Some, None, PendingOption } from "../option";
 import type { Cloneable, Recoverable } from "../types";
 import type { ResultError } from "./error";
+import type { OkAwaitedValues, OkValues } from "./types";
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**
@@ -196,6 +197,29 @@ export interface Resultant<T, E> {
    * ```
    */
   clone<U, F>(this: Result<Cloneable<U>, Cloneable<F>>): Result<U, F>;
+
+  /**
+   * Combines this {@link Result} with other `Result` instances into a single
+   * `Result` containing a tuple of values.
+   *
+   * The `combine` method takes an arbitrary number of `Result` instances,
+   * all sharing the same {@link Err} type. If all `Result` instances
+   * (including this one) are {@link Ok}, it returns a `Result` with a tuple of
+   * their `Ok` values in the order provided. If any `Result` is `Err`, it returns
+   * that `Err`. The resulting tuple includes the value of this `Result` as the first
+   * element, followed by the values from the provided `Result` instances.
+   *
+   * @example
+   * ```ts
+   * const a = ok<Promise<number>, string>(Promise.resolve(1));
+   * const b = ok<string, string>("hi");
+   * const c = err<Date, string>("no");
+   * const d = a.combine(b, c); // Result<[Promise<number>, string, Date], string>
+   * ```
+   */
+  combine<U extends Result<unknown, E>[]>(
+    ...results: U
+  ): Result<[T, ...OkValues<U>], E>;
 
   /**
    * Returns a **shallow** copy of the {@link Result}.
@@ -944,6 +968,30 @@ export interface PendingResult<T, E>
    * ```
    */
   check(): Promise<readonly [boolean, Awaited<T> | CheckedError<Awaited<E>>]>;
+
+  /**
+   * Combines this {@link PendingResult} with other {@link Result} or `PendingResult`
+   * instances into a single `PendingResult` containing a tuple of resolved values.
+   *
+   * The `combine` method takes an arbitrary number of `Result` or `PendingResult`
+   * instances. It resolves all inputs and returns a `PendingResult` that, when
+   * resolved, contains a `Result` with a tuple of their {@link Ok} values if all
+   * resolve to `Ok`. If any input resolves to {@link Err}, the result resolves to
+   * that `Err`. The resulting tuple includes the resolved value of this `PendingResult`
+   * as the first element, followed by the resolved values from the provided instances.
+   *
+   * @example
+   * ```ts
+   * const a = pendingOk<number, Error>(1);
+   * const b = ok<Promise<string>, Error>(Promise.resolve("hi"));
+   * const c = err<symbol, Error>(new Error("An error occurred"));
+   * const d = pendingErr<Promise<Date>, Error>(new Error("not a date"));
+   * const e = a.combine(b, c, d); // PendingResult<[number, string, symbol, Date], Error>
+   * ```
+   */
+  combine<U extends (Result<unknown, E> | PendingResult<unknown, E>)[]>(
+    ...opts: U
+  ): PendingResult<[Awaited<T>, ...OkAwaitedValues<U>], E>;
 
   /**
    * Converts this {@link PendingResult} to a {@link PendingOption | PendingOption\<E>}
