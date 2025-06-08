@@ -1,5 +1,11 @@
 # @ts-rust/std
 
+## 0.2.0
+
+### Minor Changes
+
+- fc9a9f8: Add combine method
+
 ## 0.1.0
 
 ### Minor Changes
