@@ -75,6 +75,28 @@ expect(await x.andThen((_) => none())).toStrictEqual(none());
 expect(await y.andThen((n) => some(n * 2))).toStrictEqual(none());
 ```
 
+### combine
+
+[`combine<U extends (Option<unknown> | PendingOption<unknown>)[]>(...opts: U): PendingOption<[Awaited<T>, ...SomeAwaitedValues<U>]>`](../api/Option/interfaces/PendingOption.mdx#combine)
+
+Combines this `PendingOption` with other `Option` or `PendingOption`
+instances into a single `PendingOption` containing a tuple of resolved values.
+
+The `combine` method takes an arbitrary number of `Option` or `PendingOption`
+instances. It resolves all inputs and returns a `PendingOption` that, when
+resolved, contains an `Option` with a tuple of their values if all resolve
+to `Some`. If any input resolves to `None`, the result resolves to `None`.
+The resulting tuple includes the resolved value of this `PendingOption` as
+the first element, followed by the resolved values from the provided instances.
+
+```ts
+const a = pendingSome(1);
+const b = some(Promise.resolve("hi"));
+const c = none<Error>();
+const d = pendingNone<Promise<Date>>();
+const e = a.combine(b, c, d); // PendingOption<[number, string, Error, Date]>
+```
+
 ### filter
 
 [`filter(f: (x: T) => boolean | Promise<boolean>): PendingOption<T>`](../api/Option/interfaces/PendingOption.mdx#filter)

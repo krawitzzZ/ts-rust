@@ -940,11 +940,11 @@ export interface PendingOption<T>
    *
    * @example
    * ```ts
-   * const x = pendingSome(1);
-   * const y = some(Promise.resolve("hi"));
-   * const z = none<Error>();
-   * const h = pendingNone<Promise<Date>>();
-   * const w = x.combine(y, z, h); // PendingOption<[number, Promise<string>, Error, Date]>
+   * const a = pendingSome(1);
+   * const b = some(Promise.resolve("hi"));
+   * const c = none<Error>();
+   * const d = pendingNone<Promise<Date>>();
+   * const e = a.combine(b, c, d); // PendingOption<[number, string, Error, Date]>
    * ```
    */
   combine<U extends (Option<unknown> | PendingOption<unknown>)[]>(
