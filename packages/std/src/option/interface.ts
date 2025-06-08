@@ -113,7 +113,7 @@ export interface Optional<T> {
 
   /**
    * Combines this {@link Option} with other `Option` instances into a single
-   * `Option` * containing a tuple of values.
+   * `Option` containing a tuple of values.
    *
    * The `combine` method takes an arbitrary number of `Option` instances,
    * all sharing the same error-free structure. If all `Option` instances

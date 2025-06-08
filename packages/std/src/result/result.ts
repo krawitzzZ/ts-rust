@@ -11,6 +11,7 @@ import {
   isOption,
 } from "../option";
 import { isPrimitive } from "../types.utils";
+import type { OkAwaitedValues, OkValues } from "./types";
 import {
   ResultError,
   ResultErrorKind,
@@ -161,7 +162,8 @@ export function run<T, E>(
 ): Result<T, E> {
   const errorResult = (error: unknown): Result<T, E> => {
     try {
-      return err(mkErr(error));
+      const handledError: E = mkErr(error);
+      return err(handledError);
     } catch (e) {
       return err(
         unexpectedError<E>(
@@ -637,6 +639,26 @@ class _Result<T, E> implements Resultant<T, E> {
     return err<U, F>(unexpectedError(this.error.unexpected.clone()));
   }
 
+  combine<U extends Result<unknown, E>[]>(
+    ...results: U
+  ): Result<[T, ...OkValues<U>], E> {
+    if (isErr(this.#state)) {
+      return err(this.#state.error);
+    }
+
+    const acc = [this.#state.value] as unknown as [T, ...OkValues<U>];
+
+    for (const result of results) {
+      if (result.isErr()) {
+        return err(result.error);
+      }
+
+      acc.push(result.value as OkValues<U>[number]);
+    }
+
+    return ok(acc);
+  }
+
   copy(): Result<T, E> {
     return isOk(this.#state) ? ok(this.#state.value) : err(this.#state.error);
   }
@@ -1109,6 +1131,37 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
   check(): Promise<readonly [boolean, CheckedError<Awaited<E>> | Awaited<T>]> {
     return settleResult(this.#promise).then((self) =>
       self.isOk() ? [true, self.value] : [false, self.error],
+    );
+  }
+
+  combine<U extends (Result<unknown, E> | PendingResult<unknown, E>)[]>(
+    ...results: U
+  ): PendingResult<[Awaited<T>, ...OkAwaitedValues<U>], E> {
+    return pendingResult(
+      this.#promise.then(async (self) => {
+        if (self.isErr()) {
+          return err(self.error);
+        }
+
+        const acc = [await self.value] as unknown as [
+          Awaited<T>,
+          ...OkAwaitedValues<U>,
+        ];
+
+        for (const result of results) {
+          const awaitedResult = await result;
+
+          if (awaitedResult.isErr()) {
+            return err(awaitedResult.error);
+          }
+
+          const awaitedValue = await awaitedResult.value;
+
+          acc.push(awaitedValue as OkAwaitedValues<U>[number]);
+        }
+
+        return ok(acc);
+      }),
     );
   }
 

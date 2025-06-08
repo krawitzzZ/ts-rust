@@ -254,9 +254,8 @@ describe("PendingOption", () => {
     });
 
     it("returns `PendingOption` that resolves to `Some` with combined awaited values if self and provided options all resolve to `Some`", async () => {
-      const promiseTwo = Promise.resolve(two);
       const self = pendingSome(one);
-      const other = some(promiseTwo);
+      const other = some(Promise.resolve(two));
       const another = pendingSome(zero);
       const result = self.combine(other, another);
 
