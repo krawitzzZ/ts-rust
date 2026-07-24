@@ -208,11 +208,11 @@ import { some, none } from "@ts-rust/std";
 const x = some(42);
 const y = none<number>();
 
-x.tap((n) => console.log(n)); // 42
-y.tap((n) => console.log(n)); // No output
+x.inspect((n) => console.log(n)); // 42
+y.inspect((n) => console.log(n)); // No output
 
-x.inspect((opt) => console.log(opt)); // Some(42)
-y.inspect((opt) => console.log(opt)); // None
+x.tap((opt) => console.log(opt)); // Some { value: 42 }
+y.tap((opt) => console.log(opt)); // None
 ```
 
 ### match

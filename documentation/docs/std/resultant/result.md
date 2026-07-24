@@ -248,15 +248,15 @@ expect(y.err()).toStrictEqual(some("failure"));
 
 [`expect(this: SettledResult<T, E>, msg?: string): T`](../api/Result/interfaces/Resultant.mdx#expect)
 
-Retrieves the error if this result is an `Err`, or throws a [`ResultError`](../errors/result-error.md)
-with an optional message if it’s an `Ok`.
+Retrieves the value if this result is an `Ok`, or throws a [`ResultError`](../errors/result-error.md)
+with an optional message if it's an `Err`.
 
 :::note
 Only available on `Result`s that are [`Settled`](../api/Result/type-aliases/SettledResult.mdx).
 :::
 
 :::danger
-Throws [`ResultError`](../errors/result-error.md) if this result is an `Ok`.
+Throws [`ResultError`](../errors/result-error.md) if this result is an `Err`.
 :::
 
 ```ts

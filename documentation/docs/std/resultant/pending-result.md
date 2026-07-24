@@ -18,9 +18,9 @@ use the methods available on [`Result`](./result.md) to work with the value.
 - [`pendingErr(error: E | CheckedError<E> | Promise<E> | Promise<CheckedError<E>>)`](../api/Result/functions/pendingErr.mdx) -
 creates a `PendingResult` that resolves to `Err<E>` variant.
 - [`pendingOk(value: T | Promise<T>)`](../api/Result/functions/pendingOk.mdx) -
-creates a `PendingOption` that resolves to `Some<T>` variant.
+creates a `PendingResult` that resolves to `Ok<T>` variant.
 - [`pendingResult(resultOrFactory: | Result<T, E> | Promise<Result<T, E>> | (() => Result<T, E> | Promise<Result<T, E>>))`](../api/Result/functions/pendingResult.mdx) -
-creates a `PendingOption` that resolves to the provided [`Result`](./result.md).
+creates a `PendingResult` that resolves to the provided [`Result`](./result.md).
 
 ## Methods
 
@@ -34,7 +34,7 @@ otherwise returns a `PendingResult` with `x`.
 This is the asynchronous version of [`and`](./result.md#and).
 
 :::note
-If `x` is a `Promise` and rejects, `None` is returned.
+If `x` is a `Promise` and rejects, `Err` is returned.
 :::
 
 ```ts
