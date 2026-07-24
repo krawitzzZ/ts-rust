@@ -103,6 +103,76 @@ const pending = result.toPending(); // PendingResult<number, string>
 console.log(await pending); // Ok(42)
 ```
 
+### run and runAsync
+
+- `run(action, mkErr)`: Executes a synchronous `action` and wraps the outcome
+  in a `Result`. If the action throws, the error is passed to `mkErr` to create
+  an `Err`.
+- `runAsync(action, mkErr)`: Executes an asynchronous `action` returning a
+  `Promise` and wraps the outcome in a `PendingResult`. If the action throws,
+  the error is passed to `mkErr` to create an `Err`.
+
+> **Note**: If `mkErr` throws, the method returns an `Err` with an
+> `UnexpectedError`.
+
+```typescript
+import { run, runAsync } from "@ts-rust/std";
+
+// Synchronous run
+const parsed = run(
+  () => JSON.parse('{ "key": "value" }'),
+  (e) => new Error(`Parse failed: ${e}`),
+);
+console.log(parsed.isOk()); // true
+console.log(parsed.unwrap()); // { key: "value" }
+
+const failed = run(
+  () => JSON.parse("invalid json"),
+  (e) => new Error(`Parse failed: ${e}`),
+);
+console.log(failed.isErr()); // true
+console.log(failed.unwrapErr().expected.message); // "Parse failed: ..."
+
+// Asynchronous runAsync
+const asyncResult = runAsync(
+  () => fetch("https://api.example.com/data").then((r) => r.json()),
+  (e) => new Error(`Fetch failed: ${e}`),
+);
+const resolved = await asyncResult;
+console.log(resolved.isOk()); // true or false depending on the fetch
+```
+
+### runResult and runPendingResult
+
+- `runResult(getResult)`: Safely executes a synchronous action that returns a
+  `Result`, capturing any thrown errors as an `Err` with an `UnexpectedError`.
+- `runPendingResult(getResult)`: Safely executes an action that returns a
+  `Result`, `PendingResult`, or `Promise<Result>`, capturing any thrown errors
+  as a resolved `PendingResult` with an `Err` containing an `UnexpectedError`.
+
+```typescript
+import { runResult, runPendingResult, ok, err } from "@ts-rust/std";
+
+// Successful Result
+const success = runResult(() => ok(42));
+console.log(success.unwrap()); // 42
+
+// Failed Result
+const failure = runResult(() => err("already failed"));
+console.log(failure.unwrapErr().expected); // "already failed"
+
+// Action throws an error
+const thrown = runResult(() => {
+  throw new Error("Oops");
+});
+console.log(thrown.isErr()); // true
+console.log(thrown.unwrapErr().unexpected?.message); // "Oops"
+
+// Async variant
+const asyncSuccess = runPendingResult(() => ok(42));
+console.log((await asyncSuccess).unwrap()); // 42
+```
+
 ## Key Methods of `Result<T, E>`
 
 `Result<T, E>` provides a variety of methods for working with success and

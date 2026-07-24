@@ -590,10 +590,26 @@ class _Result<T, E> implements Resultant<T, E> {
     this.#state = state;
   }
 
+  /**
+   * Returns `x` if this is `Ok`, otherwise returns this `Err` unchanged.
+   *
+   * @template U - The type of the value in the other result.
+   * @param x - The result to return if this is `Ok`.
+   * @returns A {@link Result} with `x`'s value if this is `Ok`, or this `Err`.
+   */
   and<U>(x: Result<U, E>): Result<U, E> {
     return isOk(this.#state) ? x.copy() : err(this.#state.error);
   }
 
+  /**
+   * Calls a function with the contained value if `Ok`, returning the result.
+   * Returns this `Err` unchanged if `Err`. If the function throws, the error
+   * is wrapped as an unexpected error.
+   *
+   * @template U - The type of the value returned by the function.
+   * @param f - A function that takes the contained value and returns a {@link Result}.
+   * @returns The result of the function call, or this `Err`.
+   */
   andThen<U>(f: (x: T) => Result<U, E>): Result<U, E> {
     if (isErr(this.#state)) {
       return err(this.#state.error);
@@ -612,6 +628,12 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  /**
+   * Returns a tuple indicating whether this is `Ok` or `Err`, along with the
+   * contained value or error.
+   *
+   * @returns `[true, T]` if `Ok`, or `[false, CheckedError<E>]` if `Err`.
+   */
   check(
     this: SettledResult<T, E>,
   ): this extends Ok<T, E>
@@ -623,6 +645,14 @@ class _Result<T, E> implements Resultant<T, E> {
       : [true, this.#state.value];
   }
 
+  /**
+   * Clones the contained value or error if both types are `Cloneable`.
+   * Returns a new {@link Result} with the cloned contents.
+   *
+   * @template U - The cloned value type.
+   * @template F - The cloned error type.
+   * @returns A new {@link Result} with cloned contents.
+   */
   clone<U, F>(this: Result<Cloneable<U>, Cloneable<F>>): Result<U, F> {
     if (this.isOk()) {
       return ok(isPrimitive(this.value) ? this.value : this.value.clone());
@@ -639,6 +669,14 @@ class _Result<T, E> implements Resultant<T, E> {
     return err<U, F>(unexpectedError(this.error.unexpected.clone()));
   }
 
+  /**
+   * Combines this {@link Result} with other results into a tuple if all are `Ok`.
+   * Returns the first `Err` encountered if any result is `Err`.
+   *
+   * @template U - The types of the other results' values.
+   * @param results - The other results to combine.
+   * @returns A {@link Result} containing a tuple of all values, or the first `Err`.
+   */
   combine<U extends Result<unknown, E>[]>(
     ...results: U
   ): Result<[T, ...OkValues<U>], E> {
@@ -659,10 +697,21 @@ class _Result<T, E> implements Resultant<T, E> {
     return ok(acc);
   }
 
+  /**
+   * Returns a shallow copy of this {@link Result}.
+   *
+   * @returns A new {@link Result} with the same variant and contents.
+   */
   copy(): Result<T, E> {
     return isOk(this.#state) ? ok(this.#state.value) : err(this.#state.error);
   }
 
+  /**
+   * Converts this {@link Result} to an {@link Option} containing the error
+   * if `Err`, or `None` if `Ok`.
+   *
+   * @returns An {@link Option} with the expected error, or `None`.
+   */
   err(this: SettledResult<T, E>): Option<E> {
     if (this.isOk()) {
       return none();
@@ -674,6 +723,14 @@ class _Result<T, E> implements Resultant<T, E> {
     );
   }
 
+  /**
+   * Returns the contained value if `Ok`, or throws a {@link ResultError}
+   * with the provided message if `Err`.
+   *
+   * @param msg - An optional message for the thrown error.
+   * @returns The contained value.
+   * @throws {ResultError} If this is `Err`.
+   */
   expect(this: SettledResult<T, E>, msg?: string): T;
   expect(msg?: string): T {
     if (isOk(this.#state)) {
@@ -686,6 +743,14 @@ class _Result<T, E> implements Resultant<T, E> {
     );
   }
 
+  /**
+   * Returns the contained error if `Err`, or throws a {@link ResultError}
+   * with the provided message if `Ok`.
+   *
+   * @param msg - An optional message for the thrown error.
+   * @returns The contained error as a {@link CheckedError}.
+   * @throws {ResultError} If this is `Ok`.
+   */
   expectErr(this: SettledResult<T, E>, msg?: string): CheckedError<E>;
   expectErr(msg?: string): CheckedError<E> {
     if (isErr(this.#state)) {
@@ -698,6 +763,14 @@ class _Result<T, E> implements Resultant<T, E> {
     );
   }
 
+  /**
+   * Flattens a nested `Result<Result<U, F>, F>` into a `Result<U, F>`.
+   * Returns an unexpected error if the `Ok` value is not a `Result`.
+   *
+   * @template U - The type of the inner result's value.
+   * @template F - The type of the inner result's error.
+   * @returns The inner {@link Result} if this is `Ok` containing a `Result`, or an `Err`.
+   */
   flatten<U, F>(this: Result<Result<U, F>, F>): Result<U, F> {
     if (this.isErr()) {
       return err(this.error);
@@ -715,6 +788,13 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.value.copy();
   }
 
+  /**
+   * Calls a function with the contained value if `Ok` for side effects,
+   * then returns this {@link Result} unchanged.
+   *
+   * @param f - A function called with the contained value if `Ok`.
+   * @returns This {@link Result} unchanged.
+   */
   inspect(f: (x: T) => unknown): Result<T, E> {
     if (isOk(this.#state)) {
       try {
@@ -731,6 +811,13 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.copy();
   }
 
+  /**
+   * Calls a function with the contained error if `Err` for side effects,
+   * then returns this {@link Result} unchanged.
+   *
+   * @param f - A function called with the contained error if `Err`.
+   * @returns This {@link Result} unchanged.
+   */
   inspectErr(f: (x: CheckedError<E>) => unknown): Result<T, E> {
     if (isErr(this.#state)) {
       try {
@@ -747,10 +834,22 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.copy();
   }
 
+  /**
+   * Returns `true` if this is an `Err` variant.
+   *
+   * @returns `true` if this is `Err`.
+   */
   isErr(): this is Err<T, E> {
     return isErr(this.#state);
   }
 
+  /**
+   * Returns `true` if this is `Err` and the predicate returns `true`
+   * for the contained error.
+   *
+   * @param f - A predicate function applied to the contained error.
+   * @returns `true` if this is `Err` and the predicate passes.
+   */
   isErrAnd(f: (x: CheckedError<E>) => boolean): this is Err<T, E> & boolean {
     if (isOk(this.#state)) {
       return false;
@@ -763,10 +862,22 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  /**
+   * Returns `true` if this is an `Ok` variant.
+   *
+   * @returns `true` if this is `Ok`.
+   */
   isOk(): this is Ok<T, E> {
     return isOk(this.#state);
   }
 
+  /**
+   * Returns `true` if this is `Ok` and the predicate returns `true`
+   * for the contained value.
+   *
+   * @param f - A predicate function applied to the contained value.
+   * @returns `true` if this is `Ok` and the predicate passes.
+   */
   isOkAnd(f: (x: T) => boolean): this is Ok<T, E> & boolean {
     if (isErr(this.#state)) {
       return false;
@@ -779,6 +890,11 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  /**
+   * Returns an iterator yielding the contained value if `Ok`, or nothing if `Err`.
+   *
+   * @returns An {@link IterableIterator} over the contained value.
+   */
   iter(): IterableIterator<T, T, void> {
     const state = this.#state;
     let isConsumed = false;
@@ -801,6 +917,15 @@ class _Result<T, E> implements Resultant<T, E> {
     };
   }
 
+  /**
+   * Maps the contained value using the provided function if `Ok`.
+   * Returns this `Err` unchanged. If the function throws, the error is
+   * wrapped as an unexpected error.
+   *
+   * @template U - The type of the mapped value.
+   * @param f - A function that maps the contained value to a new value.
+   * @returns A {@link Result} with the mapped value, or this `Err`.
+   */
   map<U>(f: (x: T) => Awaited<U>): Result<U, E> {
     if (isErr(this.#state)) {
       return err(this.#state.error);
@@ -819,6 +944,15 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  /**
+   * Maps the entire {@link Result} (not just its value) using the provided function.
+   * The function receives a copy of this result and can return a sync or async result.
+   *
+   * @template U - The type of the value in the resulting result.
+   * @template F - The type of the error in the resulting result.
+   * @param f - A function that takes a copy of this result and returns a new result.
+   * @returns A {@link Result} or {@link PendingResult} with the mapped result.
+   */
   mapAll<U, F>(f: (x: Result<T, E>) => Result<U, F>): Result<U, F>;
   mapAll<U, F>(
     f: (x: Result<T, E>) => Promise<Result<U, F>>,
@@ -845,6 +979,15 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  /**
+   * Maps the contained error using the provided function if `Err`.
+   * Returns this `Ok` unchanged. If the function throws, the error is
+   * wrapped as an unexpected error.
+   *
+   * @template F - The type of the mapped error.
+   * @param f - A function that maps the contained error to a new error type.
+   * @returns A {@link Result} with the mapped error, or this `Ok`.
+   */
   mapErr<F>(f: (e: E) => Awaited<F>): Result<T, F> {
     if (isOk(this.#state)) {
       return ok(this.#state.value);
@@ -868,6 +1011,15 @@ class _Result<T, E> implements Resultant<T, E> {
     );
   }
 
+  /**
+   * Maps the contained value using the function if `Ok`, or returns the
+   * default value if `Err`.
+   *
+   * @template U - The type of the result.
+   * @param def - The default value to return if `Err`.
+   * @param f - A function that maps the contained value.
+   * @returns The mapped value or the default.
+   */
   mapOr<U>(
     this: SettledResult<T, E>,
     def: Awaited<U>,
@@ -884,6 +1036,16 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  /**
+   * Maps the contained value using the function if `Ok`, or computes a
+   * default value using the factory function if `Err`.
+   *
+   * @template U - The type of the result.
+   * @param mkDef - A function that computes the default value if `Err`.
+   * @param f - A function that maps the contained value.
+   * @returns The mapped value or the computed default.
+   * @throws {ResultError} If the `mkDef` factory throws an exception.
+   */
   mapOrElse<U>(
     this: SettledResult<T, E>,
     mkDef: () => Awaited<U>,
@@ -928,10 +1090,23 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  /**
+   * Converts this {@link Result} to an {@link Option} containing the value
+   * if `Ok`, or `None` if `Err`.
+   *
+   * @returns An {@link Option} with the value, or `None`.
+   */
   ok(): Option<T> {
     return isOk(this.#state) ? some<T>(this.#state.value) : none<T>();
   }
 
+  /**
+   * Returns this result if `Ok`, otherwise returns `x`.
+   *
+   * @template F - The error type of the fallback result.
+   * @param x - The fallback result to use if this is `Err`.
+   * @returns This result if `Ok`, or `x` if `Err`.
+   */
   or<F>(x: Result<T, F>): Result<T, F> {
     if (isOk(this.#state)) {
       return ok(this.#state.value);
@@ -940,6 +1115,14 @@ class _Result<T, E> implements Resultant<T, E> {
     return x;
   }
 
+  /**
+   * Returns this result if `Ok`, otherwise calls the factory function
+   * to produce a fallback result.
+   *
+   * @template F - The error type of the fallback result.
+   * @param f - A function that produces a fallback result if this is `Err`.
+   * @returns This result if `Ok`, or the result of `f` if `Err`.
+   */
   orElse<F>(f: () => Result<T, F>): Result<T, F> {
     if (isOk(this.#state)) {
       return ok(this.#state.value);
@@ -958,6 +1141,13 @@ class _Result<T, E> implements Resultant<T, E> {
     }
   }
 
+  /**
+   * Calls a function with a copy of this {@link Result} for side effects,
+   * then returns this result unchanged.
+   *
+   * @param f - A function called with a copy of this result.
+   * @returns This {@link Result} unchanged.
+   */
   tap(f: (x: Result<T, E>) => unknown): Result<T, E> {
     try {
       const r = f(this.copy());
@@ -972,10 +1162,22 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.copy();
   }
 
+  /**
+   * Converts this {@link Result} into a {@link PendingResult} by awaiting
+   * its contents.
+   *
+   * @returns A {@link PendingResult} resolving to this result with awaited contents.
+   */
   toPending(): PendingSettledRes<T, E> {
     return pendingResult(settleResult(this.copy()));
   }
 
+  /**
+   * Clones the contained value or error and converts this {@link Result} into
+   * a {@link PendingResult} by awaiting the cloned contents.
+   *
+   * @returns A {@link PendingResult} resolving to a cloned version of this result.
+   */
   toPendingCloned(
     this: Result<Cloneable<T>, Cloneable<E>>,
   ): PendingSettledRes<T, E> {
@@ -988,6 +1190,26 @@ class _Result<T, E> implements Resultant<T, E> {
       : `Err { ${stringify(this.#state.error, true)} }`;
   }
 
+  /**
+   * Transposes a `Result<Option<U>, F>` into an `Option<Result<U, F>>`.
+   * If this is `Ok` containing a `Some`, the result is `Some(Ok(value))`.
+   * If this is `Ok` containing a `None`, the result is `None`.
+   * If this is `Err`, the result is `Some(Err(error))`.
+   *
+   * @template U - The type of the value in the inner option.
+   * @template F - The type of the error.
+   * @returns An {@link Option} containing the transposed result.
+   */
+  /**
+   * Transposes a `Result<Option<U>, F>` into an `Option<Result<U, F>>`.
+   * If this is `Ok` containing a `Some`, the result is `Some(Ok(value))`.
+   * If this is `Ok` containing a `None`, the result is `None`.
+   * If this is `Err`, the result is `Some(Err(error))`.
+   *
+   * @template U - The type of the value in the inner option.
+   * @template F - The type of the error.
+   * @returns An {@link Option} containing the transposed result.
+   */
   transpose<U, F>(this: Result<Option<U>, F>): Option<Result<U, F>> {
     if (this.isErr()) {
       return some(err(this.error));
@@ -996,6 +1218,12 @@ class _Result<T, E> implements Resultant<T, E> {
     return isOption(this.value) ? this.value.map((x) => ok(x)) : none();
   }
 
+  /**
+   * Returns a tuple indicating whether this is `Ok` or `Err`, along with
+   * the error (if `Err`) or value (if `Ok`).
+   *
+   * @returns `[true, undefined, T]` if `Ok`, or `[false, CheckedError<E>, undefined]` if `Err`.
+   */
   try(
     this: SettledResult<T, E>,
   ): this extends Ok<T, E>
@@ -1007,6 +1235,12 @@ class _Result<T, E> implements Resultant<T, E> {
       : [false, this.#state.error, undefined];
   }
 
+  /**
+   * Returns the contained value if `Ok`, or throws a {@link ResultError} if `Err`.
+   *
+   * @returns The contained value.
+   * @throws {ResultError} If this is `Err`.
+   */
   unwrap(this: SettledResult<T, E>): T;
   unwrap(): T {
     if (isErr(this.#state)) {
@@ -1019,6 +1253,12 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.#state.value;
   }
 
+  /**
+   * Returns the contained error if `Err`, or throws a {@link ResultError} if `Ok`.
+   *
+   * @returns The contained error as a {@link CheckedError}.
+   * @throws {ResultError} If this is `Ok`.
+   */
   unwrapErr(this: SettledResult<T, E>): CheckedError<E>;
   unwrapErr(): CheckedError<E> {
     if (isOk(this.#state)) {
@@ -1031,10 +1271,24 @@ class _Result<T, E> implements Resultant<T, E> {
     return this.#state.error;
   }
 
+  /**
+   * Returns the contained value if `Ok`, or the default value if `Err`.
+   *
+   * @param def - The default value to return if this is `Err`.
+   * @returns The contained value or the default.
+   */
   unwrapOr(this: SettledResult<T, E>, def: Awaited<T>): T {
     return this.isErr() ? def : this.value;
   }
 
+  /**
+   * Returns the contained value if `Ok`, or computes a default using
+   * the factory function if `Err`.
+   *
+   * @param mkDef - A function that produces the default value if this is `Err`.
+   * @returns The contained value or the computed default.
+   * @throws {ResultError} If the factory function `mkDef` throws an exception.
+   */
   unwrapOrElse(this: SettledResult<T, E>, mkDef: () => Awaited<T>): T {
     try {
       return this.isOk() ? this.value : mkDef();

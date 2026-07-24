@@ -59,6 +59,52 @@ if (result.isErr()) {
 }
 ```
 
+## API
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `expected` | `E \| undefined` | The expected error value, if this is an expected error. |
+| `unexpected` | `ResultError \| undefined` | The unexpected `ResultError`, if this is an unexpected error. |
+
+### Methods
+
+#### `get()`
+
+Returns the underlying error value, regardless of whether it is expected or unexpected.
+
+```typescript
+get(): E | ResultError
+```
+
+#### `handle(f, g)`
+
+Applies one of two functions depending on whether the error is unexpected or expected.
+
+```typescript
+handle<T>(f: (e: ResultError) => T, g: (e: E) => T): T
+```
+
+- `f` is called if the error is unexpected.
+- `g` is called if the error is expected.
+
+#### `isExpected()`
+
+Type guard that returns `true` if this is an expected error. Narrows the type to `ExpectedError<E>`.
+
+```typescript
+isExpected(): this is ExpectedError<E>
+```
+
+#### `isUnexpected()`
+
+Type guard that returns `true` if this is an unexpected error. Narrows the type to `UnexpectedError<E>`.
+
+```typescript
+isUnexpected(): this is UnexpectedError<E>
+```
+
 ## See Also
 
 - [AnyError](./any-error.md)

@@ -297,10 +297,25 @@ class _Option<T> implements Optional<T> {
     this.#value = value;
   }
 
+  /**
+   * Returns `x` if this is `Some`, otherwise returns `None`.
+   *
+   * @template U - The type of the value in the other option.
+   * @param x - The option to return if this is `Some`.
+   * @returns An {@link Option} containing `x`'s value if this is `Some`, or `None`.
+   */
   and<U>(x: Option<U>): Option<U> {
     return this.isNone() ? none() : x.copy();
   }
 
+  /**
+   * Calls a function with the contained value if `Some`, returning the result
+   * as an {@link Option}. Returns `None` if this is `None`.
+   *
+   * @template U - The type of the value returned by the function.
+   * @param f - A function that takes the contained value and returns an {@link Option}.
+   * @returns An {@link Option} with the mapped value, or `None`.
+   */
   andThen<U>(f: (x: T) => Option<U>): Option<U> {
     if (isNothing(this.#value)) {
       return none();
@@ -313,6 +328,13 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Clones the contained value if `Some`, returning a new {@link Option} with
+   * the cloned value. Returns `None` if this is `None`.
+   *
+   * @template U - The type of the cloned value.
+   * @returns A new {@link Option} containing the cloned value, or `None`.
+   */
   clone<U>(this: Option<Cloneable<U>>): Option<U> {
     if (this.isNone()) {
       return none();
@@ -325,6 +347,14 @@ class _Option<T> implements Optional<T> {
     return some(this.value.clone());
   }
 
+  /**
+   * Combines this {@link Option} with other options into a tuple if all are `Some`.
+   * Returns `None` if any option is `None`.
+   *
+   * @template U - The types of the other options.
+   * @param opts - The other options to combine.
+   * @returns An {@link Option} containing a tuple of all values, or `None`.
+   */
   combine<U extends Option<unknown>[]>(
     ...opts: U
   ): Option<[T, ...SomeValues<U>]> {
@@ -345,10 +375,23 @@ class _Option<T> implements Optional<T> {
     return some(acc);
   }
 
+  /**
+   * Returns a shallow copy of this {@link Option}.
+   *
+   * @returns A new {@link Option} with the same variant and value.
+   */
   copy(): Option<T> {
     return isSomething(this.#value) ? some(this.#value) : none();
   }
 
+  /**
+   * Returns the contained value if `Some`, or throws an {@link OptionError}
+   * with the provided message if `None`.
+   *
+   * @param msg - An optional message for the thrown error.
+   * @returns The contained value.
+   * @throws {OptionError} If this is `None`.
+   */
   expect(this: SettledOption<T>, msg?: string): T {
     if (this.isSome()) {
       return this.value;
@@ -360,6 +403,13 @@ class _Option<T> implements Optional<T> {
     );
   }
 
+  /**
+   * Returns `Some` if this is `Some` and the predicate returns `true`,
+   * otherwise returns `None`.
+   *
+   * @param f - A predicate function applied to the contained value.
+   * @returns An {@link Option} containing the value if the predicate passes, or `None`.
+   */
   filter(f: (x: T) => boolean): Option<T> {
     if (isNothing(this.#value)) {
       return none();
@@ -372,6 +422,13 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Flattens a nested {@link Option} into a single layer.
+   * Converts `Option<Option<U>>` into `Option<U>`.
+   *
+   * @template U - The type of the inner option's value.
+   * @returns The inner {@link Option} if this is `Some` containing an option, or `None`.
+   */
   flatten<U>(this: Option<Option<U>>): Option<U> {
     if (this.isNone() || !isOption(this.value)) {
       return none();
@@ -380,6 +437,13 @@ class _Option<T> implements Optional<T> {
     return this.value.copy();
   }
 
+  /**
+   * Inserts a value if this is `None`, then returns the contained value.
+   * If this is `Some`, the value is not replaced.
+   *
+   * @param x - The value to insert if this is `None`.
+   * @returns The contained value (existing or newly inserted).
+   */
   getOrInsert(this: SettledOption<T>, x: T): T;
   getOrInsert(x: Awaited<T>): T {
     if (this.isNone()) {
@@ -389,6 +453,14 @@ class _Option<T> implements Optional<T> {
     return this.value;
   }
 
+  /**
+   * Inserts a value computed by the function if this is `None`, then returns
+   * the contained value. If this is `Some`, the function is not called.
+   *
+   * @param f - A function that produces the value to insert if this is `None`.
+   * @returns The contained value (existing or newly inserted).
+   * @throws {OptionError} If the function `f` throws an exception.
+   */
   getOrInsertWith(this: SettledOption<T>, f: () => T): T;
   getOrInsertWith(f: () => Awaited<T>): T {
     if (this.isSome()) {
@@ -407,12 +479,26 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Replaces the contained value with a new value, regardless of the variant.
+   * Returns the new value.
+   *
+   * @param x - The new value to set.
+   * @returns The newly set value.
+   */
   insert(this: SettledOption<T>, x: T): T;
   insert(x: T): T {
     this.#value = x;
     return this.#value;
   }
 
+  /**
+   * Calls a function with the contained value if `Some` for side effects,
+   * then returns this {@link Option} unchanged.
+   *
+   * @param f - A function called with the contained value if `Some`.
+   * @returns This {@link Option} unchanged.
+   */
   inspect(f: (x: T) => unknown): Option<T> {
     if (isSomething(this.#value)) {
       try {
@@ -429,10 +515,22 @@ class _Option<T> implements Optional<T> {
     return this.copy();
   }
 
+  /**
+   * Returns `true` if this is a `None` variant.
+   *
+   * @returns `true` if this is `None`.
+   */
   isNone(): this is None<T> {
     return isNothing(this.#value);
   }
 
+  /**
+   * Returns `true` if this is `None`, or if the predicate returns `true`
+   * for the contained value.
+   *
+   * @param f - A predicate function applied to the contained value.
+   * @returns `true` if this is `None` or the predicate passes.
+   */
   isNoneOr(f: (x: T) => boolean): boolean {
     if (isNothing(this.#value)) {
       return true;
@@ -445,10 +543,21 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Returns `true` if this is a `Some` variant.
+   *
+   * @returns `true` if this is `Some`.
+   */
   isSome(): this is Some<T> {
     return isSomething(this.#value);
   }
 
+  /**
+   * Returns `true` if this is `Some` and the predicate returns `true`.
+   *
+   * @param f - A predicate function applied to the contained value.
+   * @returns `true` if this is `Some` and the predicate passes.
+   */
   isSomeAnd(f: (x: T) => boolean): this is Some<T> & boolean {
     if (isNothing(this.#value)) {
       return false;
@@ -461,6 +570,11 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Returns an iterator yielding the contained value if `Some`, or nothing if `None`.
+   *
+   * @returns An {@link IterableIterator} over the contained value.
+   */
   iter(): IterableIterator<T, T, void> {
     const value = this.#value;
     let isConsumed = false;
@@ -483,6 +597,14 @@ class _Option<T> implements Optional<T> {
     };
   }
 
+  /**
+   * Maps the contained value using the provided function if `Some`.
+   * Returns `None` if this is `None`.
+   *
+   * @template U - The type of the mapped value.
+   * @param f - A function that maps the contained value to a new value.
+   * @returns An {@link Option} with the mapped value, or `None`.
+   */
   map<U>(f: (x: T) => Awaited<U>): Option<U> {
     if (isNothing(this.#value)) {
       return none();
@@ -495,6 +617,14 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Maps the entire {@link Option} (not just its value) using the provided function.
+   * The function receives a copy of this option and can return a sync or async result.
+   *
+   * @template U - The type of the value in the resulting option.
+   * @param f - A function that takes a copy of this option and returns a new option.
+   * @returns An {@link Option} or {@link PendingOption} with the mapped result.
+   */
   mapAll<U>(f: (x: Option<T>) => Option<U>): Option<U>;
   mapAll<U>(f: (x: Option<T>) => Promise<Option<U>>): PendingSettledOpt<U>;
   mapAll<U>(
@@ -513,6 +643,15 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Maps the contained value using the function if `Some`, or returns the
+   * default value if `None`.
+   *
+   * @template U - The type of the result.
+   * @param def - The default value to return if `None`.
+   * @param f - A function that maps the contained value.
+   * @returns The mapped value or the default.
+   */
   mapOr<U>(
     this: SettledOption<T>,
     def: Awaited<U>,
@@ -529,6 +668,16 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Maps the contained value using the function if `Some`, or computes a
+   * default value using the factory function if `None`.
+   *
+   * @template U - The type of the result.
+   * @param mkDef - A function that computes the default value if `None`.
+   * @param f - A function that maps the contained value.
+   * @returns The mapped value or the computed default.
+   * @throws {OptionError} If the `mkDef` factory throws an exception.
+   */
   mapOrElse<U>(
     this: SettledOption<T>,
     mkDef: () => Awaited<U>,
@@ -557,6 +706,17 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Pattern-matches on this {@link Option}, applying one of two functions
+   * depending on whether it is `Some` or `None`.
+   *
+   * @template U - The return type for `Some`.
+   * @template F - The return type for `None`.
+   * @param f - A function called with the contained value if `Some`.
+   * @param g - A function called if `None`.
+   * @returns The result of the applied function.
+   * @throws {OptionError} If either predicate throws an exception.
+   */
   match<U, F = U>(
     this: SettledOption<T>,
     f: (x: T) => Awaited<U>,
@@ -573,10 +733,26 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Converts this {@link Option} to a {@link Result}, using the provided
+   * error value if `None`.
+   *
+   * @template E - The type of the error.
+   * @param y - The error value to use if this is `None`.
+   * @returns An {@link Ok} with the value if `Some`, or an {@link Err} with `y`.
+   */
   okOr<E>(y: Awaited<E>): Result<T, E> {
     return isSomething(this.#value) ? ok(this.#value) : err(y);
   }
 
+  /**
+   * Converts this {@link Option} to a {@link Result}, computing the error
+   * value using the factory function if `None`.
+   *
+   * @template E - The type of the error.
+   * @param mkErr - A function that produces the error value if this is `None`.
+   * @returns An {@link Ok} with the value if `Some`, or an {@link Err} from the factory.
+   */
   okOrElse<E>(mkErr: () => Awaited<E>): Result<T, E> {
     try {
       return isSomething(this.#value) ? ok(this.#value) : err(mkErr());
@@ -591,10 +767,23 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Returns this option if `Some`, otherwise returns `x`.
+   *
+   * @param x - The fallback option to use if this is `None`.
+   * @returns This option if `Some`, or `x` if `None`.
+   */
   or(x: Option<T>): Option<T> {
     return isSomething(this.#value) ? some(this.#value) : x;
   }
 
+  /**
+   * Returns this option if `Some`, otherwise calls the factory function
+   * to produce a fallback option.
+   *
+   * @param f - A function that produces a fallback option if this is `None`.
+   * @returns This option if `Some`, or the result of `f` if `None`.
+   */
   orElse(f: () => Option<T>): Option<T> {
     try {
       return isSomething(this.#value) ? some(this.#value) : f();
@@ -603,10 +792,23 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Replaces the contained value with a new one and returns a new {@link Option}
+   * containing the old value.
+   *
+   * @param x - The new value to set.
+   * @returns A new {@link Option} containing the old value.
+   */
   replace(x: T): Option<T> {
     return new _Option(this.#replaceValue(x));
   }
 
+  /**
+   * Takes the contained value out of this {@link Option}, leaving `None` in
+   * its place. Returns a new {@link Option} with the taken value.
+   *
+   * @returns An {@link Option} containing the previously held value, or `None`.
+   */
   take(): Option<T> {
     if (this.isNone()) {
       return none();
@@ -615,6 +817,13 @@ class _Option<T> implements Optional<T> {
     return new _Option(this.#takeValue());
   }
 
+  /**
+   * Takes the contained value if the predicate returns `true`, leaving `None`
+   * in its place. Returns `None` if the predicate returns `false` or this is `None`.
+   *
+   * @param f - A predicate function applied to the contained value.
+   * @returns An {@link Option} containing the taken value if the predicate passes, or `None`.
+   */
   takeIf(f: (x: T) => boolean): Option<T> {
     if (isNothing(this.#value)) {
       return none();
@@ -631,6 +840,13 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Calls a function with a copy of this {@link Option} for side effects,
+   * then returns this option unchanged.
+   *
+   * @param f - A function called with a copy of this option.
+   * @returns This {@link Option} unchanged.
+   */
   tap(f: (opt: Option<T>) => unknown): Option<T> {
     try {
       const r = f(this.copy());
@@ -645,6 +861,12 @@ class _Option<T> implements Optional<T> {
     return this.copy();
   }
 
+  /**
+   * Converts this {@link Option} into a {@link PendingOption} by awaiting
+   * the contained value if `Some`.
+   *
+   * @returns A {@link PendingOption} resolving to this option with an awaited value.
+   */
   toPending(): PendingSettledOpt<T> {
     return pendingOption(async () => {
       const copy = this.copy();
@@ -657,6 +879,12 @@ class _Option<T> implements Optional<T> {
     });
   }
 
+  /**
+   * Clones the contained value and converts this {@link Option} into a
+   * {@link PendingOption} by awaiting the cloned value if `Some`.
+   *
+   * @returns A {@link PendingOption} resolving to a cloned version of this option.
+   */
   toPendingCloned(this: Option<Cloneable<T>>): PendingSettledOpt<T> {
     return pendingOption(async () => {
       const clone = this.clone();
@@ -673,6 +901,16 @@ class _Option<T> implements Optional<T> {
     return this.isNone() ? "None" : `Some { ${stringify(this.#value, true)} }`;
   }
 
+  /**
+   * Transposes an `Option<Result<U, E>>` into a `Result<Option<U>, E>`.
+   * If this is `Some` containing an `Ok`, the result is `Ok(Some(value))`.
+   * If this is `Some` containing an `Err`, the result is `Err(error)`.
+   * If this is `None`, the result is `Ok(None)`.
+   *
+   * @template U - The type of the value in the inner result.
+   * @template E - The type of the error in the inner result.
+   * @returns A {@link Result} containing the transposed option.
+   */
   transpose<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E> {
     if (this.isNone() || !isResult(this.value)) {
       return ok(none<U>());
@@ -683,6 +921,12 @@ class _Option<T> implements Optional<T> {
       : err(this.value.error);
   }
 
+  /**
+   * Returns the contained value if `Some`, or throws an {@link OptionError} if `None`.
+   *
+   * @returns The contained value.
+   * @throws {OptionError} If this is `None`.
+   */
   unwrap(this: SettledOption<T>): T {
     if (this.isSome()) {
       return this.value;
@@ -694,10 +938,24 @@ class _Option<T> implements Optional<T> {
     );
   }
 
+  /**
+   * Returns the contained value if `Some`, or the default value if `None`.
+   *
+   * @param def - The default value to return if this is `None`.
+   * @returns The contained value or the default.
+   */
   unwrapOr(this: SettledOption<T>, def: Awaited<T>): T {
     return this.isNone() ? def : this.value;
   }
 
+  /**
+   * Returns the contained value if `Some`, or computes a default using
+   * the factory function if `None`.
+   *
+   * @param mkDef - A function that produces the default value if this is `None`.
+   * @returns The contained value or the computed default.
+   * @throws {OptionError} If the factory function `mkDef` throws an exception.
+   */
   unwrapOrElse(this: SettledOption<T>, mkDef: () => T): T {
     try {
       return this.isNone() ? mkDef() : this.value;
@@ -710,6 +968,13 @@ class _Option<T> implements Optional<T> {
     }
   }
 
+  /**
+   * Returns this option if exactly one of `Some`, or `None` if both are
+   * `Some` or both are `None`.
+   *
+   * @param y - The other option to compare with.
+   * @returns An {@link Option} containing the value if exactly one is `Some`, or `None`.
+   */
   xor(y: Option<T>): Option<T>;
   xor(y: Promise<Option<T>>): PendingSettledOpt<T>;
   xor(y: MaybePromise<Option<T>>): Option<T> | PendingSettledOpt<T> {

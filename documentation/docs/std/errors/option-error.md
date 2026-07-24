@@ -49,6 +49,18 @@ try {
 }
 ```
 
+## OptionErrorKind Values
+
+The `OptionError` class uses the `OptionErrorKind` enum to categorize errors. Each
+value corresponds to a specific failure scenario:
+
+| Kind | Description |
+|------|-------------|
+| `ValueAccessedOnNone` | Thrown when the `value` property is accessed on a `None` variant. |
+| `ExpectCalledOnNone` | Thrown when `expect()` is called on a `None` variant. |
+| `UnwrapCalledOnNone` | Thrown when `unwrap()` is called on a `None` variant. |
+| `PredicateException` | Thrown when a callback/predicate passed to a method throws an exception (e.g., `map`, `filter`, `unwrapOrElse`, `mapOrElse`, `match`, `getOrInsertWith`). |
+
 ## See Also
 
 - [AnyError](./any-error.md)

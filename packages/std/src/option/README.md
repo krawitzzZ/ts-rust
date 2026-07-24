@@ -102,10 +102,13 @@ implementation.
 
 Below are some of the most commonly used methods with examples.
 
-### unwrap and unwrapOr
+### unwrap, unwrapOr, and unwrapOrElse
 
 - `unwrap()`: Extracts the value if `Some`, or throws an `OptionError` if `None`.
 - `unwrapOr(def)`: Returns the value if `Some`, or a default value if `None`.
+- `unwrapOrElse(mkDef)`: Returns the value if `Some`, or the result of `mkDef` if `None`.
+
+> **Note**: If `mkDef` throws an exception, an `OptionError` is thrown with the original error as its reason.
 
 ```typescript
 import { some, none } from "@ts-rust/std";
@@ -115,12 +118,30 @@ const y = none<number>();
 
 console.log(x.unwrap()); // 42
 console.log(y.unwrapOr(0)); // 0
+console.log(x.unwrapOrElse(() => 0)); // 42
+console.log(y.unwrapOrElse(() => 0)); // 0
 
 try {
   y.unwrap();
 } catch (e) {
   console.log(e.message); // "[UnwrapCalledOnNone] `unwrap`: called on `None`."
 }
+```
+
+### and
+
+- `and(x)`: Returns `None` if this option is `None`, otherwise returns `x`.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(2);
+const y = none<number>();
+
+console.log(x.and(some(3))); // Some(3)
+console.log(x.and(none())); // None
+console.log(y.and(some(3))); // None
+console.log(y.and(none())); // None
 ```
 
 ### map and andThen
@@ -155,6 +176,42 @@ console.log(
   }),
 ); // None
 console.log(y.andThen(doubleIfPositive)); // None
+```
+
+### mapAll
+
+- `mapAll(f)`: Maps this option by applying `f` to its full state, executing the callback for both `Some` and `None`, returning a new `Option`.
+
+> **Note**: If `f` throws, `None` is returned.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(42);
+const y = none<number>();
+
+console.log(x.mapAll((opt) => some(opt.unwrapOr(0) + 1))); // Some(43)
+console.log(y.mapAll((opt) => some(opt.unwrapOr(0) + 1))); // Some(1)
+```
+
+### mapOr and mapOrElse
+
+- `mapOr(def, f)`: Returns `f` applied to the value if `Some`, otherwise returns `def`.
+- `mapOrElse(mkDef, f)`: Returns `f` applied to the value if `Some`, otherwise returns the result of `mkDef`.
+
+> **Note**: If `f` throws, the default value is returned. If `mkDef` throws, an `OptionError` is thrown.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(2);
+const y = none<number>();
+
+console.log(x.mapOr(0, (n) => n * 2)); // 4
+console.log(y.mapOr(0, (n) => n * 2)); // 0
+
+console.log(x.mapOrElse(() => 0, (n) => n * 2)); // 4
+console.log(y.mapOrElse(() => 0, (n) => n * 2)); // 0
 ```
 
 ### or and orElse
@@ -193,6 +250,106 @@ console.log(y.okOr("missing")); // Err("missing")
 
 console.log(x.okOrElse(() => "missing")); // Ok(42)
 console.log(y.okOrElse(() => "missing")); // Err("missing")
+```
+
+### clone
+
+- `clone()`: Returns a clone of the `Option`. Only available on `Option`s with `Cloneable` values.
+
+```typescript
+import { some } from "@ts-rust/std";
+
+const value = { a: 1, clone: () => ({ a: 1 }) };
+const x = some(value);
+const y = x.clone();
+
+console.log(y); // Some { a: 1 }
+console.log(y === x); // false (different reference)
+```
+
+### combine
+
+- `combine(...opts)`: Combines this `Option` with other `Option` instances into a single `Option` containing a tuple of values. Returns `None` if any `Option` is `None`.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const a = some(1);
+const b = some("hi");
+const c = none<Date>();
+
+console.log(a.combine(b, c)); // None (because c is None)
+console.log(a.combine(b)); // Some { 1, "hi" }
+```
+
+### copy
+
+- `copy()`: Returns a shallow copy of the `Option`.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const value = { a: 1 };
+const x = some(value);
+const y = none<{ a: number }>();
+
+console.log(x.copy()); // Some { a: 1 }
+console.log(x.copy() === x); // false (different option reference)
+console.log(x.copy().unwrap() === value); // true (same value reference)
+console.log(y.copy()); // None
+```
+
+### expect
+
+> **Throws**: An `OptionError` if called on `None`.
+
+- `expect(msg?)`: Returns the value if `Some`, or throws an `OptionError` with `msg` if `None`.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(42);
+const y = none<number>();
+
+console.log(x.expect("Missing value")); // 42
+
+try {
+  y.expect("Missing value");
+} catch (e) {
+  console.log(e.message); // "Missing value"
+}
+```
+
+### filter
+
+- `filter(f)`: Returns the option if `Some` and `f` returns `true`, otherwise returns `None`.
+
+> **Note**: If `f` throws an exception, `None` is returned.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(2);
+const y = none<number>();
+
+console.log(x.filter((n) => n > 0)); // Some(2)
+console.log(x.filter((n) => n < 0)); // None
+console.log(y.filter((n) => n > 0)); // None
+```
+
+### flatten
+
+- `flatten()`: Flattens an `Option` of an `Option` into a single `Option`.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(some(some(6)));
+console.log(x.flatten()); // Some(Some(6))
+console.log(x.flatten().flatten()); // Some(6)
+
+const y = none();
+console.log(y.flatten()); // None
 ```
 
 ### inspect and tap
@@ -299,13 +456,38 @@ console.log(
 ); // false
 ```
 
+### iter
+
+- `iter()`: Returns an iterator over this option's value, yielding it if `Some` or nothing if `None`.
+
+> **Note**: Yields exactly one item for `Some`, or zero items for `None`.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(42);
+const y = none<number>();
+
+console.log([...x.iter()]); // [42]
+console.log([...y.iter()]); // []
+
+for (const val of x.iter()) {
+  console.log(val); // 42
+}
+```
+
 ### Mutating Methods
 
 `Option<T>` provides methods that can mutate the option in place:
 
 - `insert(x)`: Sets the value to `x`, overwriting any existing value.
 - `getOrInsert(x)`: Sets the value to `x` if `None`, and returns the value.
+- `getOrInsertWith(f)`: Inserts the result of `f` if `None`, and returns the value.
+- `replace(x)`: Replaces the current value with `x` and returns the old `Option`.
 - `take()`: Takes the value out, leaving `None` in its place.
+- `takeIf(f)`: Takes the value out if `f` returns `true`, leaving `None` in its place.
+
+> **Note**: `getOrInsertWith` throws an `OptionError` if `f` throws. `takeIf` returns `None` if `f` throws, and the value remains unchanged.
 
 ```typescript
 import { some, none } from "@ts-rust/std";
@@ -321,6 +503,85 @@ console.log(y); // Some(20)
 const z = some(30);
 console.log(z.take()); // Some(30)
 console.log(z); // None
+
+const w = none<number>();
+console.log(w.getOrInsertWith(() => 99)); // 99
+console.log(w); // Some(99)
+
+const v = some(5);
+console.log(v.replace(10)); // Some(5) (old value)
+console.log(v); // Some(10) (now has new value)
+
+const u = some(7);
+console.log(u.takeIf((n) => n > 5)); // Some(7)
+console.log(u); // None
+
+const t = some(3);
+console.log(t.takeIf((n) => n > 5)); // None
+console.log(t); // Some(3) (unchanged)
+```
+
+### toPending and toPendingCloned
+
+- `toPending()`: Maps this option to a `PendingOption` by supplying a shallow copy of this option.
+- `toPendingCloned()`: Maps this option to a `PendingOption` by supplying a clone of this option. Only available on `Option`s with `Cloneable` values.
+
+> **Note**: If the inner value is a promise-like that rejects, the resulting `PendingOption` resolves to `None`.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(Promise.resolve(42));
+const y = none<number>();
+
+console.log(await x.toPending()); // Some(42)
+console.log(await y.toPending()); // None
+```
+
+### toString
+
+- `toString()`: Returns a string representation of the `Option`.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(2);
+const y = none<number>();
+
+console.log(x.toString()); // "Some { 2 }"
+console.log(y.toString()); // "None"
+```
+
+### transpose
+
+- `transpose()`: Transposes an `Option` of a `Result` into a `Result` of an `Option`. Maps `None` to `Ok(None)`, `Some(Ok(_))` to `Ok(Some(_))`, and `Some(Err(_))` to `Err(_)`.
+
+```typescript
+import { some, none, ok, err } from "@ts-rust/std";
+
+const x = none<Result<number, string>>();
+const y = some(ok(2));
+const z = some(err("error"));
+
+console.log(x.transpose()); // Ok(None)
+console.log(y.transpose()); // Ok(Some(2))
+console.log(z.transpose()); // Err("error")
+```
+
+### xor
+
+- `xor(y)`: Returns `Some` if exactly one of this or `y` is `Some`, otherwise returns `None`.
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(2);
+const y = none<number>();
+
+console.log(x.xor(some(3))); // None (both are Some)
+console.log(x.xor(none())); // Some(2) (exactly one is Some)
+console.log(y.xor(some(3))); // Some(3) (exactly one is Some)
+console.log(y.xor(none())); // None (both are None)
 ```
 
 ## `PendingOption<T>` for Async Operations

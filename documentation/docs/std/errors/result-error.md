@@ -59,6 +59,25 @@ try {
 }
 ```
 
+## ResultErrorKind Values
+
+The `ResultError` class uses the `ResultErrorKind` enum to categorize errors. Each
+value corresponds to a specific failure scenario:
+
+| Kind | Description |
+|------|-------------|
+| `ErrorAccessedOnOk` | Thrown when the `error` property is accessed on an `Ok` variant. |
+| `ValueAccessedOnErr` | Thrown when the `value` property is accessed on an `Err` variant. |
+| `ExpectCalledOnErr` | Thrown when `expect()` is called on an `Err` variant. |
+| `ExpectErrCalledOnOk` | Thrown when `expectErr()` is called on an `Ok` variant. |
+| `UnwrapCalledOnErr` | Thrown when `unwrap()` is called on an `Err` variant. |
+| `UnwrapErrCalledOnOk` | Thrown when `unwrapErr()` is called on an `Ok` variant. |
+| `FlattenCalledOnFlatResult` | Thrown when `flatten()` is called on an `Ok` that does not contain a `Result`. |
+| `ResultRejection` | Thrown when a `PendingResult` promise rejects unexpectedly. |
+| `PredicateException` | Thrown when a callback/predicate passed to a method throws an exception (e.g., `map`, `mapErr`, `andThen`, `orElse`, `unwrapOrElse`, `mapOrElse`, `match`). |
+| `FromOptionException` | Thrown when converting an `Option` to a `Result` via `okOrElse` and the error factory throws. |
+| `Unexpected` | Generic unexpected error, used as a default when no specific kind applies. |
+
 ## See Also
 
 - [AnyError](./any-error.md)
