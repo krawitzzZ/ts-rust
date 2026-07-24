@@ -2,6 +2,9 @@
 module.exports = {
   testEnvironment: "node",
   transform: { "^.+\\.(t|j)sx?$": "@swc/jest" },
+  moduleNameMapper: {
+    "^@ts-rust/shared$": "<rootDir>/../shared/src/index.ts",
+  },
   coverageThreshold: {
     global: {
       statements: 85,

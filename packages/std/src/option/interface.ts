@@ -875,8 +875,7 @@ export interface Optional<T> {
  * specified.
  */
 export interface PendingOption<T>
-  extends PromiseLike<Option<T>>,
-    Recoverable<Option<T>> {
+  extends PromiseLike<Option<T>>, Recoverable<Option<T>> {
   /**
    * Returns a {@link PendingOption} with {@link None} if this option resolves to
    * {@link None}, otherwise returns a {@link PendingOption} with `x`.

@@ -137,9 +137,7 @@ export function pendingNone<T>(): PendingOption<Awaited<T>> {
  */
 export function pendingOption<T>(
   optionOrFactory:
-    | Option<T>
-    | Promise<Option<T>>
-    | (() => Option<T> | Promise<Option<T>>),
+    Option<T> | Promise<Option<T>> | (() => Option<T> | Promise<Option<T>>),
 ): PendingOption<T> {
   if (typeof optionOrFactory === "function") {
     return pendingOption(optionOrFactory());

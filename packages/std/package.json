@@ -40,9 +40,6 @@
   "dependencies": {
     "@ts-rust/shared": "workspace:*"
   },
-  "engines": {
-    "node": ">=20"
-  },
   "keywords": [
     "typescript",
     "rust",

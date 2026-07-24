@@ -4,7 +4,7 @@ import eslint from "@eslint/js";
 import tslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
 import globals from "globals";
-import imports from "eslint-plugin-import";
+import { importX } from "eslint-plugin-import-x";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -28,17 +28,17 @@ export default [
 
   {
     name: "Default rules",
-    plugins: { import: imports },
+    plugins: { "import-x": importX },
     rules: {
       "no-console": ["error", { allow: ["warn", "error"] }],
-      "import/order": "error",
-      "import/prefer-default-export": "off",
-      "import/no-relative-packages": "off",
-      "import/no-extraneous-dependencies": [
+      "import-x/order": "error",
+      "import-x/prefer-default-export": "off",
+      "import-x/no-relative-packages": "off",
+      "import-x/no-extraneous-dependencies": [
         "error",
         { devDependencies: ["**/*.spec.ts"] },
       ],
-      "import/no-cycle": ["error", { maxDepth: 1, ignoreExternal: true }],
+      "import-x/no-cycle": ["error", { maxDepth: 1, ignoreExternal: true }],
       "@typescript-eslint/no-empty-function": "off",
       "@typescript-eslint/no-shadow": ["error"],
       "@typescript-eslint/no-useless-constructor": "off",

@@ -37,8 +37,7 @@ export type Result<T, E> = Ok<T, E> | Err<T, E>;
  * been resolved from potential `PromiseLike` types to their awaited forms.
  */
 export type SettledResult<T, E> =
-  | Ok<Awaited<T>, Awaited<E>>
-  | Err<Awaited<T>, Awaited<E>>;
+  Ok<Awaited<T>, Awaited<E>> | Err<Awaited<T>, Awaited<E>>;
 
 /**
  * Represents an expected error of type `E` within a {@link CheckedError}.
@@ -903,8 +902,7 @@ export interface Resultant<T, E> {
  * specified.
  */
 export interface PendingResult<T, E>
-  extends PromiseLike<Result<T, E>>,
-    Recoverable<Result<T, E>> {
+  extends PromiseLike<Result<T, E>>, Recoverable<Result<T, E>> {
   /**
    * Returns a {@link PendingResult} that resolves to {@link Err} if this result
    * resolves to {@link Err}, otherwise returns a {@link PendingResult} with `x`.
