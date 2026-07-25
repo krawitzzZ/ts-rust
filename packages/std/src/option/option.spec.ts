@@ -1457,4 +1457,28 @@ describe("Option", () => {
       expect(() => result.unwrap()).toThrow(OptionError);
     });
   });
+
+  describe("contains", () => {
+    it("returns `false` if self is `None`", () => {
+      expect(none<number>().contains(one)).toBe(false);
+    });
+
+    it("returns `true` if self is `Some` and value matches", () => {
+      expect(some(one).contains(one)).toBe(true);
+    });
+
+    it("returns `false` if self is `Some` and value does not match", () => {
+      expect(some(one).contains(two)).toBe(false);
+    });
+  });
+
+  describe("unwrapOrDefault", () => {
+    it("returns the value if self is `Some`", () => {
+      expect(some(one).unwrapOrDefault()).toBe(one);
+    });
+
+    it("returns `undefined` if self is `None`", () => {
+      expect(none<number>().unwrapOrDefault()).toBeUndefined();
+    });
+  });
 });

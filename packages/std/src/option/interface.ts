@@ -135,6 +135,22 @@ export interface Optional<T> {
   ): Option<[T, ...SomeValues<U>]>;
 
   /**
+   * Returns `true` if the option is {@link Some} and the contained value
+   * equals `value` using the `===` operator.
+   *
+   * @example
+   * ```ts
+   * const x = some(2);
+   * const y = none<number>();
+   *
+   * expect(x.contains(2)).toBe(true);
+   * expect(x.contains(3)).toBe(false);
+   * expect(y.contains(2)).toBe(false);
+   * ```
+   */
+  contains(value: T): boolean;
+
+  /**
    * Returns a **shallow** copy of the {@link Option}.
    *
    * @example
@@ -812,6 +828,20 @@ export interface Optional<T> {
    * ```
    */
   unwrapOr(this: SettledOption<T>, def: Awaited<T>): T;
+
+  /**
+   * Returns the contained value if {@link Some}, or `undefined` if {@link None}.
+   *
+   * @example
+   * ```ts
+   * const x = some(2);
+   * const y = none<number>();
+   *
+   * expect(x.unwrapOrDefault()).toBe(2);
+   * expect(y.unwrapOrDefault()).toBeUndefined();
+   * ```
+   */
+  unwrapOrDefault(): T | undefined;
 
   /**
    * Returns the contained value if {@link Some}, or the result of `mkDef` if {@link None}.

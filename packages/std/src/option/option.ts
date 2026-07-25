@@ -376,6 +376,17 @@ class _Option<T> implements Optional<T> {
   }
 
   /**
+   * Returns `true` if this is `Some` and the contained value equals `value`
+   * using the `===` operator.
+   *
+   * @param value - The value to compare against.
+   * @returns `true` if this is `Some` and the values are strictly equal.
+   */
+  contains(value: T): boolean {
+    return isSomething(this.#value) && this.#value === value;
+  }
+
+  /**
    * Returns a shallow copy of this {@link Option}.
    *
    * @returns A new {@link Option} with the same variant and value.
@@ -946,6 +957,15 @@ class _Option<T> implements Optional<T> {
    */
   unwrapOr(this: SettledOption<T>, def: Awaited<T>): T {
     return this.isNone() ? def : this.value;
+  }
+
+  /**
+   * Returns the contained value if `Some`, or `undefined` if `None`.
+   *
+   * @returns The contained value, or `undefined` if `None`.
+   */
+  unwrapOrDefault(): T | undefined {
+    return this.isSome() ? this.value : undefined;
   }
 
   /**

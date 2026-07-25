@@ -221,6 +221,22 @@ export interface Resultant<T, E> {
   ): Result<[T, ...OkValues<U>], E>;
 
   /**
+   * Returns `true` if the result is {@link Ok} and the contained value
+   * equals `value` using the `===` operator.
+   *
+   * @example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.contains(2)).toBe(true);
+   * expect(x.contains(3)).toBe(false);
+   * expect(y.contains(2)).toBe(false);
+   * ```
+   */
+  contains(value: T): boolean;
+
+  /**
    * Returns a **shallow** copy of the {@link Result}.
    *
    * @example
@@ -870,6 +886,20 @@ export interface Resultant<T, E> {
    * ```
    */
   unwrapOr(this: SettledResult<T, E>, def: Awaited<T>): T;
+
+  /**
+   * Returns the contained value if {@link Ok}, or `undefined` if {@link Err}.
+   *
+   * @example
+   * ```ts
+   * const x = ok<number, string>(2);
+   * const y = err<number, string>("failure");
+   *
+   * expect(x.unwrapOrDefault()).toBe(2);
+   * expect(y.unwrapOrDefault()).toBeUndefined();
+   * ```
+   */
+  unwrapOrDefault(): T | undefined;
 
   /**
    * Returns the contained value if {@link Ok}, or the result of `mkDef`

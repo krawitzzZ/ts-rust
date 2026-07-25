@@ -698,6 +698,17 @@ class _Result<T, E> implements Resultant<T, E> {
   }
 
   /**
+   * Returns `true` if this is `Ok` and the contained value equals `value`
+   * using the `===` operator.
+   *
+   * @param value - The value to compare against.
+   * @returns `true` if this is `Ok` and the values are strictly equal.
+   */
+  contains(value: T): boolean {
+    return isOk(this.#state) && this.#state.value === value;
+  }
+
+  /**
    * Returns a shallow copy of this {@link Result}.
    *
    * @returns A new {@link Result} with the same variant and contents.
@@ -1279,6 +1290,15 @@ class _Result<T, E> implements Resultant<T, E> {
    */
   unwrapOr(this: SettledResult<T, E>, def: Awaited<T>): T {
     return this.isErr() ? def : this.value;
+  }
+
+  /**
+   * Returns the contained value if `Ok`, or `undefined` if `Err`.
+   *
+   * @returns The contained value, or `undefined` if `Err`.
+   */
+  unwrapOrDefault(): T | undefined {
+    return this.isOk() ? this.value : undefined;
   }
 
   /**

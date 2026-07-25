@@ -1585,4 +1585,28 @@ describe("Result", () => {
       expect(callback).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe("contains", () => {
+    it("returns `false` if self is `Err`", () => {
+      expect(err(expectedErr).contains(one)).toBe(false);
+    });
+
+    it("returns `true` if self is `Ok` and value matches", () => {
+      expect(ok(one).contains(one)).toBe(true);
+    });
+
+    it("returns `false` if self is `Ok` and value does not match", () => {
+      expect(ok(one).contains(two)).toBe(false);
+    });
+  });
+
+  describe("unwrapOrDefault", () => {
+    it("returns the value if self is `Ok`", () => {
+      expect(ok(one).unwrapOrDefault()).toBe(one);
+    });
+
+    it("returns `undefined` if self is `Err`", () => {
+      expect(err(expectedErr).unwrapOrDefault()).toBeUndefined();
+    });
+  });
 });

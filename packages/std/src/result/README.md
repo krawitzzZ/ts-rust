@@ -334,6 +334,42 @@ console.log(() =>
 ); // Throws ResultError
 ```
 
+### contains
+
+- `contains(value: T)`: Returns `true` if this is `Ok` and the contained value equals `value` using strict equality (`===`).
+
+```typescript
+import { ok, err } from "@ts-rust/std";
+
+const x = ok<number, string>(42);
+const y = err<number, string>("failure");
+
+console.log(x.contains(42)); // true
+console.log(x.contains(99)); // false
+console.log(y.contains(42)); // false
+```
+
+### unwrap and unwrapOr
+
+- `unwrap()`: Extracts the value if `Ok`, or throws a `ResultError` if `Err`.
+- `unwrapOr(def)`: Returns the value if `Ok`, or a default value if `Err`.
+- `unwrapOrElse(mkDef)`: Returns the value if `Ok`, or the result of `mkDef` if `Err`.
+- `unwrapOrDefault()`: Returns the value if `Ok`, or `undefined` if `Err`.
+
+```typescript
+import { ok, err } from "@ts-rust/std";
+
+const x = ok<number, string>(42);
+const y = err<number, string>("failure");
+
+console.log(x.unwrap()); // 42
+console.log(y.unwrapOr(0)); // 0
+console.log(x.unwrapOrElse(() => 0)); // 42
+console.log(y.unwrapOrElse(() => 0)); // 0
+console.log(x.unwrapOrDefault()); // 42
+console.log(y.unwrapOrDefault()); // undefined
+```
+
 ## Key Methods of `PendingResult<T, E>`
 
 `PendingResult<T, E>` mirrors the methods of `Result<T, E>` but operates

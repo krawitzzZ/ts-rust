@@ -102,11 +102,12 @@ implementation.
 
 Below are some of the most commonly used methods with examples.
 
-### unwrap, unwrapOr, and unwrapOrElse
+### unwrap, unwrapOr, unwrapOrElse, and unwrapOrDefault
 
 - `unwrap()`: Extracts the value if `Some`, or throws an `OptionError` if `None`.
 - `unwrapOr(def)`: Returns the value if `Some`, or a default value if `None`.
 - `unwrapOrElse(mkDef)`: Returns the value if `Some`, or the result of `mkDef` if `None`.
+- `unwrapOrDefault()`: Returns the value if `Some`, or `undefined` if `None`.
 
 > **Note**: If `mkDef` throws an exception, an `OptionError` is thrown with the original error as its reason.
 
@@ -120,6 +121,8 @@ console.log(x.unwrap()); // 42
 console.log(y.unwrapOr(0)); // 0
 console.log(x.unwrapOrElse(() => 0)); // 42
 console.log(y.unwrapOrElse(() => 0)); // 0
+console.log(x.unwrapOrDefault()); // 42
+console.log(y.unwrapOrDefault()); // undefined
 
 try {
   y.unwrap();
@@ -280,6 +283,21 @@ const c = none<Date>();
 
 console.log(a.combine(b, c)); // None (because c is None)
 console.log(a.combine(b)); // Some { 1, "hi" }
+```
+
+### contains
+
+- `contains(value: T)`: Returns `true` if this is `Some` and the contained value equals `value` using strict equality (`===`).
+
+```typescript
+import { some, none } from "@ts-rust/std";
+
+const x = some(42);
+const y = none<number>();
+
+console.log(x.contains(42)); // true
+console.log(x.contains(99)); // false
+console.log(y.contains(42)); // false
 ```
 
 ### copy
