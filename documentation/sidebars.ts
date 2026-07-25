@@ -1,7 +1,22 @@
+import * as fs from "fs";
+import * as path from "path";
 import type { SidebarsConfig } from "@docusaurus/plugin-content-docs";
-import typedocSidebar from "./docs/std/api/typedoc-sidebar";
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
+
+const apiDir = path.resolve(__dirname, "docs/std/api");
+const apiGenerated =
+  fs.existsSync(apiDir) && fs.existsSync(path.join(apiDir, "index.mdx"));
+
+let typeDocSidebar: { items: unknown[] } = { items: [] };
+if (apiGenerated) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-member-access
+    typeDocSidebar = require("./docs/std/api/typedoc-sidebar").default;
+  } catch {
+    // typedoc sidebar not yet generated
+  }
+}
 
 /**
  * Creating a sidebar enables you to:
@@ -96,16 +111,20 @@ const sidebars: SidebarsConfig = {
         },
       ],
     },
-    {
-      type: "category",
-      label: "API",
-      link: {
-        type: "doc",
-        id: "std/api/index",
-      },
-      items: typedocSidebar.items,
-    },
   ],
 };
+
+if (apiGenerated) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (sidebars.stdSidebar as any[]).push({
+    type: "category",
+    label: "API",
+    link: {
+      type: "doc",
+      id: "std/api/index",
+    },
+    items: typeDocSidebar.items,
+  });
+}
 
 export default sidebars;
