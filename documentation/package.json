@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "NODE_ENV=development pnpm clear:generated && docusaurus start --no-open --no-minify --host 0.0.0.0",
+    "start": "NODE_ENV=development docusaurus start --no-open --no-minify --host 0.0.0.0",
     "build:dev": "pnpm clear:generated && docusaurus build --dev --no-minify",
     "docusaurus": "docusaurus",
     "build": "pnpm clear:generated && docusaurus build",
