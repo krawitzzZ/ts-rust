@@ -172,6 +172,10 @@ const config: Config = {
               label: "GitHub",
               href: "https://github.com/krawitzzz/ts-rust",
             },
+            {
+              label: "npm",
+              href: "https://www.npmjs.com/package/@ts-rust/std",
+            },
           ],
         },
       ],

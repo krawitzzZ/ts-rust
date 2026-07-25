@@ -6,7 +6,7 @@ sidebar_label: CheckedError
 ## Overview
 
 The main idea behind the `Result` implementation in `@ts-rust/std` library, is
-that it is completely safe and expectable. Due to dynamic nature of JavaScript,
+that it is completely safe and predictable. Due to dynamic nature of JavaScript,
 it is impossible to guarantee that `Result<T, E>` will hold an error of type `E`
 at all times, because, technically, any kind of error may happen, for example,
 if you call a `map` method on `Result`, the predicate function may throw and there
@@ -20,7 +20,7 @@ or an [`UnexpectedError<E>`](../api/Result/type-aliases/UnexpectedError.mdx). In
 case the result holds an expected error (for example, `string` in `Result<number, string>`),
 calling `unwrapErr` method would result in a `string` value. On the other hand,
 if result holds an unexpected error (for example, if a predicate threw an exception
-in one of the methods that accept one, like [`map`](/ts-rust/std/api/Result/interfaces/Resultant#map)),
+in one of the methods that accept one, like [`map`](../api/Result/interfaces/Resultant.mdx#map)),
 then `unwrapErr` will return a [`ResultError`](./result-error.md) instance.
 
 ## When It Appears

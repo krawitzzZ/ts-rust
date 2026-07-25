@@ -30,7 +30,7 @@ types are very common, as they have a number of uses:
 
 [`and<U>(x: Option<U>): Option<U>`](../api/Option/interfaces/Optional.mdx#and)
 
-Takes another `Option` and returns `None` if this options is `None`, otherwise
+Takes another `Option` and returns `None` if this option is `None`, otherwise
 returns provided option.
 
 ```ts
@@ -518,7 +518,7 @@ Matches the option, returning `f` applied to the value if `Some`, or `g` if `Non
 
 :::danger
 Throws [`OptionError`](../errors/option-error.md) if `f` or `g` throws an exception.
-Original error will be  set as [`OptionError.reason`](../api/Option/interfaces/OptionError.mdx#properties).
+Original error will be set as [`OptionError.reason`](../api/Option/interfaces/OptionError.mdx#properties).
 :::
 
 ```ts

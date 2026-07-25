@@ -611,7 +611,7 @@ to the [`CheckedError`](../errors/checked-error.md) if `Err`.
 
 :::danger
 Throws [`ResultError`](../errors/result-error.md) if `f` or `g` throws an exception,
-with the original  error set as [`ResultError.reason`](../api/Result/interfaces/ResultError.mdx#properties).
+with the original error set as [`ResultError.reason`](../api/Result/interfaces/ResultError.mdx#properties).
 :::
 
 ```ts

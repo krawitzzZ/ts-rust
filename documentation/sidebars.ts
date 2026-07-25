@@ -37,7 +37,7 @@ const sidebars: SidebarsConfig = {
         {
           type: "doc",
           id: "std/optional/functions",
-          label: "functions",
+          label: "Functions",
         },
       ],
     },
@@ -62,7 +62,7 @@ const sidebars: SidebarsConfig = {
         {
           type: "doc",
           id: "std/resultant/functions",
-          label: "functions",
+          label: "Functions",
         },
       ],
     },

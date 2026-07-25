@@ -166,3 +166,10 @@ function fetchData(id: number): PendingResult<string, Error> {
 
 fetchData(1).then((result) => console.log(result.unwrapOr("Unknown")));
 ```
+
+## Next Steps
+
+- [Optional Types](/ts-rust/std/optional): Learn about `Option<T>`, `PendingOption<T>`, and all available methods.
+- [Result Types](/ts-rust/std/resultant): Learn about `Result<T, E>`, `PendingResult<T, E>`, and error handling patterns.
+- [Error Handling](/ts-rust/std/errors): Understand `AnyError`, `CheckedError`, and how to create custom error types.
+- [API Reference](/ts-rust/std/api): Full TypeDoc-generated API documentation.
