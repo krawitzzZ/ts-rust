@@ -20,7 +20,7 @@ export type Right<T, U> = IEither<T, U> & { get(): U; readonly right: U };
  * A type representing a disjoint union of two possible outcomes: a "left" value of type `T`
  * or a "right" value of type `U`.
  *
- * Inspired by Haskell’s
+ * Inspired by Haskell's
  * {@link https://hackage.haskell.org/package/base/docs/Data-Either.html | Either}, this type
  * is used to model computations that may produce one of two distinct results, such as an error
  * ({@link Left}) or a success ({@link Right}). It provides a type-safe alternative to
@@ -92,7 +92,7 @@ export type IEither<T, U> = {
    * This method provides a way to handle both possible outcomes of an {@link Either} in a
    * single operation: if the value is a "left" of type `T`, it applies `f` to produce a
    * result of type `R`; if it is a "right" of type `U`, it applies `g` to produce a result
-   * of type `R`. Inspired by Haskell’s `either` function, it eliminates the need for explicit
+   * of type `R`. Inspired by Haskell's `either` function, it eliminates the need for explicit
    * type checking with {@link IEither.isLeft | isLeft} or {@link IEither.isRight | isRight}.
    *
    * @example

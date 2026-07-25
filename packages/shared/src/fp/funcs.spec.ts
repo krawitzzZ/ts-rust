@@ -1,53 +1,6 @@
-import { id, noop, cnst } from "./funcs";
+import { cnst } from "./funcs";
 
 describe("fp", () => {
-  describe("noop", () => {
-    it("should return undefined", () => {
-      expect(noop()).toBeUndefined();
-    });
-
-    it("should not throw an error when called without arguments", () => {
-      expect(() => noop()).not.toThrow();
-    });
-
-    it("should not throw an error when called with arguments", () => {
-      expect(() => noop(1, "test", {}, () => {})).not.toThrow();
-    });
-
-    it("should not have side effects", () => {
-      let sideEffect = 0;
-      const increment = () => sideEffect++;
-
-      noop(increment); // Should do nothing
-      expect(sideEffect).toBe(0);
-
-      increment(); // Just to confirm sideEffect changes normally
-      expect(sideEffect).toBe(1);
-    });
-  });
-
-  describe("id", () => {
-    it.each([
-      null,
-      undefined,
-      NaN,
-      0,
-      2,
-      5,
-      123,
-      true,
-      false,
-      "hey",
-      new Date(),
-      new Error(),
-      {},
-      [],
-      () => {},
-    ])("returns the same value - '%p'", (value) => {
-      expect(id(value)).toBe(value);
-    });
-  });
-
   describe("cnst", () => {
     it("should return a function", () => {
       const always42 = cnst(42);

@@ -11,7 +11,7 @@ conventions 1:1.
 
 - `packages/std` — Core library (published to npm as `@ts-rust/std`). Option,
 - Result, PendingOption, PendingResult, error types. `packages/shared` — Internal
-- shared utilities (private). FP primitives, LazyPromise, stringify.
+- shared utilities (private). FP primitives, stringify.
 - `documentation/` — Docusaurus documentation site.
 
 ## Setup
