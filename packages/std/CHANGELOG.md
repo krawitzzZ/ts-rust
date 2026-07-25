@@ -1,5 +1,11 @@
 # @ts-rust/std
 
+## 0.3.0
+
+### Minor Changes
+
+- 3ff9789: Add contains and orDefault methods
+
 ## 0.2.0
 
 ### Minor Changes
