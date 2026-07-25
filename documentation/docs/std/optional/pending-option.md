@@ -271,7 +271,7 @@ for handling the rejection.
 
 :::danger
 Rejects with `OptionError` if `f` or `g` throws an exception or rejects,
-original error will be set as [`OptionError.reason`](../api/Option/classes/OptionError.mdx#properties).
+original error will be set as [`OptionError.reason`](../api/Option/interfaces/OptionError.mdx#properties).
 :::
 
 ```ts

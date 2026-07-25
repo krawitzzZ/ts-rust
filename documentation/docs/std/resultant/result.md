@@ -582,7 +582,7 @@ Returns `f` applied to the contained value if `Ok`, otherwise returns the result
 
 :::danger
 If `mkDef` is called and throws an exception, [`ResultError`](../errors/result-error.md) is thrown
-with the original error set as [`ResultError.reason`](../api/Result/classes/ResultError.mdx#properties).
+with the original error set as [`ResultError.reason`](../api/Result/interfaces/ResultError.mdx#properties).
 :::
 
 ```ts
@@ -611,7 +611,7 @@ to the [`CheckedError`](../errors/checked-error.md) if `Err`.
 
 :::danger
 Throws [`ResultError`](../errors/result-error.md) if `f` or `g` throws an exception,
-with the original  error set as [`ResultError.reason`](../api/Result/classes/ResultError.mdx#properties).
+with the original  error set as [`ResultError.reason`](../api/Result/interfaces/ResultError.mdx#properties).
 :::
 
 ```ts
@@ -856,7 +856,7 @@ expect(() => y.unwrap()).toThrow(ResultError);
 [`unwrapErr(this: SettledResult<T, E>): CheckedError<E>`](../api/Result/interfaces/Resultant.mdx#unwraperr)
 
 Retrieves the [`CheckedError`](../errors/checked-error.md) if this result is an `Err`, or
-throws a [`ResultError`](../api/Result/classes/ResultError.mdx) if it’s an `Ok`.
+throws a [`ResultError`](../api/Result/interfaces/ResultError.mdx) if it’s an `Ok`.
 
 :::note
 Only available on `Result`s that are [`Settled`](../api/Result/type-aliases/SettledResult.mdx).
@@ -904,7 +904,7 @@ Only available on `Result`s that are [`Settled`](../api/Result/type-aliases/Sett
 
 :::danger
 Throws [`ResultError`](../errors/result-error.md) if `mkDef` throws, with the original error
-set as [`ResultError.reason`](../api/Result/classes/ResultError.mdx#properties).
+set as [`ResultError.reason`](../api/Result/interfaces/ResultError.mdx#properties).
 :::
 
 ```ts

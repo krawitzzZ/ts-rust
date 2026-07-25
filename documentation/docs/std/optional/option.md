@@ -490,7 +490,7 @@ Returns `f` applied to the contained value if `Some`, otherwise returns the resu
 
 :::danger
 Throws [`OptionError`](../errors/option-error.md) if `mkDef` is called and throws an exception.
-Original error will be set as [`OptionError.reason`](../api/Option/classes/OptionError.mdx#properties).
+Original error will be set as [`OptionError.reason`](../api/Option/interfaces/OptionError.mdx#properties).
 :::
 
 ```ts
@@ -518,7 +518,7 @@ Matches the option, returning `f` applied to the value if `Some`, or `g` if `Non
 
 :::danger
 Throws [`OptionError`](../errors/option-error.md) if `f` or `g` throws an exception.
-Original error will be  set as [`OptionError.reason`](../api/Option/classes/OptionError.mdx#properties).
+Original error will be  set as [`OptionError.reason`](../api/Option/interfaces/OptionError.mdx#properties).
 :::
 
 ```ts
@@ -842,7 +842,7 @@ Only available on `Option`s that are [`Settled`](../api/Option/type-aliases/Sett
 
 :::danger
 Throws [`OptionError`](../errors/option-error.md) if `mkDef` throws. Original error will be set as
-[`OptionError.reason`](../api/Option/classes/OptionError.mdx#properties).
+[`OptionError.reason`](../api/Option/interfaces/OptionError.mdx#properties).
 :::
 
 ```ts

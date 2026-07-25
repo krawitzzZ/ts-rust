@@ -341,7 +341,7 @@ the original error. In this case the caller is responsible for handling the reje
 
 :::danger
  Rejects with [`ResultError`](../errors/result-error.md) if `f` or `g` throws an exception or rejects,
-  original error will be set as [`ResultError.reason`](../api/Result/classes/ResultError.mdx#properties).
+  original error will be set as [`ResultError.reason`](../api/Result/interfaces/ResultError.mdx#properties).
 :::
 
 ```ts

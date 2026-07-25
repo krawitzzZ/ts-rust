@@ -5,7 +5,7 @@ sidebar_label: ResultError
 
 ## Overview
 
-The [`ResultError`](../api/Result/classes/ResultError.mdx) class is a specialized
+The [`ResultError`](../api/Result/interfaces/ResultError.mdx) class is a specialized
 error type in the `@ts-rust/std` library, used with the `Result` type to represent
 errors that occur during operations that can succeed or fail. It extends the
 [`AnyError`](./any-error.md) class where template `T` is
