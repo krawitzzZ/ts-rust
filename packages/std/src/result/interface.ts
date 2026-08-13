@@ -406,7 +406,7 @@ export interface Resultant<T, E> {
    * expect(y.isErrAnd(e => Boolean(e.unexpected))).toBe(false);
    * ```
    */
-  isErrAnd(f: (x: CheckedError<E>) => boolean): this is Err<T, E> & boolean;
+  isErrAnd(f: (x: CheckedError<E>) => boolean): boolean;
 
   /**
    * Checks if this result is an {@link Ok}, narrowing its type to
@@ -440,7 +440,7 @@ export interface Resultant<T, E> {
    * expect(y.isOkAnd(_ => true)).toBe(false);
    * ```
    */
-  isOkAnd(f: (x: T) => boolean): this is Ok<T, E> & boolean;
+  isOkAnd(f: (x: T) => boolean): boolean;
 
   /**
    * Returns an iterator over this result’s value, yielding it if {@link Ok}
@@ -667,7 +667,8 @@ export interface Resultant<T, E> {
   ok(): Option<T>;
 
   /**
-   * Returns the current result if it is {@link Ok}, otherwise returns `x`.
+   * Returns the current result if it is {@link Ok}, otherwise returns a copy
+   * of `x`.
    *
    * @example
    * ```ts

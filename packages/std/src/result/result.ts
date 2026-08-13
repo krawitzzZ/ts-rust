@@ -861,7 +861,7 @@ class _Result<T, E> implements Resultant<T, E> {
    * @param f - A predicate function applied to the contained error.
    * @returns `true` if this is `Err` and the predicate passes.
    */
-  isErrAnd(f: (x: CheckedError<E>) => boolean): this is Err<T, E> & boolean {
+  isErrAnd(f: (x: CheckedError<E>) => boolean): boolean {
     if (isOk(this.#state)) {
       return false;
     }
@@ -889,7 +889,7 @@ class _Result<T, E> implements Resultant<T, E> {
    * @param f - A predicate function applied to the contained value.
    * @returns `true` if this is `Ok` and the predicate passes.
    */
-  isOkAnd(f: (x: T) => boolean): this is Ok<T, E> & boolean {
+  isOkAnd(f: (x: T) => boolean): boolean {
     if (isErr(this.#state)) {
       return false;
     }
@@ -1112,18 +1112,18 @@ class _Result<T, E> implements Resultant<T, E> {
   }
 
   /**
-   * Returns this result if `Ok`, otherwise returns `x`.
+   * Returns this result if `Ok`, otherwise returns a copy of `x`.
    *
    * @template F - The error type of the fallback result.
    * @param x - The fallback result to use if this is `Err`.
-   * @returns This result if `Ok`, or `x` if `Err`.
+   * @returns This result if `Ok`, or a copy of `x` if `Err`.
    */
   or<F>(x: Result<T, F>): Result<T, F> {
     if (isOk(this.#state)) {
       return ok(this.#state.value);
     }
 
-    return x;
+    return x.copy();
   }
 
   /**
@@ -1567,9 +1567,13 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
   or<F>(
     x: MaybePromise<Result<T, F>> | PendingResult<T, F>,
   ): PendingResult<Awaited<T>, Awaited<F>> {
-    const promise: Promise<Result<T, F>> = this.#promise.then((self) =>
-      self.isOk() ? ok(self.value) : x,
-    );
+    const promise: Promise<Result<T, F>> = this.#promise.then((self) => {
+      if (self.isOk()) {
+        return ok(self.value);
+      }
+
+      return isPromise(x) || isPendingResult(x) ? x : x.copy();
+    });
 
     return pendingResult(settleResult(promise));
   }

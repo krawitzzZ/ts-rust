@@ -980,6 +980,7 @@ describe("PendingResult", () => {
       const awaited = await result;
 
       expect(awaited.unwrap()).toBe(other.unwrap());
+      expect(awaited).not.toBe(other);
     });
 
     it("returns unexpected `Err` if self is `Err` and provided promise with result rejects", async () => {

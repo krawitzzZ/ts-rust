@@ -725,6 +725,7 @@ describe("PendingOption", () => {
       const awaited = await result;
 
       expect(awaited.unwrap()).toBe(other.unwrap());
+      expect(awaited).not.toBe(other);
     });
 
     it("returns `None` if self is `None` and provided promise with option rejects", async () => {

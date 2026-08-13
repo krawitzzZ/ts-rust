@@ -379,7 +379,7 @@ expect(y.isErr()).toBe(true);
 
 ### isErrAnd
 
-[`isErrAnd(f: (x: CheckedError<E>) => boolean): this is Err<T, E> & boolean`](../api/Result/interfaces/Resultant.mdx#iserrand)
+[`isErrAnd(f: (x: CheckedError<E>) => boolean): boolean`](../api/Result/interfaces/Resultant.mdx#iserrand)
 
 Returns `true` if the result is `Err` and `f` returns `true` for the contained error.
 
@@ -412,7 +412,7 @@ expect(y.isOk()).toBe(false);
 
 ### isOkAnd
 
-[`isOkAnd(f: (x: T) => boolean): this is Ok<T, E> & boolean`](../api/Result/interfaces/Resultant.mdx#isokand)
+[`isOkAnd(f: (x: T) => boolean): boolean`](../api/Result/interfaces/Resultant.mdx#isokand)
 
 Returns `true` if the result is `Ok` and `f` returns `true` for the contained value.
 
@@ -644,7 +644,7 @@ expect(y.ok()).toStrictEqual(none());
 
 [`or<F>(x: Result<T, F>): Result<T, F>`](../api/Result/interfaces/Resultant.mdx#or)
 
-Returns the current result if it is `Ok`, otherwise returns `x`.
+Returns the current result if it is `Ok`, otherwise returns a copy of `x`.
 
 ```ts
 const x = ok<number, string>(2);

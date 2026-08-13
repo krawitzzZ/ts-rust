@@ -1146,7 +1146,8 @@ describe("Result", () => {
         const result = self.or(other);
 
         expect(result.isOk()).toBe(true);
-        expect(result).toBe(other);
+        expect(result).not.toBe(other);
+        expect(result).toStrictEqual(other);
       },
     );
   });

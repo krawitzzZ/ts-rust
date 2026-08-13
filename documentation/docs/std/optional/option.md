@@ -351,7 +351,7 @@ expect(y.isSome()).toBe(false);
 
 ### isSomeAnd
 
-[`isSomeAnd(f: (x: T) => boolean): this is Some<T> & boolean`](../api/Option/interfaces/Optional.mdx#issomeand)
+[`isSomeAnd(f: (x: T) => boolean): boolean`](../api/Option/interfaces/Optional.mdx#issomeand)
 
 Returns `true` if the option is `Some` **and** `f` returns `true` for the contained value.
 
@@ -565,7 +565,7 @@ expect(y.okOrElse(() => "error")).toStrictEqual(err("error"));
 
 [`or(x: Option<T>): Option<T>`](../api/Option/interfaces/Optional.mdx#or)
 
-Returns the current option if it is `Some`, otherwise returns `x`.
+Returns the current option if it is `Some`, otherwise returns a copy of `x`.
 
 ```ts
 const x = some(2);

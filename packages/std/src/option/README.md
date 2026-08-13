@@ -219,7 +219,7 @@ console.log(y.mapOrElse(() => 0, (n) => n * 2)); // 0
 
 ### or and orElse
 
-- `or(x)`: Returns this `Option` if `Some`, otherwise returns `x`.
+- `or(x)`: Returns this `Option` if `Some`, otherwise returns a copy of `x`.
 - `orElse(f)`: Returns this `Option` if `Some`, otherwise returns the result of `f`.
 
 ```typescript

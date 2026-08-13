@@ -569,7 +569,7 @@ class _Option<T> implements Optional<T> {
    * @param f - A predicate function applied to the contained value.
    * @returns `true` if this is `Some` and the predicate passes.
    */
-  isSomeAnd(f: (x: T) => boolean): this is Some<T> & boolean {
+  isSomeAnd(f: (x: T) => boolean): boolean {
     if (isNothing(this.#value)) {
       return false;
     }
@@ -779,13 +779,13 @@ class _Option<T> implements Optional<T> {
   }
 
   /**
-   * Returns this option if `Some`, otherwise returns `x`.
+   * Returns this option if `Some`, otherwise returns a copy of `x`.
    *
    * @param x - The fallback option to use if this is `None`.
-   * @returns This option if `Some`, or `x` if `None`.
+   * @returns This option if `Some`, or a copy of `x` if `None`.
    */
   or(x: Option<T>): Option<T> {
-    return isSomething(this.#value) ? some(this.#value) : x;
+    return isSomething(this.#value) ? some(this.#value) : x.copy();
   }
 
   /**
@@ -1231,9 +1231,13 @@ class _PendingOption<T> implements PendingOption<T> {
   or(x: MaybePromise<Option<T>> | PendingOption<T>): PendingSettledOpt<T> {
     return pendingOption(
       settleOption(
-        this.#promise.then((option) =>
-          option.isSome() ? some(option.value) : x,
-        ),
+        this.#promise.then((option) => {
+          if (option.isSome()) {
+            return some(option.value);
+          }
+
+          return isPromise(x) || isPendingOption(x) ? x : x.copy();
+        }),
       ),
     );
   }

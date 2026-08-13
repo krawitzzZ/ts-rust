@@ -381,7 +381,7 @@ export interface Optional<T> {
    * expect(y.isSomeAnd(n => n > 0)).toBe(false);
    * ```
    */
-  isSomeAnd(f: (x: T) => boolean): this is Some<T> & boolean;
+  isSomeAnd(f: (x: T) => boolean): boolean;
 
   /**
    * Returns an iterator over this option’s value, yielding it if {@link Some}
@@ -590,7 +590,8 @@ export interface Optional<T> {
   okOrElse<E>(mkErr: () => Awaited<E>): Result<T, E>;
 
   /**
-   * Returns the current option if it is {@link Some}, otherwise returns `x`.
+   * Returns the current option if it is {@link Some}, otherwise returns a copy
+   * of `x`.
    *
    * @example
    * ```ts
