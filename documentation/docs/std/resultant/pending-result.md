@@ -372,7 +372,7 @@ const y = err<number, string>("failure").toPending();
 expect(await x.or(ok(3))).toStrictEqual(ok(2));
 expect(await x.or(err("another one"))).toStrictEqual(ok(2));
 expect(await y.or(ok(3))).toStrictEqual(ok(3));
-expect(await y.or(err("another one"))).toStrictEqual(err("failure"));
+expect(await y.or(err("another one"))).toStrictEqual(err("another one"));
 expect((await y.or(Promise.reject(new Error("boom")))).unwrapErr().unexpected).toBeDefined();
 ```
 
@@ -439,13 +439,13 @@ Only available when the `PendingResult` resolves to an `Option`.
 :::
 
 ```ts
-const x = pendingOption(some(ok(2)));
-const y = pendingOption(some(err("error")));
-const z = pendingOption(none<Result<number, string>>());
+const x = ok<Option<number>, string>(none()).toPending();
+const y = ok<Option<number>, string>(some(2)).toPending();
+const z = err<Option<number>, string>("error").toPending();
 
-expect(await x.transpose()).toStrictEqual(ok(some(2)));
-expect(await y.transpose()).toStrictEqual(err("error"));
-expect(await z.transpose()).toStrictEqual(ok(none()));
+expect(await x.transpose()).toStrictEqual(none());
+expect(await y.transpose()).toStrictEqual(some(ok(2)));
+expect(await z.transpose()).toStrictEqual(some(err("error")));
 ```
 
 ### try

@@ -377,7 +377,7 @@ describe("PendingResult", () => {
       expect(awaited.isNone()).toBe(true);
     });
 
-    it("returns `PendingOption` that resolves to `None` if self resolves to expected `Err`", async () => {
+    it("returns `PendingOption` that resolves to `Some` if self resolves to expected `Err`", async () => {
       const self = pendingErr(expectedErr);
       const result = self.err();
 
@@ -497,7 +497,7 @@ describe("PendingResult", () => {
   });
 
   describe("inspectErr", () => {
-    it("calls `inspect` on inner `Result` and returns its result", async () => {
+    it("calls `inspectErr` on inner `Result` and returns its result", async () => {
       const inner = err(one);
       const inspectResult = err(one);
       const self = pendingResult(inner);

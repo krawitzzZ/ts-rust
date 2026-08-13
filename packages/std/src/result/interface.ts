@@ -362,14 +362,14 @@ export interface Resultant<T, E> {
    * ```ts
    * const x = ok<number, string>(2);
    * const y = err<number, string>("failure");
-   * let sideEffect = 0;
+   * let sideEffect: CheckedError<string> | null = null;
    *
-   * expect(x.inspect(n => (sideEffect = n))).toStrictEqual(ok(2));
-   * expect(x.inspect(_ => { throw new Error() })).toStrictEqual(ok(2));
-   * expect(sideEffect).toBe(0);
-   * expect(y.inspect(n => (sideEffect = n))).toStrictEqual(err("failure"));
-   * expect(y.inspect(_ => { throw new Error() })).toStrictEqual(err("failure"));
-   * expect(sideEffect).toBe(2);
+   * expect(x.inspectErr(e => (sideEffect = e))).toStrictEqual(ok(2));
+   * expect(x.inspectErr(_ => { throw new Error() })).toStrictEqual(ok(2));
+   * expect(sideEffect).toBeNull();
+   * expect(y.inspectErr(e => (sideEffect = e))).toStrictEqual(err("failure"));
+   * expect(y.inspectErr(_ => { throw new Error() })).toStrictEqual(err("failure"));
+   * expect(isCheckedError(sideEffect)).toBe(true);
    * ```
    */
   inspectErr(f: (x: CheckedError<E>) => unknown): Result<T, E>;
@@ -498,7 +498,7 @@ export interface Resultant<T, E> {
    * as its argument.
    *
    * @notes
-   * - If `f` throws an {@link Err} with an {@link UnexpectedError} is returned.
+   * - If `f` throws, an {@link Err} with an {@link UnexpectedError} is returned.
    *
    * @example
    * ```ts
@@ -1287,7 +1287,7 @@ export interface PendingResult<T, E>
    * expect(await x.or(ok(3))).toStrictEqual(ok(2));
    * expect(await x.or(err("another one"))).toStrictEqual(ok(2));
    * expect(await y.or(ok(3))).toStrictEqual(ok(3));
-   * expect(await y.or(err("another one"))).toStrictEqual(err("failure"));
+   * expect(await y.or(err("another one"))).toStrictEqual(err("another one"));
    * expect((await y.or(Promise.reject(new Error("boom")))).unwrapErr().unexpected).toBeDefined();
    * ```
    */
@@ -1353,13 +1353,13 @@ export interface PendingResult<T, E>
    *
    * @example
    * ```ts
-   * const x = pendingOption(some(ok(2)));
-   * const y = pendingOption(some(err("error")));
-   * const z = pendingOption(none<Result<number, string>>());
+   * const x = ok<Option<number>, string>(none()).toPending();
+   * const y = ok<Option<number>, string>(some(2)).toPending();
+   * const z = err<Option<number>, string>("error").toPending();
    *
-   * expect(await x.transpose()).toStrictEqual(ok(some(2)));
-   * expect(await y.transpose()).toStrictEqual(err("error"));
-   * expect(await z.transpose()).toStrictEqual(ok(none()));
+   * expect(await x.transpose()).toStrictEqual(none());
+   * expect(await y.transpose()).toStrictEqual(some(ok(2)));
+   * expect(await z.transpose()).toStrictEqual(some(err("error")));
    * ```
    */
   transpose<U, F>(

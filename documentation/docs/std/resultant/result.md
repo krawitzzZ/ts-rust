@@ -353,14 +353,14 @@ Calls `f` with the error if this result is an `Err`, then returns a [`copy`](#co
 ```ts
 const x = ok<number, string>(2);
 const y = err<number, string>("failure");
-let sideEffect = 0;
+let sideEffect: CheckedError<string> | null = null;
 
-expect(x.inspect((n) => (sideEffect = n))).toStrictEqual(ok(2));
-expect(x.inspect((_) => { throw new Error(); })).toStrictEqual(ok(2));
-expect(sideEffect).toBe(0); // unchanged
-expect(y.inspect((n) => (sideEffect = n))).toStrictEqual(err("failure"));
-expect(y.inspect((_) => { throw new Error(); })).toStrictEqual(err("failure"));
-expect(sideEffect).toBe(2);
+expect(x.inspectErr((e) => (sideEffect = e))).toStrictEqual(ok(2));
+expect(x.inspectErr((_) => { throw new Error(); })).toStrictEqual(ok(2));
+expect(sideEffect).toBeNull();
+expect(y.inspectErr((e) => (sideEffect = e))).toStrictEqual(err("failure"));
+expect(y.inspectErr((_) => { throw new Error(); })).toStrictEqual(err("failure"));
+expect(isCheckedError(sideEffect)).toBe(true);
 ```
 
 ### isErr

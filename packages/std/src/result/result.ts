@@ -1211,16 +1211,6 @@ class _Result<T, E> implements Resultant<T, E> {
    * @template F - The type of the error.
    * @returns An {@link Option} containing the transposed result.
    */
-  /**
-   * Transposes a `Result<Option<U>, F>` into an `Option<Result<U, F>>`.
-   * If this is `Ok` containing a `Some`, the result is `Some(Ok(value))`.
-   * If this is `Ok` containing a `None`, the result is `None`.
-   * If this is `Err`, the result is `Some(Err(error))`.
-   *
-   * @template U - The type of the value in the inner option.
-   * @template F - The type of the error.
-   * @returns An {@link Option} containing the transposed result.
-   */
   transpose<U, F>(this: Result<Option<U>, F>): Option<Result<U, F>> {
     if (this.isErr()) {
       return some(err(this.error));
