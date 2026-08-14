@@ -7,7 +7,7 @@ sidebar_label: functions
 
 ### ok
 
-- [`ok<E>(): Result<void, E>`](../api/Result/functions/ok.mdx)
+- [`ok<E>(value: void): Result<void, E>`](../api/Result/functions/ok.mdx)
 - [`ok<T, E>(value: T): Result<T, E>`](../api/Result/functions/ok.mdx)
 
 Creates an [`Ok`](../api/Result/type-aliases/Ok.mdx) variant of a `Result` containing
@@ -17,8 +17,8 @@ If called without arguments, narrows the type to `Result<void, E>`, which is use
 when you want to represent a successful operation without a value.
 
 ```ts
-const x: Result<void, string> = ok<string>();
-const y: Result<number, string> = ok<number, string>(42);
+const x: Result<void, string> = ok();
+const y: Result<number, string> = ok(42);
 
 expect(x.isOk()).toBe(true);
 expect(x.unwrap()).toBeUndefined();
@@ -29,7 +29,7 @@ expect(y.unwrap()).toBe(42);
 
 ### err
 
-- [`err<T>(): Result<T, void>`](../api/Result/functions/err.mdx)
+- [`err<T>(error: void): Result<T, void>`](../api/Result/functions/err.mdx)
 - [`err<T, E>(error: E | CheckedError<E>): Result<T, E>`](../api/Result/functions/err.mdx)
 
 Creates an [`Err`](../api/Result/type-aliases/Err.mdx) variant of a `Result` containing the given error.
@@ -42,8 +42,8 @@ indicating a failed outcome for a checked `Result`. This function accepts
 raw error value or `CheckedError`.
 
 ```ts
-const x: Result<number, void> = err<number>();
-const y: Result<number, string> = err<number, string>("failure");
+const x: Result<number, void> = err();
+const y: Result<number, string> = err("failure");
 
 expect(x.isErr()).toBe(true);
 expect(x.unwrapErr().expected).toBeUndefined();
@@ -164,7 +164,27 @@ const pendingRes: PendingResult<string, Error> = runAsync(
 const res: Result<string, Error> = await pendingRes;
 
 if (res.isErr()) {
-  console.log(res.unwrapErr().message); // Fetch failed: ...
+  console.log(res.unwrapErr().expected?.message); // Fetch failed: ...
+}
+```
+
+### fromPromise
+
+[`fromPromise<T, E>(promise: PromiseLike<T>, mkErr: (error: unknown) => Awaited<E>): PendingResult<T, E>`](../api/Result/functions/fromPromise.mdx)
+
+Wraps a promise in a `PendingResult`, mapping rejection through `mkErr`. This
+is the promise-taking counterpart of `runAsync`.
+
+```ts
+const pendingRes = fromPromise(
+  fetch("https://api.example.com/text").then((res) => res.text()),
+  (e) => new Error(`Fetch failed: ${JSON.stringify(e)}`),
+);
+
+const res = await pendingRes;
+
+if (res.isErr()) {
+  console.log(res.unwrapErr().expected?.message);
 }
 ```
 

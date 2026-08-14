@@ -256,7 +256,7 @@ expect(await noneMapped).toStrictEqual(some(1));
 
 ### match
 
-[`match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>>`](../api/Option/interfaces/PendingOption.mdx#match)
+[`match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<InferType<U, F>>>`](../api/Option/interfaces/PendingOption.mdx#match)
 
 Matches the resolved option, returning `f` applied to the value if `Some`,
 or `g` if `None`. Returns a `Promise` with the result.

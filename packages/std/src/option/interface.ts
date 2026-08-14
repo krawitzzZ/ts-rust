@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { Cloneable, Recoverable } from "../types";
+import type { Cloneable, InferType, Recoverable } from "../types";
 import type { Result, Ok, Err, PendingResult } from "../result";
 import type { OptionError } from "./error";
 import type { SomeAwaitedValues, SomeValues } from "./types";
@@ -552,7 +552,7 @@ export interface Optional<T> {
     this: SettledOption<T>,
     f: (x: T) => Awaited<U>,
     g: () => Awaited<F>,
-  ): U | F;
+  ): InferType<U, F>;
 
   /**
    * Converts to a {@link Result}, using `y` as the error value if {@link None}.
@@ -1165,7 +1165,10 @@ export interface PendingOption<T>
    * await expect(y.match(n => n * 2, () => { throw new Error() })).rejects.toThrow(OptionError);
    * ```
    */
-  match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>>;
+  match<U, F = U>(
+    f: (x: T) => U,
+    g: () => F,
+  ): Promise<Awaited<InferType<U, F>>>;
 
   /**
    * Converts to a {@link PendingResult}, using `y` as the error value if this

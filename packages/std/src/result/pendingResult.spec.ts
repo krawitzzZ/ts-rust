@@ -388,6 +388,16 @@ describe("PendingResult", () => {
       expect(awaited.isSome()).toBe(true);
       expect(awaited.unwrap()).toBe(expectedErr.expected);
     });
+
+    it.each([0, "", false, null] as const)(
+      "returns `Some` for falsy expected error %p",
+      async (value) => {
+        const awaited = await pendingErr(value).err();
+
+        expect(awaited.isSome()).toBe(true);
+        expect(awaited.unwrap()).toBe(value);
+      },
+    );
   });
 
   describe("flatten", () => {

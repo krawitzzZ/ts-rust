@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Option, Some, None, PendingOption } from "../option";
-import type { Cloneable, Recoverable } from "../types";
+import type { Cloneable, InferType, Recoverable } from "../types";
 import type { ResultError } from "./error";
 import type { OkAwaitedValues, OkValues } from "./types";
 /* eslint-enable @typescript-eslint/no-unused-vars */
@@ -138,7 +138,7 @@ export interface Resultant<T, E> {
    * expect(z.and(x)).toStrictEqual(err("failure"));
    * ```
    */
-  and<U>(x: Result<U, E>): Result<U, E>;
+  and<U, F = E>(x: Result<U, F>): Result<U, InferType<E, F>>;
 
   /**
    * Applies `f` to the value if this result is {@link Ok} and returns its result,
@@ -153,7 +153,7 @@ export interface Resultant<T, E> {
    * expect(y.andThen(n => ok(n * 2))).toStrictEqual(err("failure"));
    * ```
    */
-  andThen<U>(f: (x: T) => Result<U, E>): Result<U, E>;
+  andThen<U, F = E>(f: (x: T) => Result<U, F>): Result<U, InferType<E, F>>;
 
   /**
    * Inspects this result’s state, returning a tuple indicating success and either the value or error.
@@ -647,7 +647,7 @@ export interface Resultant<T, E> {
     this: SettledResult<T, E>,
     f: (x: T) => Awaited<U>,
     g: (e: CheckedError<E>) => Awaited<F>,
-  ): U | F;
+  ): InferType<U, F>;
 
   /**
    * Converts this result to an {@link Option}, discarding the error if present.
@@ -951,9 +951,9 @@ export interface PendingResult<T, E>
    * expect(await z.and(x)).toStrictEqual(err("failure"));
    * ```
    */
-  and<U>(
-    x: Result<U, E> | PendingResult<U, E> | Promise<Result<U, E>>,
-  ): PendingResult<Awaited<U>, Awaited<E>>;
+  and<U, F = E>(
+    x: Result<U, F> | PendingResult<U, F> | Promise<Result<U, F>>,
+  ): PendingResult<Awaited<U>, Awaited<InferType<E, F>>>;
 
   /**
    * Returns a {@link PendingResult} that resolves to {@link Err} if this result
@@ -972,9 +972,9 @@ export interface PendingResult<T, E>
    * expect(await y.andThen(_ => err("oops"))).toStrictEqual(err("failure"));
    * ```
    */
-  andThen<U>(
-    f: (x: T) => Result<U, E> | PendingResult<U, E> | Promise<Result<U, E>>,
-  ): PendingResult<Awaited<U>, Awaited<E>>;
+  andThen<U, F = E>(
+    f: (x: T) => Result<U, F> | PendingResult<U, F> | Promise<Result<U, F>>,
+  ): PendingResult<Awaited<U>, Awaited<InferType<E, F>>>;
 
   /**
    * Inspects this {@link PendingResult}’s state, returning a promise of
@@ -996,7 +996,9 @@ export interface PendingResult<T, E>
    * expect(await y.check()).toEqual([false, expect.objectContaining({ expected: "failure" })]);
    * ```
    */
-  check(): Promise<readonly [boolean, Awaited<T> | CheckedError<Awaited<E>>]>;
+  check(): Promise<
+    readonly [true, Awaited<T>] | readonly [false, CheckedError<Awaited<E>>]
+  >;
 
   /**
    * Combines this {@link PendingResult} with other {@link Result} or `PendingResult`
@@ -1267,7 +1269,7 @@ export interface PendingResult<T, E>
   match<U, F = U>(
     f: (x: T) => U,
     g: (e: CheckedError<E>) => F,
-  ): Promise<Awaited<U | F>>;
+  ): Promise<Awaited<InferType<U, F>>>;
 
   /**
    * Returns this pending result if it resolves to an {@link Ok},
@@ -1392,10 +1394,7 @@ export interface PendingResult<T, E>
    * ```
    */
   try(): Promise<
-    readonly [
-      boolean,
-      CheckedError<Awaited<E>> | undefined,
-      Awaited<T> | undefined,
-    ]
+    | readonly [true, undefined, Awaited<T>]
+    | readonly [false, CheckedError<Awaited<E>>, undefined]
   >;
 }

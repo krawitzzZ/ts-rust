@@ -359,6 +359,16 @@ describe("Result", () => {
       expect(result.isSome()).toBe(true);
       expect(result.unwrap()).toBe(expectedErr.expected);
     });
+
+    it.each([0, "", false, null] as const)(
+      "returns `Some` for falsy expected error %p",
+      (value) => {
+        const result = err(value).err();
+
+        expect(result.isSome()).toBe(true);
+        expect(result.unwrap()).toBe(value);
+      },
+    );
   });
 
   describe("expect", () => {

@@ -97,12 +97,14 @@ if (error.isUnexpected()) {
 
 - [`ok(value: T)`](../api/Result/functions/ok.mdx) - creates `Ok<T>` variant.
 - [`err(err: E)`](../api/Result/functions/err.mdx) - creates `Err<E>` variant.
+- [`fromPromise(promise, mkErr)`](../api/Result/functions/fromPromise.mdx) -
+  wraps a promise in a `PendingResult`, mapping rejection through `mkErr`.
 
 ## Methods
 
 ### and
 
-[`and<U>(x: Result<U, E>): Result<U, E>`](../api/Result/interfaces/Resultant.mdx#and)
+[`and<U, F = E>(x: Result<U, F>): Result<U, InferType<E, F>>`](../api/Result/interfaces/Resultant.mdx#and)
 
 Returns `x` if this result is `Ok`, otherwise returns the `Err` value of self.
 
@@ -118,7 +120,7 @@ expect(z.and(x)).toStrictEqual(err("failure"));
 
 ### andThen
 
-[`andThen<U>(f: (x: T) => Result<U, E>): Result<U, E>`](../api/Result/interfaces/Resultant.mdx#andthen)
+[`andThen<U, F = E>(f: (x: T) => Result<U, F>): Result<U, InferType<E, F>>`](../api/Result/interfaces/Resultant.mdx#andthen)
 
 Applies `f` to the value if this result is `Ok` and returns its result,
 otherwise returns the `Err` value of self.
@@ -133,7 +135,7 @@ expect(y.andThen((n) => ok(n * 2))).toStrictEqual(err("failure"));
 
 ### check
 
-[`check(this: SettledResult<T, E>): this extends Ok<T, E> ? [true, T] : [false, CheckedError<E>]`](../api/Result/interfaces/Resultant.mdx#check)
+[`check(this: SettledResult<T, E>): this extends Ok<T, E> ? readonly [true, T] : readonly [false, CheckedError<E>]`](../api/Result/interfaces/Resultant.mdx#check)
 
 Inspects the `Result`’s state, returning a tuple indicating success and either a value or an error.
 
@@ -597,7 +599,7 @@ expect(y.mapOrElse(() => 0, n => n * 2)).toBe(0);
 
 ### match
 
-[`match<U, F = U>(this: SettledResult<T, E>, f: (x: T) => Awaited<U>, g: (e: CheckedError<E>) => Awaited<F>): U | F`](../api/Result/interfaces/Resultant.mdx#match)
+[`match<U, F = U>(this: SettledResult<T, E>, f: (x: T) => Awaited<U>, g: (e: CheckedError<E>) => Awaited<F>): InferType<U, F>`](../api/Result/interfaces/Resultant.mdx#match)
 
 Matches this result, returning `f` applied to the value if `Ok`, or `g` applied
 to the [`CheckedError`](../errors/checked-error.md) if `Err`.
@@ -806,7 +808,7 @@ expect(z.transpose()).toStrictEqual(some(err("error")));
 
 ### try
 
-[`try(this: SettledResult<T, E>): this extends Ok<T, E> ? [true, undefined, T] : [false, CheckedError<E>, undefined]`](../api/Result/interfaces/Resultant.mdx#try)
+[`try(this: SettledResult<T, E>): this extends Ok<T, E> ? readonly [true, undefined, T] : readonly [false, CheckedError<E>, undefined]`](../api/Result/interfaces/Resultant.mdx#try)
 
 Extracts this result’s state, returning a tuple with a success flag, error, and value.
 

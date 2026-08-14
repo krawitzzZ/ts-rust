@@ -1,4 +1,10 @@
-export type { Primitive, Clone, Cloneable, Recoverable } from "./types";
+export type {
+  Primitive,
+  Clone,
+  Cloneable,
+  Recoverable,
+  InferType,
+} from "./types";
 export type {
   OptionError,
   PendingOption,
@@ -33,6 +39,8 @@ export {
   pendingNone,
   some,
   none,
+  fromNullable,
+  fromUndefined,
 } from "./option";
 export {
   ResultErrorKind,
@@ -47,6 +55,7 @@ export {
   err,
   run,
   runAsync,
+  fromPromise,
   runResult,
   runPendingResult,
 } from "./result";

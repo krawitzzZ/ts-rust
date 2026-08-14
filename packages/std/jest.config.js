@@ -18,6 +18,7 @@ module.exports = {
     "!src/**/*.d.ts",
     "!src/**/index.ts",
     "!src/**/sandbox.dev.ts",
+    "!src/**/*.typetest.ts",
     "!src/**/*.spec.ts",
     "!src/**/__tests__/**",
     "!src/**/__mocks__/**",

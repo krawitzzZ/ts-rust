@@ -7,6 +7,8 @@ import {
   pendingOption,
   pendingSome,
   some,
+  fromNullable,
+  fromUndefined,
 } from "./index";
 
 describe("Option utils", () => {
@@ -43,6 +45,38 @@ describe("Option utils", () => {
 
       expect(option.isNone()).toBe(true);
       expect(() => option.unwrap()).toThrow(OptionError);
+    });
+  });
+
+  describe("fromNullable", () => {
+    it.each([0, "", false, NaN] as const)(
+      "returns `Some` for present value %p",
+      (value) => {
+        const option = fromNullable(value);
+
+        expect(option.isSome()).toBe(true);
+        expect(option.unwrap()).toBe(value);
+      },
+    );
+
+    it.each([null, undefined] as const)("returns `None` for %p", (value) => {
+      expect(fromNullable(value).isNone()).toBe(true);
+    });
+  });
+
+  describe("fromUndefined", () => {
+    it.each([0, "", false, NaN, null] as const)(
+      "returns `Some` for defined value %p",
+      (value) => {
+        const option = fromUndefined(value);
+
+        expect(option.isSome()).toBe(true);
+        expect(option.unwrap()).toBe(value);
+      },
+    );
+
+    it("returns `None` for undefined", () => {
+      expect(fromUndefined(undefined).isNone()).toBe(true);
     });
   });
 

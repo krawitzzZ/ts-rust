@@ -27,4 +27,6 @@ export {
   pendingNone,
   some,
   none,
+  fromNullable,
+  fromUndefined,
 } from "./option";

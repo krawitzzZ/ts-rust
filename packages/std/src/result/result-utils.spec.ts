@@ -12,6 +12,7 @@ import {
   pendingResult,
   run,
   runAsync,
+  fromPromise,
   runPendingResult,
   runResult,
 } from "./index";
@@ -306,6 +307,34 @@ describe("Result utils", () => {
       expect(onError).toHaveBeenCalledTimes(1);
     });
 
+    it("maps a rejected promise through mkErr", async () => {
+      const action = jest.fn(() => Promise.reject(new Error("oi")));
+      const onError = jest.fn(() => runError);
+      const res = await runAsync(action, onError);
+
+      expect(res.isOk()).toBe(false);
+      expect(res.unwrapErr().expected).toBe(runError);
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it("maps a rejected promise through mkErr when mkErr throws", async () => {
+      const action = jest.fn(() => Promise.reject(new Error("oi")));
+      const onError = jest.fn(() => {
+        throw new Error("oops");
+      });
+      const res = await runAsync(action, onError);
+
+      expect(res.isOk()).toBe(false);
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+      expect(res.unwrapErr().unexpected?.kind).toBe(
+        ResultErrorKind.PredicateException,
+      );
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+
     it("does not throw and returns unexpected err if mkErr function throws", async () => {
       const action = jest.fn(() => {
         throw new Error("oi");
@@ -321,6 +350,43 @@ describe("Result utils", () => {
         ResultErrorKind.PredicateException,
       );
       expect(action).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("fromPromise", () => {
+    const runError = new Error("fromPromise error");
+
+    it("returns ok when the promise fulfills", async () => {
+      const onError = jest.fn(() => runError);
+      const res = await fromPromise(Promise.resolve(1), onError);
+
+      expect(res.isOk()).toBe(true);
+      expect(res.unwrap()).toBe(1);
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("maps rejection through mkErr", async () => {
+      const onError = jest.fn(() => runError);
+      const res = await fromPromise(Promise.reject(new Error("oi")), onError);
+
+      expect(res.isOk()).toBe(false);
+      expect(res.unwrapErr().expected).toBe(runError);
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it("returns unexpected err if mkErr throws on rejection", async () => {
+      const onError = jest.fn(() => {
+        throw new Error("oops");
+      });
+      const res = await fromPromise(Promise.reject(new Error("oi")), onError);
+
+      expect(res.isOk()).toBe(false);
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+      expect(res.unwrapErr().unexpected?.kind).toBe(
+        ResultErrorKind.PredicateException,
+      );
       expect(onError).toHaveBeenCalledTimes(1);
     });
   });

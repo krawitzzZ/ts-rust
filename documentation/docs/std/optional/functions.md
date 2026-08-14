@@ -7,7 +7,7 @@ sidebar_label: functions
 
 ### some
 
-[`some<T>(value: T): Option<T>`](../api/Option/functions/some.mdx)
+[`some<T>(value: T): Some<T>`](../api/Option/functions/some.mdx)
 
 Creates a [`Some`](../api/Option/type-aliases/Some.mdx) variant of an `Option`
 containing the given value.
@@ -24,13 +24,49 @@ expect(x.expect("Not 42")).toBe(42);
 [`none<T>(): Option<T>`](../api/Option/functions/none.mdx)
 
 Creates a [`None`](../api/Option/type-aliases/None.mdx) variant of an `Option`,
-representing the absence of a value.
+representing the absence of a value. The type argument is optional when the
+`Option` type is already known.
 
 ```ts
-const x = none<number>();
+const x: Option<number> = none();
 
 expect(x.isNone()).toBe(true);
 expect(() => x.expect("x is `None`")).toThrow("x is `None`");
+```
+
+### fromNullable
+
+[`fromNullable<T>(value: T): Option<NonNullable<T>>`](../api/Option/functions/fromNullable.mdx)
+
+Creates a `Some` unless the value is `null` or `undefined`.
+
+```ts
+const x = fromNullable(42);
+const y = fromNullable<number | null>(null);
+
+expect(x).toStrictEqual(some(42));
+expect(y.isNone()).toBe(true);
+```
+
+### fromUndefined
+
+[`fromUndefined<T>(value: T | undefined): Option<Exclude<T, undefined>>`](../api/Option/functions/fromUndefined.mdx)
+
+Creates a `Some` unless the value is `undefined`. Unlike `fromNullable`, `null`
+is treated as a present value.
+
+:::note
+`undefined` is a valid argument without forcing `T` to `undefined`. When control
+flow has already narrowed a value to `undefined`, pass an explicit type argument
+(`fromUndefined<string>(x)`).
+:::
+
+```ts
+const x = fromUndefined<string>(undefined);
+const y = fromUndefined<number | null>(null);
+
+expect(x.isNone()).toBe(true);
+expect(y).toStrictEqual(some(null));
 ```
 
 ### pendingSome

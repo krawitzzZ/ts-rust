@@ -1,12 +1,12 @@
 /**
  * The `Types` module defines common utility types used throughout
  * the `@ts-rust/std` package. It exports foundational types such as `Primitive`,
- * `Cloneable`, `Clone`, `Recoverable`, and `MaybePromise`, which provide building
- * blocks for type-safe programming in TypeScript. Inspired by Rust's type system,
- * these types enable better handling of cloning, error recovery, and
- * synchronous/asynchronous value interoperability. Use this module to leverage
- * these utility types in your TypeScript applications for more robust and
- * predictable code.
+ * `Cloneable`, `Clone`, `Recoverable`, `MaybePromise`, and `InferType`, which
+ * provide building blocks for type-safe programming in TypeScript. Inspired by
+ * Rust's type system, these types enable better handling of cloning, error
+ * recovery, type inference, and synchronous/asynchronous value interoperability.
+ * Use this module to leverage these utility types in your TypeScript applications
+ * for more robust and predictable code.
  * @module Types
  */
 
@@ -188,3 +188,15 @@ export type Primitive =
  * or eventually resolved from a Promise.
  */
 export type MaybePromise<T> = T | Promise<T>;
+
+/**
+ * Merges two type parameters, treating `unknown` as an unbound slot.
+ *
+ * When `Left` is `unknown` (e.g. the open side of an unannotated factory),
+ * returns `Right` alone. Otherwise returns `Left | Right`. Used when chaining
+ * result operations so a concrete type from a callback is not swallowed
+ * by `unknown | T` collapsing to `unknown`.
+ */
+export type InferType<Left, Right> = unknown extends Left
+  ? Right
+  : Left | Right;

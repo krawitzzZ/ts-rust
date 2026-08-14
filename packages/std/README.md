@@ -44,8 +44,8 @@ For detailed documentation, visit [krawitzzz.github.io/ts-rust](https://krawitzz
 
 ## Key Exports
 
-- `Option<T>`, `some`, `none`: For handling optional values.
-- `Result<T, E>`, `ok`, `err`: For handling success/error scenarios.
+- `Option<T>`, `some`, `none`, `fromNullable`, `fromUndefined`: For handling optional values.
+- `Result<T, E>`, `ok`, `err`, `run`, `runAsync`, `fromPromise`: For handling success/error scenarios.
 - `PendingOption<T>`, `pendingOption`, `pendingSome`, `pendingNone`: Async optional values.
 - `PendingResult<T, E>`, `pendingResult`, `pendingOk`, `pendingErr`: Async success/error handling.
 

@@ -33,6 +33,7 @@ export {
   err,
   run,
   runAsync,
+  fromPromise,
   runResult,
   runPendingResult,
 } from "./result";

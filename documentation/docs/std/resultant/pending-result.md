@@ -21,12 +21,14 @@ creates a `PendingResult` that resolves to `Err<E>` variant.
 creates a `PendingResult` that resolves to `Ok<T>` variant.
 - [`pendingResult(resultOrFactory: | Result<T, E> | Promise<Result<T, E>> | (() => Result<T, E> | Promise<Result<T, E>>))`](../api/Result/functions/pendingResult.mdx) -
 creates a `PendingResult` that resolves to the provided [`Result`](./result.md).
+- [`fromPromise(promise, mkErr)`](../api/Result/functions/fromPromise.mdx) -
+wraps a promise in a `PendingResult`, mapping rejection through `mkErr`.
 
 ## Methods
 
 ### and
 
-[`and<U>(x: Result<U, E> | PendingResult<U, E> | Promise<Result<U, E>>): PendingResult<Awaited<U>, Awaited<E>>`](../api/Result/interfaces/PendingResult.mdx#and)
+[`and<U, F = E>(x: Result<U, F> | PendingResult<U, F> | Promise<Result<U, F>>): PendingResult<Awaited<U>, Awaited<InferType<E, F>>>`](../api/Result/interfaces/PendingResult.mdx#and)
 
 Returns a `PendingResult` that resolves to `Err` if this result resolves to `Err`,
 otherwise returns a `PendingResult` with `x`.
@@ -49,7 +51,7 @@ expect(await z.and(x)).toStrictEqual(err("failure"));
 
 ### andThen
 
-[`andThen<U>(f: (x: T) => Result<U, E> | PendingResult<U, E> | Promise<Result<U, E>>): PendingResult<Awaited<U>, Awaited<E>>`](../api/Result/interfaces/PendingResult.mdx#andthen)
+[`andThen<U, F = E>(f: (x: T) => Result<U, F> | PendingResult<U, F> | Promise<Result<U, F>>): PendingResult<Awaited<U>, Awaited<InferType<E, F>>>`](../api/Result/interfaces/PendingResult.mdx#andthen)
 
 Returns a `PendingResult` that resolves to `Err` if this result resolves to `Err`,
 otherwise applies `f` to the resolved `Ok` value and returns its result.
@@ -67,7 +69,7 @@ expect(await y.andThen((_) => err("oops"))).toStrictEqual(err("failure"));
 
 ### check
 
-[`check(): Promise<[boolean, Awaited<T> | CheckedError<Awaited<E>>]>`](../api/Result/interfaces/PendingResult.mdx#check)
+[`check(): Promise<readonly [true, Awaited<T>] | readonly [false, CheckedError<Awaited<E>>]>`](../api/Result/interfaces/PendingResult.mdx#check)
 
 Inspects this `PendingResult`’s state, returning a promise of
 a tuple with a success flag and either the value or error.
@@ -328,9 +330,10 @@ expect((await y.mapErr(() => { throw new Error("boom") })).unwrapErr().unexpecte
 
 ### match
 
-[`match<U, F = U>(f: (x: T) => U, g: (e: CheckedError<E>) => F): Promise<Awaited<U | F>>`](../api/Result/interfaces/PendingResult.mdx#match)
+[`match<U, F = U>(f: (x: T) => U, g: (e: CheckedError<E>) => F): Promise<Awaited<InferType<U, F>>>`](../api/Result/interfaces/PendingResult.mdx#match)
 
-Returns this pending result if it resolves to an `Ok`, otherwise returns `x`.
+Matches this pending result, returning a promise of `f` applied to the value if
+it resolves to an `Ok`, or `g` applied to the error if it resolves to an `Err`.
 
 This is the asynchronous version of [`match`](./result.md#match).
 
@@ -450,7 +453,7 @@ expect(await z.transpose()).toStrictEqual(some(err("error")));
 
 ### try
 
-[`try(): Promise<[boolean, CheckedError<Awaited<E>> | undefined, Awaited<T> | undefined]>`](../api/Result/interfaces/PendingResult.mdx#try)
+[`try(): Promise<readonly [true, undefined, Awaited<T>] | readonly [false, CheckedError<Awaited<E>>, undefined]>`](../api/Result/interfaces/PendingResult.mdx#try)
 
 Extracts this `PendingResult`’s state, returning a promise of a tuple with a success flag, error, and value.
 

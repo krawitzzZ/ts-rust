@@ -49,6 +49,24 @@ console.log(someValue.isSome()); // true
 console.log(noValue.isNone()); // true
 ```
 
+### fromNullable and fromUndefined
+
+- `fromNullable<T>(value: T)`: Creates `Some` unless the value is `null` or
+  `undefined`.
+- `fromUndefined<T>(value: T | undefined)`: Creates `Some` unless the value is
+  `undefined`. `null` is treated as a present value. When control flow has
+  already narrowed a value to `undefined`, pass an explicit type argument
+  (`fromUndefined<string>(x)`).
+
+```typescript
+import { fromNullable, fromUndefined } from "@ts-rust/std";
+
+fromNullable(42); // Some(42)
+fromNullable(null); // None
+fromUndefined(undefined); // None
+fromUndefined(null); // Some(null)
+```
+
 ### pendingSome and pendingNone
 
 - `pendingSome<T>(value: T | Promise<T>)`: Creates a `PendingOption<T>` that

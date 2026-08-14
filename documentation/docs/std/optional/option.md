@@ -23,6 +23,10 @@ types are very common, as they have a number of uses:
 
 - [`none()`](../api/Option/functions/none.mdx) - creates `None` variant.
 - [`some<T>(value: T)`](../api/Option/functions/some.mdx) - creates `Some<T>` variant.
+- [`fromNullable<T>(value: T)`](../api/Option/functions/fromNullable.mdx) -
+  creates `Some` unless the value is `null` or `undefined`.
+- [`fromUndefined<T>(value: T | undefined)`](../api/Option/functions/fromUndefined.mdx) -
+  creates `Some` unless the value is `undefined`. `null` is treated as present.
 
 ## Methods
 
@@ -505,7 +509,7 @@ expect(y.mapOrElse(() => 0, n => n * 2)).toBe(0);
 
 ### match
 
-[`match<U, F = U>(this: SettledOption<T>, f: (x: T) => Awaited<U>, g: () => Awaited<F>): U | F`](../api/Option/interfaces/Optional.mdx#match)
+[`match<U, F = U>(this: SettledOption<T>, f: (x: T) => Awaited<U>, g: () => Awaited<F>): InferType<U, F>`](../api/Option/interfaces/Optional.mdx#match)
 
 Matches the option, returning `f` applied to the value if `Some`, or `g` if `None`.
 

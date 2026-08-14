@@ -8,7 +8,7 @@ import {
   pendingResult,
   ResultErrorKind,
 } from "../result";
-import type { Cloneable, MaybePromise } from "../types";
+import type { Cloneable, InferType, MaybePromise } from "../types";
 import { isPrimitive } from "../types.utils";
 import { unexpectedError } from "../result/error";
 import { OptionError, OptionErrorKind } from "./error";
@@ -63,6 +63,69 @@ export function some<T>(value: T): Option<T> {
  */
 export function none<T>(): Option<T> {
   return _Option.none();
+}
+
+/**
+ * Creates an {@link Option} from a value that may be `null` or `undefined`.
+ *
+ * Returns {@link Some} if the value is present, or {@link None} if it is
+ * `null` or `undefined`.
+ *
+ * @template T - The type of the input value.
+ * @param value - A value that may be `null` or `undefined`.
+ * @returns {@link Some} with the non-nullable value, or {@link None}.
+ *
+ * @example
+ * ```ts
+ * const x = fromNullable(42);
+ * const y = fromNullable<number | null>(null);
+ * const z = fromNullable<string | undefined>(undefined);
+ *
+ * expect(x).toStrictEqual(some(42));
+ * expect(y.isNone()).toBe(true);
+ * expect(z.isNone()).toBe(true);
+ * ```
+ */
+export function fromNullable<T>(value: T): Option<NonNullable<T>> {
+  if (value === null || value === undefined) {
+    return none();
+  }
+
+  return some(value);
+}
+
+/**
+ * Creates an {@link Option} from a value that may be `undefined`.
+ *
+ * Returns {@link Some} if the value is defined, or {@link None} if it is
+ * `undefined`. Unlike {@link fromNullable}, `null` is treated as a present
+ * value.
+ *
+ * @template T - The type of the defined value. `undefined` on the argument
+ *   does not become `T`; pass an explicit `T` (or `T | undefined`) when the
+ *   value has been narrowed to `undefined`.
+ * @param value - A value that may be `undefined`.
+ * @returns {@link Some} with the defined value, or {@link None}.
+ *
+ * @example
+ * ```ts
+ * const x = fromUndefined(42);
+ * const y = fromUndefined<string>(undefined);
+ * const z = fromUndefined<number | null>(null);
+ *
+ * expect(x).toStrictEqual(some(42));
+ * expect(y.isNone()).toBe(true);
+ * expect(z).toStrictEqual(some(null));
+ * ```
+ */
+export function fromUndefined<T>(
+  value: T | undefined,
+): Option<Exclude<T, undefined>> {
+  if (value === undefined) {
+    return none();
+  }
+
+  return some(value as Exclude<T, undefined>);
 }
 
 /**
@@ -732,9 +795,9 @@ class _Option<T> implements Optional<T> {
     this: SettledOption<T>,
     f: (x: T) => Awaited<U>,
     g: () => Awaited<F>,
-  ): U | F {
+  ): InferType<U, F> {
     try {
-      return this.isNone() ? g() : f(this.value);
+      return (this.isNone() ? g() : f(this.value)) as InferType<U, F>;
     } catch (e) {
       throw new OptionError(
         "`match`: one of the predicates threw an exception",
@@ -753,7 +816,10 @@ class _Option<T> implements Optional<T> {
    * @returns An {@link Ok} with the value if `Some`, or an {@link Err} with `y`.
    */
   okOr<E>(y: Awaited<E>): Result<T, E> {
-    return isSomething(this.#value) ? ok(this.#value) : err(y);
+    return (isSomething(this.#value) ? ok(this.#value) : err(y)) as Result<
+      T,
+      E
+    >;
   }
 
   /**
@@ -766,9 +832,11 @@ class _Option<T> implements Optional<T> {
    */
   okOrElse<E>(mkErr: () => Awaited<E>): Result<T, E> {
     try {
-      return isSomething(this.#value) ? ok(this.#value) : err(mkErr());
+      return (
+        isSomething(this.#value) ? ok(this.#value) : err(mkErr())
+      ) as Result<T, E>;
     } catch (e) {
-      return err(
+      return err<T, E>(
         unexpectedError<E>(
           "`Option.okOrElse`: callback `mkErr` threw an exception",
           ResultErrorKind.FromOptionException,
@@ -1200,16 +1268,13 @@ class _PendingOption<T> implements PendingOption<T> {
     return pendingOption(settleOption(this.#promise.then(f)));
   }
 
-  match<U, F = U>(f: (x: T) => U, g: () => F): Promise<Awaited<U | F>> {
-    return Promise.resolve(
-      this.#promise.then((option) => {
-        if (option.isNone()) {
-          return g();
-        }
-
-        return f(option.value);
-      }),
-    );
+  match<U, F = U>(
+    f: (x: T) => U,
+    g: () => F,
+  ): Promise<Awaited<InferType<U, F>>> {
+    return this.#promise.then((option) =>
+      toPromise(option.isNone() ? g() : f(option.value)),
+    ) as Promise<Awaited<InferType<U, F>>>;
   }
 
   okOr<E>(y: Awaited<E>): PendingResult<T, E> {
@@ -1218,9 +1283,9 @@ class _PendingOption<T> implements PendingOption<T> {
 
   okOrElse<E>(mkErr: () => MaybePromise<E>): PendingResult<T, E> {
     return pendingResult(
-      this.#promise.then(async (option) => {
+      this.#promise.then(async (option): Promise<Result<T, E>> => {
         if (option.isNone()) {
-          return err(await mkErr());
+          return err(await mkErr()) as Result<T, E>;
         }
 
         return ok(option.value);

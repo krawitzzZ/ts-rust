@@ -109,8 +109,10 @@ console.log(await pending); // Ok(42)
   in a `Result`. If the action throws, the error is passed to `mkErr` to create
   an `Err`.
 - `runAsync(action, mkErr)`: Executes an asynchronous `action` returning a
-  `Promise` and wraps the outcome in a `PendingResult`. If the action throws,
-  the error is passed to `mkErr` to create an `Err`.
+  `Promise` and wraps the outcome in a `PendingResult`. If the action throws
+  or the promise rejects, the error is passed to `mkErr` to create an `Err`.
+- `fromPromise(promise, mkErr)`: Same as `runAsync`, but takes an already
+  created promise instead of a factory.
 
 > **Note**: If `mkErr` throws, the method returns an `Err` with an
 > `UnexpectedError`.
