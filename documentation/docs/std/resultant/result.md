@@ -433,7 +433,7 @@ expect(y.isOkAnd((_) => true)).toBe(false);
 
 ### [Symbol.iterator]
 
-[`[Symbol.iterator](): Generator<Err<never, E>, T>`](../api/Result/interfaces/Resultant.mdx#symboliterator)
+[`[Symbol.iterator](): Generator<Err<never, E>, T>`](../api/Result/interfaces/Resultant.mdx#iterator)
 
 Makes this result usable with `yield*` inside a generator passed to
 [`runGenerator`](./functions.md#rungenerator) or

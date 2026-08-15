@@ -213,7 +213,7 @@ expect(isCheckedError(sideEffect)).toBe(true);
 
 ### [Symbol.asyncIterator]
 
-[`[Symbol.asyncIterator](): AsyncGenerator<Err<never, E>, T>`](../api/Result/interfaces/PendingResult.mdx#symbolasynciterator)
+[`[Symbol.asyncIterator](): AsyncGenerator<Err<never, E>, T>`](../api/Result/interfaces/PendingResult.mdx#asynciterator)
 
 Makes this pending result usable with `yield*` inside an async generator
 passed to [`runAsyncGenerator`](./functions.md#runasyncgenerator), emulating
