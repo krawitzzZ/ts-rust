@@ -580,11 +580,180 @@ const _optMapAllExact: Eq<typeof _optMapAll, Option<number>> = true;
 const _flat = ok(ok(1)).flatten();
 const _flatExact: Eq<typeof _flat, Result<number, unknown>> = true;
 
+const _flatInnerErr = ok(ok<number, string>(1)).flatten();
+const _flatInnerErrExact: Eq<
+  typeof _flatInnerErr,
+  Result<number, string>
+> = true;
+
+const _flatNested = ok(ok(ok(1))).flatten();
+const _flatNestedExact: Eq<
+  typeof _flatNested,
+  Result<Result<number, unknown>, unknown>
+> = true;
+
+const _flatNestedTwice = _flatNested.flatten();
+const _flatNestedTwiceExact: Eq<
+  typeof _flatNestedTwice,
+  Result<number, unknown>
+> = true;
+
+const _flatDeep = ok(ok(ok(ok(1))))
+  .flatten()
+  .flatten()
+  .flatten();
+const _flatDeepExact: Eq<typeof _flatDeep, Result<number, unknown>> = true;
+
+const _flatDeepTyped = ok<Result<Result<number, string>, string>, string>(
+  ok<Result<number, string>, string>(ok<number, string>(1)),
+);
+const _flatDeepTypedOnce = _flatDeepTyped.flatten();
+const _flatDeepTypedOnceExact: Eq<
+  typeof _flatDeepTypedOnce,
+  Result<Result<number, string>, string>
+> = true;
+const _flatDeepTypedTwice = _flatDeepTypedOnce.flatten();
+const _flatDeepTypedTwiceExact: Eq<
+  typeof _flatDeepTypedTwice,
+  Result<number, string>
+> = true;
+
+const _flatErr = err<Result<number, string>, string>("e").flatten();
+const _flatErrExact: Eq<typeof _flatErr, Result<number, string>> = true;
+
+const _pFlat = pendingOk(ok(1)).flatten();
+const _pFlatExact: Eq<typeof _pFlat, PendingResult<number, unknown>> = true;
+
+const _pFlatInnerErr = pendingOk(ok<number, string>(1)).flatten();
+const _pFlatInnerErrExact: Eq<
+  typeof _pFlatInnerErr,
+  PendingResult<number, string>
+> = true;
+
+const _pFlatFromResult = ok(ok(1)).toPending().flatten();
+const _pFlatFromResultExact: Eq<
+  typeof _pFlatFromResult,
+  PendingResult<number, unknown>
+> = true;
+
+const _pFlatPending = pendingOk(pendingOk(1)).flatten();
+const _pFlatPendingExact: Eq<
+  typeof _pFlatPending,
+  PendingResult<number, unknown>
+> = true;
+
+const _pFlatNested = pendingOk(ok(ok(1))).flatten();
+const _pFlatNestedExact: Eq<
+  typeof _pFlatNested,
+  PendingResult<Result<number, unknown>, unknown>
+> = true;
+const _pFlatNestedTwice = _pFlatNested.flatten();
+const _pFlatNestedTwiceExact: Eq<
+  typeof _pFlatNestedTwice,
+  PendingResult<number, unknown>
+> = true;
+
+const _pFlatDeep = pendingOk(pendingOk(pendingOk(1)));
+const _pFlatDeepOnce = _pFlatDeep.flatten();
+const _pFlatDeepOnceExact: Eq<
+  typeof _pFlatDeepOnce,
+  PendingResult<Result<number, unknown>, unknown>
+> = true;
+const _pFlatDeepTwice = _pFlatDeepOnce.flatten();
+const _pFlatDeepTwiceExact: Eq<
+  typeof _pFlatDeepTwice,
+  PendingResult<number, unknown>
+> = true;
+
+const _pFlatDeepTyped = pendingOk<
+  Result<Result<number, string>, string>,
+  string
+>(ok<Result<number, string>, string>(ok<number, string>(1)));
+const _pFlatDeepTypedOnce = _pFlatDeepTyped.flatten();
+const _pFlatDeepTypedOnceExact: Eq<
+  typeof _pFlatDeepTypedOnce,
+  PendingResult<Result<number, string>, string>
+> = true;
+const _pFlatDeepTypedTwice = _pFlatDeepTypedOnce.flatten();
+const _pFlatDeepTypedTwiceExact: Eq<
+  typeof _pFlatDeepTypedTwice,
+  PendingResult<number, string>
+> = true;
+
+const _pFlatPromiseInner = pendingResult(
+  ok(Promise.resolve(ok<number, string>(1))),
+).flatten();
+const _pFlatPromiseInnerExact: Eq<
+  typeof _pFlatPromiseInner,
+  PendingResult<number, string>
+> = true;
+
+const _pFlatErr = pendingErr<Result<number, string>, string>("e").flatten();
+const _pFlatErrExact: Eq<
+  typeof _pFlatErr,
+  PendingResult<number, string>
+> = true;
+
 const _optFlat = some(some(1)).flatten();
 const _optFlatExact: Eq<typeof _optFlat, Option<number>> = true;
 
 const _optFlatNone = some(none<number>()).flatten();
 const _optFlatNoneExact: Eq<typeof _optFlatNone, Option<number>> = true;
+
+const _optFlatNested = some(some(some(1))).flatten();
+const _optFlatNestedExact: Eq<
+  typeof _optFlatNested,
+  Option<Option<number>>
+> = true;
+const _optFlatNestedTwice = _optFlatNested.flatten();
+const _optFlatNestedTwiceExact: Eq<
+  typeof _optFlatNestedTwice,
+  Option<number>
+> = true;
+
+const _optFlatDeep = some(some(some(some(1))))
+  .flatten()
+  .flatten()
+  .flatten();
+const _optFlatDeepExact: Eq<typeof _optFlatDeep, Option<number>> = true;
+
+const _pOptFlat = pendingSome(some(1)).flatten();
+const _pOptFlatExact: Eq<typeof _pOptFlat, PendingOption<number>> = true;
+
+const _pOptFlatFromOption = some(some(1)).toPending().flatten();
+const _pOptFlatFromOptionExact: Eq<
+  typeof _pOptFlatFromOption,
+  PendingOption<number>
+> = true;
+
+const _pOptFlatPending = pendingSome(pendingSome(1)).flatten();
+const _pOptFlatPendingExact: Eq<
+  typeof _pOptFlatPending,
+  PendingOption<number>
+> = true;
+
+const _pOptFlatNested = pendingSome(some(some(1))).flatten();
+const _pOptFlatNestedExact: Eq<
+  typeof _pOptFlatNested,
+  PendingOption<Option<number>>
+> = true;
+const _pOptFlatNestedTwice = _pOptFlatNested.flatten();
+const _pOptFlatNestedTwiceExact: Eq<
+  typeof _pOptFlatNestedTwice,
+  PendingOption<number>
+> = true;
+
+const _pOptFlatDeep = pendingSome(pendingSome(pendingSome(1)));
+const _pOptFlatDeepOnce = _pOptFlatDeep.flatten();
+const _pOptFlatDeepOnceExact: Eq<
+  typeof _pOptFlatDeepOnce,
+  PendingOption<Option<number>>
+> = true;
+const _pOptFlatDeepTwice = _pOptFlatDeepOnce.flatten();
+const _pOptFlatDeepTwiceExact: Eq<
+  typeof _pOptFlatDeepTwice,
+  PendingOption<number>
+> = true;
 
 const _transposed = ok(some(1)).transpose();
 const _transposedExact: Eq<
@@ -914,6 +1083,30 @@ const _rejectSyncOptAndThenPromise = (): void => {
 const _rejectNonCloneable = (): void => {
   // @ts-expect-error clone requires Cloneable value
   const _fail = ok({ a: 1 }).clone();
+  void _fail;
+};
+
+const _rejectFlatOk = (): void => {
+  // @ts-expect-error flatten requires nested Result
+  const _fail = ok(1).flatten();
+  void _fail;
+};
+
+const _rejectFlatPendingOk = (): void => {
+  // @ts-expect-error flatten requires nested Result
+  const _fail = pendingOk(1).flatten();
+  void _fail;
+};
+
+const _rejectFlatSome = (): void => {
+  // @ts-expect-error flatten requires nested Option
+  const _fail = some(1).flatten();
+  void _fail;
+};
+
+const _rejectFlatPendingSome = (): void => {
+  // @ts-expect-error flatten requires nested Option
+  const _fail = pendingSome(1).flatten();
   void _fail;
 };
 

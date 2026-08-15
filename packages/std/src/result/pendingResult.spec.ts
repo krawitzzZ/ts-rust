@@ -4,6 +4,7 @@ import {
   Result,
   err,
   isPendingResult,
+  isResult,
   ok,
   pendingResult,
   ResultErrorKind,
@@ -465,6 +466,40 @@ describe("PendingResult", () => {
         }
       },
     );
+
+    it("flattens `PendingResult<PendingResult<T, E>, E>` to the inner value", async () => {
+      const self = pendingOk(pendingOk(one));
+      const result = self.flatten();
+
+      expect(isPendingResult(result)).toBe(true);
+
+      const awaited = await result;
+
+      expect(awaited.isOk()).toBe(true);
+      expect(awaited.unwrap()).toBe(one);
+    });
+
+    it("peels one pending layer of a deeply nested pending result", async () => {
+      const self = pendingOk(pendingOk(pendingOk(one)));
+      const once = await self.flatten();
+      const twice = await pendingOk(pendingOk(pendingOk(one)))
+        .flatten()
+        .flatten();
+
+      expect(once.isOk()).toBe(true);
+      expect(isResult(once.unwrap())).toBe(true);
+      expect(once.unwrap().unwrap()).toBe(one);
+      expect(twice.isOk()).toBe(true);
+      expect(twice.unwrap()).toBe(one);
+    });
+
+    it("returns inner `Err` when flattening `PendingResult` that resolves to `Err`", async () => {
+      const inner = pendingErr<number, string>(expectedErr);
+      const awaited = await pendingOk(inner).flatten();
+
+      expect(awaited.isErr()).toBe(true);
+      expect(awaited.unwrapErr()).toStrictEqual(expectedErr);
+    });
   });
 
   describe("inspect", () => {

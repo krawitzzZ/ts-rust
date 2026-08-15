@@ -1072,20 +1072,20 @@ class _Result<T, E> implements Resultant<T, E> {
   }
 
   /**
-   * Flattens a nested `Result<Result<U, F>, F>` into a `Result<U, F>`.
+   * Flattens a nested `Result<Result<U, F>, E>` into a `Result<U, E | F>`.
    * Returns an unexpected error if the `Ok` value is not a `Result`.
    *
    * @template U - The type of the inner result's value.
    * @template F - The type of the inner result's error.
    * @returns The inner {@link Result} if this is `Ok` containing a `Result`, or an `Err`.
    */
-  flatten<U, F>(this: Result<Result<U, F>, F>): Result<U, F> {
+  flatten<U, F>(this: Result<Result<U, F>, E>): Result<U, InferType<E, F>> {
     if (this.isErr()) {
-      return err(this.error);
+      return err(this.error) as Result<U, InferType<E, F>>;
     }
 
     if (!isResult(this.value)) {
-      return err<U, F>(
+      return err<U, InferType<E, F>>(
         unexpectedError(
           "`flatten`: called on `Ok` with non-result value",
           ResultErrorKind.FlattenCalledOnFlatResult,
@@ -1093,7 +1093,7 @@ class _Result<T, E> implements Resultant<T, E> {
       );
     }
 
-    return this.value.copy();
+    return this.value.copy() as Result<U, InferType<E, F>>;
   }
 
   /**
@@ -1737,26 +1737,29 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
 
   flatten<U, F>(
     this:
-      | PendingResult<Result<U, F>, F>
-      | PendingResult<PendingResult<U, F>, F>
-      | PendingResult<PromiseLike<Result<U, F>>, F>,
-  ): PendingSettledRes<U, F> {
-    const promise: PromiseLike<Result<U, F>> = this.then((outer) => {
-      if (!outer.isOk()) {
-        return err<U, F>(outer.error);
-      }
+      | PendingResult<Result<U, F>, E>
+      | PendingResult<PendingResult<U, F>, E>
+      | PendingResult<PromiseLike<Result<U, F>>, E>,
+  ): PendingSettledRes<U, InferType<E, F>> {
+    const promise: PromiseLike<Result<U, InferType<E, F>>> = this.then(
+      async (outer) => {
+        if (!outer.isOk()) {
+          return err(outer.error) as Result<U, InferType<E, F>>;
+        }
 
-      if (!isResult(outer.value)) {
-        return err<U, F>(
-          unexpectedError(
-            "`flatten`: called on `Ok` with non-result value",
-            ResultErrorKind.FlattenCalledOnFlatResult,
-          ),
-        );
-      }
+        const inner = await outer.value;
+        if (!isResult(inner)) {
+          return err<U, InferType<E, F>>(
+            unexpectedError(
+              "`flatten`: called on `Ok` with non-result value",
+              ResultErrorKind.FlattenCalledOnFlatResult,
+            ),
+          );
+        }
 
-      return outer.value.copy() as Result<U, F>;
-    });
+        return inner.copy() as Result<U, InferType<E, F>>;
+      },
+    );
 
     return pendingResult(settleResult(promise));
   }

@@ -369,6 +369,25 @@ describe("PendingOption", () => {
         expect(result).not.toBe(outer);
       },
     );
+
+    it("flattens `PendingOption<PendingOption<T>>` to the inner value", async () => {
+      const result = await pendingSome(pendingSome(one)).flatten();
+
+      expect(result.isSome()).toBe(true);
+      expect(result.unwrap()).toBe(one);
+    });
+
+    it("peels one pending layer of a deeply nested pending option", async () => {
+      const once = await pendingSome(pendingSome(pendingSome(one))).flatten();
+      const twice = await pendingSome(pendingSome(pendingSome(one)))
+        .flatten()
+        .flatten();
+
+      expect(once.isSome()).toBe(true);
+      expect(once.unwrap().unwrap()).toBe(one);
+      expect(twice.isSome()).toBe(true);
+      expect(twice.unwrap()).toBe(one);
+    });
   });
 
   describe("inspect", () => {

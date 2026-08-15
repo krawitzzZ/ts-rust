@@ -313,11 +313,16 @@ export interface Resultant<T, E> {
 
   /**
    * Flattens a nested result (`Result<Result<T, E>, E>`) into a single result
-   * (`Result<T, E>`).
+   * (`Result<T, E>`). Peels one layer; chain `flatten` for deeper nesting.
+   *
+   * Outer and inner error types are merged. An unannotated outer `unknown`
+   * error (from `ok()`) does not swallow a concrete inner error type.
    *
    * @example
    * ```ts
-   * const x: Result<Result<Result<number, string>, string>, string> = ok(ok(ok(6)));
+   * const x: Result<Result<Result<number, string>, string>, string> = ok(
+   *   ok(ok<number, string>(6)),
+   * );
    * const y: Result<Result<number, string>, string> = x.flatten();
    * const z: Result<Result<number, string>, string> = err("oops");
    *
@@ -326,7 +331,7 @@ export interface Resultant<T, E> {
    * expect(z.flatten().expected).toBe("oops");
    * ```
    */
-  flatten<U, F>(this: Result<Result<U, F>, F>): Result<U, F>;
+  flatten<U, F>(this: Result<Result<U, F>, E>): Result<U, InferType<E, F>>;
 
   /**
    * Calls `f` with the value if this result is an {@link Ok}, then returns
@@ -1048,11 +1053,14 @@ export interface PendingResult<T, E>
    * resolving any inner {@link Result} or {@link PendingResult} to its final state.
    *
    * This is the asynchronous version of {@link Resultant.flatten | flatten}.
+   * Peels one layer; chain `flatten` for deeper nesting.
    *
    * @notes
    * - Handles cases like `PendingResult<Result<T, E>, E>` or
    *   `PendingResult<PendingResult<T, E>, E>`, resolving to
    *   `PendingResult<Awaited<T>, Awaited<E>>`.
+   * - Outer and inner error types are merged. An unannotated outer `unknown`
+   *   error (from `pendingOk()`) does not swallow a concrete inner error type.
    *
    * @example
    * ```ts
@@ -1065,10 +1073,10 @@ export interface PendingResult<T, E>
    */
   flatten<U, F>(
     this:
-      | PendingResult<Result<U, F>, F>
-      | PendingResult<PendingResult<U, F>, F>
-      | PendingResult<PromiseLike<Result<U, F>>, F>,
-  ): PendingResult<Awaited<U>, Awaited<F>>;
+      | PendingResult<Result<U, F>, E>
+      | PendingResult<PendingResult<U, F>, E>
+      | PendingResult<PromiseLike<Result<U, F>>, E>,
+  ): PendingResult<Awaited<U>, Awaited<InferType<E, F>>>;
 
   /**
    * Calls `f` with the value if this pending result resolves to an {@link Ok},

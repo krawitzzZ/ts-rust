@@ -318,6 +318,17 @@ describe("Option", () => {
       expect(result.unwrap()).toBe(one);
       expect(spy).toHaveBeenCalledTimes(1);
     });
+
+    it("peels one layer of a nested `Option<Option<Option<T>>>`", () => {
+      const option = some(some(some(one)));
+      const once = option.flatten();
+      const twice = once.flatten();
+
+      expect(once.isSome()).toBe(true);
+      expect(once.unwrap().unwrap()).toBe(one);
+      expect(twice.isSome()).toBe(true);
+      expect(twice.unwrap()).toBe(one);
+    });
   });
 
   describe("getOrInsert", () => {

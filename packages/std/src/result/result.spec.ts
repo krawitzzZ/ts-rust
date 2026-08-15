@@ -461,6 +461,17 @@ describe("Result", () => {
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(one);
     });
+
+    it("peels one layer of a nested `Result<Result<Result<T, E>, E>, E>`", () => {
+      const self = ok(ok(ok(one)));
+      const once = self.flatten();
+      const twice = once.flatten();
+
+      expect(once.isOk()).toBe(true);
+      expect(once.unwrap().unwrap()).toBe(one);
+      expect(twice.isOk()).toBe(true);
+      expect(twice.unwrap()).toBe(one);
+    });
   });
 
   describe("inspect", () => {
