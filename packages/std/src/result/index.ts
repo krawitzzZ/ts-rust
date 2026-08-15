@@ -21,6 +21,7 @@ export type {
   Ok,
   Err,
 } from "./interface";
+export type { InferOk, InferErr, MergeErr } from "./result";
 
 export { ResultErrorKind, isResultError, isCheckedError } from "./error";
 export {
@@ -32,6 +33,7 @@ export {
   ok,
   err,
   run,
+  runGenerator,
   runAsync,
   fromPromise,
   runResult,

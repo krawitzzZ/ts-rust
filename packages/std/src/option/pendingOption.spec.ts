@@ -405,41 +405,6 @@ describe("PendingOption", () => {
     });
   });
 
-  describe("iter", () => {
-    it("returns an iterator that yields nothing if self resolves to `None`", async () => {
-      const self = pendingNone();
-      const iter = self.iter();
-
-      expect(await iter.next()).toStrictEqual({ done: true });
-      expect(await iter.next()).toStrictEqual({ done: true });
-    });
-
-    it.each([one, true, { a: 2 }])(
-      "returns an iterator that yields '%s' only once if self resolves to `Some`",
-      async (v) => {
-        const self = pendingSome(v);
-        const iter = self.iter();
-
-        expect(await iter.next()).toStrictEqual({ done: false, value: v });
-        expect(await iter.next()).toStrictEqual({ done: true });
-        expect(await iter.next()).toStrictEqual({ done: true });
-      },
-    );
-
-    it.each([pendingSome(one), pendingNone()])(
-      "works with await for .. of loop",
-      async (opt) => {
-        const iter = opt.iter();
-
-        for await (const x of iter) {
-          expect(x).toBe(one);
-        }
-
-        expect.assertions((await opt).isSome() ? 1 : 0);
-      },
-    );
-  });
-
   describe("map", () => {
     it("does not call provided callback and returns `None` if self is `None`", async () => {
       const inner = none();

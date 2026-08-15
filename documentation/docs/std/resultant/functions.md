@@ -138,6 +138,27 @@ if (result.isOk()) {
 }
 ```
 
+### runGenerator
+
+- [`runGenerator<Y, R>(action: () => Generator<Y, R>): Result<...>`](../api/Result/functions/runGenerator.mdx)
+- [`runGenerator<Y, R, E>(action: () => Generator<Y, R>, mkErr: (error: unknown) => E): Result<...>`](../api/Result/functions/runGenerator.mdx)
+
+Evaluates a generator that `yield*`s a `Result`, emulating Rust's `?`.
+`yield*` unwraps `Ok` or aborts on `Err`. Return a `Result` from the
+generator.
+
+Thrown exceptions become an `UnexpectedError`, unless `mkErr` is provided
+to map them into an expected error (same role as [`run`](#run)'s `mkErr`).
+
+```ts
+const summed = runGenerator(function* () {
+  const a = yield* ok<number, string>(1);
+  const b = yield* ok<number, string>(2);
+  return ok(a + b);
+});
+expect(summed).toStrictEqual(ok(3));
+```
+
 ### runAsync
 
 [`runAsync<T, E>(action: () => Promise<T>, mkErr: (error: unknown) => Awaited<E>): PendingResult<T, E>`](../api/Result/functions/runAsync.mdx)

@@ -211,41 +211,6 @@ expect(await y.inspectErr(_ => { throw new Error() })).toStrictEqual(err("failur
 expect(isCheckedError(sideEffect)).toBe(true);
 ```
 
-### iter
-
-[`iter(): AsyncIterableIterator<Awaited<T>, Awaited<T>, void>`](../api/Result/interfaces/PendingResult.mdx#iter)
-
-Returns an async iterator over this pending result’s value, yielding it if
-it resolves to `Ok` or nothing if it resolves to `Err`.
-
-:::note
-
-- Yields exactly one item for a resolved `Ok`, or zero items for a resolved `Err`.
-- Compatible with `for await...of` loops and async spread operators (with caution).
-- Ignores the error value in `Err` cases, focusing only on the success case.
-
-:::
-
-```ts
-const x = ok<number, string>(42).toPending();
-const y = err<number, string>("failure").toPending();
-
-const iterX = x.iter();
-expect(await iterX.next()).toEqual({ value: 42, done: false });
-expect(await iterX.next()).toEqual({ done: true });
-
-const iterY = y.iter();
-expect(await iterY.next()).toEqual({ done: true });
-
-async function collect(iter: AsyncIterableIterator<number, number, void>) {
-  const result = [];
-  for await (const val of iter) result.push(val);
-  return result;
-}
-expect(await collect(x.iter())).toEqual([42]);
-expect(await collect(y.iter())).toEqual([]);
-```
-
 ### map
 
 [`map<U>(f: (x: T) => U): PendingResult<Awaited<U>, Awaited<E>>`](../api/Result/interfaces/PendingResult.mdx#map)

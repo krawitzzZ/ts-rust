@@ -11,7 +11,13 @@ import {
   isOption,
 } from "../option";
 import { isPrimitive } from "../types.utils";
-import type { OkAwaitedValues, OkValues } from "./types";
+import type {
+  InferErr,
+  InferOk,
+  MergeErr,
+  OkAwaitedValues,
+  OkValues,
+} from "./types";
 import {
   ResultError,
   ResultErrorKind,
@@ -31,6 +37,8 @@ import type {
   Ok,
 } from "./interface";
 /* eslint-enable @typescript-eslint/no-unused-vars */
+
+export type { InferErr, InferOk, MergeErr } from "./types";
 
 /**
  * Creates an {@link Ok} variant of a {@link Result} with a `void` value.
@@ -160,7 +168,9 @@ export function run<T, E>(
   action: () => Awaited<T>,
   mkErr: (error: unknown) => Awaited<E>,
 ): Result<T, E> {
-  const errorResult = (error: unknown): Result<T, E> => {
+  try {
+    return ok(action());
+  } catch (error) {
     try {
       const handledError: E = mkErr(error);
       return err(handledError);
@@ -173,12 +183,114 @@ export function run<T, E>(
         ),
       );
     }
+  }
+}
+
+/**
+ * Evaluates a generator that `yield*`s {@link Result} values, returning the
+ * first yielded {@link Err} or the {@link Result} the generator returns.
+ *
+ * This emulates Rust's `?` operator. `yield* someResult` unwraps {@link Ok}
+ * into the contained value, or aborts with {@link Err}.
+ *
+ * Thrown exceptions become {@link UnexpectedError}, unless `mkErr` is provided
+ * to map them into an expected error (same role as {@link run}'s `mkErr`).
+ *
+ * @example
+ * ```ts
+ * const result = runGenerator(function* () {
+ *   const a = yield* ok<number, string>(1);
+ *   const b = yield* ok<number, string>(2);
+ *   return ok(a + b);
+ * });
+ *
+ * expect(result).toStrictEqual(ok(3));
+ * ```
+ */
+export function runGenerator<Y, R extends Result<unknown, unknown>>(
+  action: () => Generator<Y, R>,
+): Result<InferOk<R>, MergeErr<InferErr<Y>, InferErr<R>>>;
+/**
+ * Evaluates a generator that `yield*`s {@link Result} values, mapping thrown
+ * exceptions through `mkErr`.
+ *
+ * @param action - A generator function that `yield*`s {@link Result} values
+ *   and returns a {@link Result}.
+ * @param mkErr - Converts a thrown value into an expected error of type `E`.
+ */
+export function runGenerator<Y, R extends Result<unknown, unknown>, E>(
+  action: () => Generator<Y, R>,
+  mkErr: (error: unknown) => Awaited<E>,
+): Result<InferOk<R>, MergeErr<MergeErr<InferErr<Y>, InferErr<R>>, E>>;
+export function runGenerator<Y, R extends Result<unknown, unknown>, E>(
+  action: () => Generator<Y, R>,
+  mkErr?: (error: unknown) => Awaited<E>,
+): Result<InferOk<R>, MergeErr<MergeErr<InferErr<Y>, InferErr<R>>, E>> {
+  type OutE = MergeErr<MergeErr<InferErr<Y>, InferErr<R>>, E>;
+  type Out = Result<InferOk<R>, OutE>;
+
+  const unexpected = (message: string, reason?: unknown): Out =>
+    err(unexpectedError<OutE>(message, ResultErrorKind.Unexpected, reason));
+
+  const thrown = (error: unknown): Out => {
+    if (!mkErr) {
+      return unexpected("`runGenerator`: generator threw an exception", error);
+    }
+
+    try {
+      const handledError: OutE = mkErr(error) as OutE;
+      return err(handledError);
+    } catch (e) {
+      return err(
+        unexpectedError<OutE>(
+          "`runGenerator`: callback `mkErr` threw an exception",
+          ResultErrorKind.PredicateException,
+          e,
+        ),
+      );
+    }
   };
 
+  let iterator: Generator<Y, R> | undefined;
+
   try {
-    return ok(action());
+    iterator = action();
+    const step = iterator.next();
+
+    if (isResult(step.value)) {
+      if (!step.done && step.value.isOk()) {
+        closeGenerator(iterator);
+        return unexpected(
+          "`runGenerator`: generator yielded an `Ok`; use `yield*` on the `Result`",
+        );
+      }
+
+      if (!step.done) {
+        closeGenerator(iterator);
+      }
+
+      return step.value as Out;
+    }
+
+    closeGenerator(iterator);
+    return unexpected(
+      "`runGenerator`: generator did not return or yield a `Result`",
+      step.value,
+    );
   } catch (error) {
-    return errorResult(error);
+    if (iterator) {
+      closeGenerator(iterator);
+    }
+
+    return thrown(error);
+  }
+}
+
+function closeGenerator(iterator: Generator<unknown, unknown>): void {
+  try {
+    iterator.return(undefined);
+  } catch {
+    // cleanup must not hide the original Ok / Err / throw
   }
 }
 
@@ -945,30 +1057,19 @@ class _Result<T, E> implements Resultant<T, E> {
   }
 
   /**
-   * Returns an iterator yielding the contained value if `Ok`, or nothing if `Err`.
+   * Makes this result usable with `yield*` inside a generator passed to
+   * {@link runGenerator}.
    *
-   * @returns An {@link IterableIterator} over the contained value.
+   * An {@link Ok} resumes the generator with the contained value. An {@link Err}
+   * is yielded so {@link runGenerator} can return it without resuming.
    */
-  iter(): IterableIterator<T, T, void> {
-    const state = this.#state;
-    let isConsumed = false;
+  *[Symbol.iterator](): Generator<Err<never, E>, T> {
+    if (isOk(this.#state)) {
+      return this.#state.value;
+    }
 
-    return {
-      next(): IteratorResult<T, T> {
-        if (isConsumed || isErr(state)) {
-          // according to the specification (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#value)
-          // `value` can be omitted if `done` is true
-          return { done: true } as IteratorResult<T, T>;
-        }
-
-        isConsumed = true;
-
-        return { done: false, value: state.value };
-      },
-      [Symbol.iterator]() {
-        return this;
-      },
-    };
+    yield this as unknown as Err<never, E>;
+    return undefined as never;
   }
 
   /**
@@ -1524,30 +1625,6 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
 
   inspectErr(f: (x: CheckedError<E>) => unknown): PendingResult<T, E> {
     return pendingResult(this.#promise.then((self) => self.inspectErr(f)));
-  }
-
-  iter(): AsyncIterableIterator<Awaited<T>, Awaited<T>, void> {
-    const promise = settleResult(this.#promise);
-    let isConsumed = false;
-
-    return {
-      async next(): Promise<IteratorResult<Awaited<T>, Awaited<T>>> {
-        return promise.then((self) => {
-          if (isConsumed || self.isErr()) {
-            // according to the specification (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#value)
-            // `value` can be omitted if `done` is true
-            return { done: true } as IteratorResult<Awaited<T>, Awaited<T>>;
-          }
-
-          isConsumed = true;
-
-          return { done: false, value: self.value };
-        });
-      },
-      [Symbol.asyncIterator]() {
-        return this;
-      },
-    };
   }
 
   map<U>(f: (x: T) => U): PendingResult<Awaited<U>, Awaited<E>> {

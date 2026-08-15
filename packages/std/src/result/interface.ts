@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Option, Some, None, PendingOption } from "../option";
+import type { runGenerator } from "../result";
 import type { Cloneable, InferType, Recoverable } from "../types";
 import type { ResultError } from "./error";
 import type { OkAwaitedValues, OkValues } from "./types";
@@ -443,31 +444,26 @@ export interface Resultant<T, E> {
   isOkAnd(f: (x: T) => boolean): boolean;
 
   /**
-   * Returns an iterator over this result’s value, yielding it if {@link Ok}
-   * or nothing if {@link Err}.
+   * Makes this result usable with `yield*` inside a generator passed to
+   * {@link runGenerator}, emulating Rust's `?` operator.
    *
-   * @notes
-   * - Yields exactly one item for {@link Ok}, or zero items for {@link Err}.
-   * - Compatible with `for...of` loops and spread operators.
-   * - Ignores the error value in {@link Err} cases, focusing only on the success case.
+   * An {@link Ok} resumes the generator with the contained value. An
+   * {@link Err} is yielded to {@link runGenerator}, which returns that error
+   * and does not resume.
+   *
+   * This is not a value iterator: `for...of` / spread do not yield `T`.
    *
    * @example
    * ```ts
-   * const x = ok<number, string>(42);
-   * const y = err<number, string>("failure");
+   * const result = runGenerator(function* () {
+   *   const n = yield* ok<number, string>(1);
+   *   return ok(n + 1);
+   * });
    *
-   * const iterX = x.iter();
-   * expect(iterX.next()).toEqual({ value: 42, done: false });
-   * expect(iterX.next()).toEqual({ done: true });
-   *
-   * const iterY = y.iter();
-   * expect(iterY.next()).toEqual({ done: true });
-   *
-   * expect([...x.iter()]).toEqual([42]);
-   * expect([...y.iter()]).toEqual([]);
+   * expect(result).toStrictEqual(ok(2));
    * ```
    */
-  iter(): IterableIterator<T, T, void>;
+  [Symbol.iterator](): Generator<Err<never, E>, T>;
 
   /**
    * Transforms this result by applying `f` to the value if it’s an {@link Ok},
@@ -1125,39 +1121,6 @@ export interface PendingResult<T, E>
    * ```
    */
   inspectErr(f: (x: CheckedError<E>) => unknown): PendingResult<T, E>;
-
-  /**
-   * Returns an async iterator over this pending result’s value, yielding it if
-   * it resolves to {@link Ok} or nothing if it resolves to {@link Err}.
-   *
-   * @notes
-   * - Yields exactly one item for a resolved {@link Ok}, or zero items
-   *   for a resolved {@link Err}.
-   * - Compatible with `for await...of` loops and async spread operators (with caution).
-   * - Ignores the error value in {@link Err} cases, focusing only on the success case.
-   *
-   * @example
-   * ```ts
-   * const x = ok<number, string>(42).toPending();
-   * const y = err<number, string>("failure").toPending();
-   *
-   * const iterX = x.iter();
-   * expect(await iterX.next()).toEqual({ value: 42, done: false });
-   * expect(await iterX.next()).toEqual({ done: true });
-   *
-   * const iterY = y.iter();
-   * expect(await iterY.next()).toEqual({ done: true });
-   *
-   * async function collect(iter) {
-   *   const result = [];
-   *   for await (const val of iter) result.push(val);
-   *   return result;
-   * }
-   * expect(await collect(x.iter())).toEqual([42]);
-   * expect(await collect(y.iter())).toEqual([]);
-   * ```
-   */
-  iter(): AsyncIterableIterator<Awaited<T>, Awaited<T>, void>;
 
   /**
    * Maps the resolved value with `f`, returning a {@link PendingResult} with

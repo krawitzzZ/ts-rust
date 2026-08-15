@@ -103,11 +103,14 @@ const pending = result.toPending(); // PendingResult<number, string>
 console.log(await pending); // Ok(42)
 ```
 
-### run and runAsync
+### run, runGenerator, and runAsync
 
 - `run(action, mkErr)`: Executes a synchronous `action` and wraps the outcome
   in a `Result`. If the action throws, the error is passed to `mkErr` to create
   an `Err`.
+- `runGenerator(action, mkErr?)`: Evaluates a `function*` that `yield*`s a
+  `Result` to unwrap `Ok` or abort on `Err` (Rust `?`). Return a `Result` from
+  the generator. Throws become an `UnexpectedError` unless `mkErr` maps them.
 - `runAsync(action, mkErr)`: Executes an asynchronous `action` returning a
   `Promise` and wraps the outcome in a `PendingResult`. If the action throws
   or the promise rejects, the error is passed to `mkErr` to create an `Err`.
@@ -118,7 +121,14 @@ console.log(await pending); // Ok(42)
 > `UnexpectedError`.
 
 ```typescript
-import { run, runAsync } from "@ts-rust/std";
+import { run, runAsync, runGenerator, ok } from "@ts-rust/std";
+
+const summed = runGenerator(function* () {
+  const a = yield* ok<number, string>(1);
+  const b = yield* ok<number, string>(2);
+  return ok(a + b);
+});
+console.log(summed.unwrap()); // 3
 
 // Synchronous run
 const parsed = run(
@@ -225,6 +235,25 @@ console.log(
     throw new Error("Failed");
   }),
 ); // false
+```
+
+### [Symbol.iterator]
+
+Makes this result usable with `yield*` inside a generator passed to
+`runGenerator`, emulating Rust's `?` operator. An `Ok` resumes with the
+contained value; an `Err` is returned by `runGenerator` and the generator
+is not resumed.
+
+This is not a value iterator: `for...of` and spread do not yield `T`.
+
+```typescript
+import { ok, runGenerator } from "@ts-rust/std";
+
+const result = runGenerator(function* () {
+  const n = yield* ok<number, string>(1);
+  return ok(n + 1);
+});
+console.log(result.unwrap()); // 2
 ```
 
 ### map, mapErr, and mapAll

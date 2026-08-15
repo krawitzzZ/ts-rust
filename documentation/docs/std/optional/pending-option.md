@@ -170,40 +170,6 @@ expect(await y.inspect((n) => (sideEffect = n))).toStrictEqual(none());
 expect(sideEffect).toBe(2); // Unchanged
 ```
 
-### iter
-
-[`iter(): AsyncIterableIterator<Awaited<T>, Awaited<T>, void>`](../api/Option/interfaces/PendingOption.mdx#iter)
-
-Returns an async iterator over the pending option’s value, yielding it if
-it resolves to `Some` or nothing if it resolves to `None`.
-
-:::note
-
-- Yields exactly one item for a resolved `Some`, or zero items for a resolved `None`.
-- Compatible with `for await...of` loops and async spread operators (with caution).
-
-:::
-
-```ts
-const x = some(42).toPending();
-const y = none<number>().toPending();
-
-const iterX = x.iter();
-expect(await iterX.next()).toEqual({ value: 42, done: false });
-expect(await iterX.next()).toEqual({ done: true });
-
-const iterY = y.iter();
-expect(await iterY.next()).toEqual({ done: true });
-
-async function collect(iter: AsyncIterableIterator<number, number, void>) {
-  const result = [];
-  for await (const val of iter) result.push(val);
-  return result;
-}
-expect(await collect(x.iter())).toEqual([42]);
-expect(await collect(y.iter())).toEqual([]);
-```
-
 ### map
 
 [`map<U>(f: (x: T) => U): PendingOption<Awaited<U>>`](../api/Option/interfaces/PendingOption.mdx#map)

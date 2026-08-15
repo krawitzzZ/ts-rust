@@ -492,26 +492,6 @@ console.log(
 ); // false
 ```
 
-### iter
-
-- `iter()`: Returns an iterator over this option's value, yielding it if `Some` or nothing if `None`.
-
-> **Note**: Yields exactly one item for `Some`, or zero items for `None`.
-
-```typescript
-import { some, none } from "@ts-rust/std";
-
-const x = some(42);
-const y = none<number>();
-
-console.log([...x.iter()]); // [42]
-console.log([...y.iter()]); // []
-
-for (const val of x.iter()) {
-  console.log(val); // 42
-}
-```
-
 ### Mutating Methods
 
 `Option<T>` provides methods that can mutate the option in place:

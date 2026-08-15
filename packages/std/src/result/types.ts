@@ -40,3 +40,35 @@ export type OkAwaitedValues<T extends unknown[]> = {
       ? Awaited<U>
       : never;
 };
+
+/**
+ * Extracts the success type parameter from a {@link Result}.
+ */
+export type InferOk<R> = R extends Result<infer T, infer _E> ? T : never;
+
+/**
+ * Extracts the error type parameter from a {@link Result}.
+ */
+export type InferErr<R> = R extends Result<infer _T, infer E> ? E : never;
+
+type IsUnknown<T> = [unknown] extends [T]
+  ? [T] extends [unknown]
+    ? true
+    : false
+  : false;
+
+/**
+ * Unions two error types, treating `never` and `unknown` as unbound slots.
+ *
+ * Used when a generator both yields `Err`s and returns a {@link Result}, so an
+ * unannotated `ok()` does not swallow concrete errors from `yield*`.
+ */
+export type MergeErr<A, B> = [A] extends [never]
+  ? B
+  : [B] extends [never]
+    ? A
+    : IsUnknown<A> extends true
+      ? B
+      : IsUnknown<B> extends true
+        ? A
+        : A | B;

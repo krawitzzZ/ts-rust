@@ -11,6 +11,7 @@ import {
   pendingOk,
   pendingResult,
   run,
+  runGenerator,
   runAsync,
   fromPromise,
   runPendingResult,
@@ -277,6 +278,130 @@ describe("Result utils", () => {
       );
       expect(action).toHaveBeenCalledTimes(1);
       expect(onError).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("runGenerator", () => {
+    it("runs a generator and returns the returned `Ok`", () => {
+      const res = runGenerator(function* () {
+        const a = yield* ok<number, string>(1);
+        const b = yield* ok<number, string>(2);
+        return ok(a + b);
+      });
+
+      expect(res).toStrictEqual(ok(3));
+    });
+
+    it("returns the first yielded `Err` and does not resume", () => {
+      const failure = err<number, string>("nope");
+      let reached = false;
+      const res = runGenerator(function* () {
+        yield* failure;
+        reached = true;
+        return ok(1);
+      });
+
+      expect(reached).toBe(false);
+      expect(res).toBe(failure);
+    });
+
+    it("runs `finally` when short-circuiting on `Err`", () => {
+      const failure = err<number, string>("nope");
+      let cleaned = false;
+      const res = runGenerator(function* () {
+        try {
+          yield* failure;
+          return ok(1);
+        } finally {
+          cleaned = true;
+        }
+      });
+
+      expect(cleaned).toBe(true);
+      expect(res).toBe(failure);
+    });
+
+    it("returns `return err(...)` without yields", () => {
+      const failure = err<number, string>("nope");
+      // eslint-disable-next-line require-yield
+      const res = runGenerator(function* () {
+        return failure;
+      });
+
+      expect(res).toBe(failure);
+    });
+
+    it("returns unexpected `Err` if the generator throws", () => {
+      const boom = new Error("boom");
+      // eslint-disable-next-line require-yield
+      const res = runGenerator(function* (): Generator<
+        never,
+        Result<number, string>
+      > {
+        throw boom;
+      });
+
+      expect(res.isErr()).toBe(true);
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+      expect(res.unwrapErr().unexpected?.kind).toBe(ResultErrorKind.Unexpected);
+      expect(res.unwrapErr().unexpected?.reason).toBe(boom);
+    });
+
+    it("maps a thrown exception through `mkErr`", () => {
+      const boom = new Error("boom");
+      const mapped = new Error("mapped");
+      const onError = jest.fn(() => mapped);
+      // eslint-disable-next-line require-yield
+      const res = runGenerator(function* (): Generator<
+        never,
+        Result<number, string>
+      > {
+        throw boom;
+      }, onError);
+
+      expect(res.unwrapErr().expected).toBe(mapped);
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledWith(boom);
+    });
+
+    it("returns unexpected `Err` if `mkErr` throws", () => {
+      const onError = jest.fn(() => {
+        throw new Error("oops");
+      });
+      // eslint-disable-next-line require-yield
+      const res = runGenerator(function* (): Generator<
+        never,
+        Result<number, string>
+      > {
+        throw new Error("boom");
+      }, onError);
+
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+      expect(res.unwrapErr().unexpected?.kind).toBe(
+        ResultErrorKind.PredicateException,
+      );
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not call `mkErr` when the generator returns `Ok`", () => {
+      const onError = jest.fn(() => new Error("unused"));
+      const res = runGenerator(function* () {
+        const n = yield* ok<number, string>(1);
+        return ok(n + 1);
+      }, onError);
+
+      expect(res).toStrictEqual(ok(2));
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("returns unexpected `Err` if the generator yields an `Ok`", () => {
+      const res = runGenerator(function* () {
+        yield ok(1) as never;
+        return ok(2);
+      });
+
+      expect(res.isErr()).toBe(true);
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
     });
   });
 

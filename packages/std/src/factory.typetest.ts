@@ -37,6 +37,7 @@ import {
   pendingResult,
   pendingSome,
   run,
+  runGenerator,
   runAsync,
   runPendingResult,
   runResult,
@@ -677,6 +678,34 @@ const _runSync: Result<number, Error> = run(
   () => new Error("x"),
 );
 
+const _runGen = runGenerator(function* () {
+  const n = yield* ok<number, string>(1);
+  return ok(n + 1);
+});
+const _runGenExact: Eq<typeof _runGen, Result<number, string>> = true;
+
+const _runGenErr = runGenerator(function* () {
+  const n = yield* ok<number, "e1">(1);
+  yield* err<number, "e2">("e2");
+  return ok(n);
+});
+const _runGenErrExact: Eq<
+  typeof _runGenErr,
+  Result<number, "e1" | "e2">
+> = true;
+
+const _runGenMkErr = runGenerator(
+  function* () {
+    const n = yield* ok<number, string>(1);
+    return ok(n);
+  },
+  () => new Error("x"),
+);
+const _runGenMkErrExact: Eq<
+  typeof _runGenMkErr,
+  Result<number, string | Error>
+> = true;
+
 const _runAsync: PendingResult<number, Error> = runAsync(
   () => Promise.resolve(1),
   () => new Error("x"),
@@ -788,15 +817,12 @@ const _overwrite: number = some(1).insert(9);
 const _getOrInsertWith: number = none<number>().getOrInsertWith(() => 1);
 
 // ---------------------------------------------------------------------------
-// Iterators
+// Result generator protocol
 // ---------------------------------------------------------------------------
 
-const _okIter: IterableIterator<number, number, void> = ok(1).iter();
-const _optIter: IterableIterator<number, number, void> = some(1).iter();
-const _pendingIter: AsyncIterableIterator<number, number, void> =
-  pendingOk(1).iter();
-const _pendingOptIter: AsyncIterableIterator<number, number, void> =
-  pendingSome(1).iter();
+const _okYield: Generator<Err<never, unknown>, number> = ok(1)[
+  Symbol.iterator
+]();
 
 // ---------------------------------------------------------------------------
 // Settled vs PromiseLike payloads

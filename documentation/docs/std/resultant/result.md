@@ -431,33 +431,27 @@ expect(x.isOkAnd((n) => n < 0)).toBe(false);
 expect(y.isOkAnd((_) => true)).toBe(false);
 ```
 
-### iter
+### [Symbol.iterator]
 
-[`iter(): IterableIterator<T, T, void>`](../api/Result/interfaces/Resultant.mdx#iter)
+[`[Symbol.iterator](): Generator<Err<never, E>, T>`](../api/Result/interfaces/Resultant.mdx#symboliterator)
 
-Returns an iterator over this result’s value, yielding it if `Ok` or nothing if `Err`.
+Makes this result usable with `yield*` inside a generator passed to
+[`runGenerator`](./functions.md#rungenerator), emulating Rust's `?` operator.
+
+An `Ok` resumes the generator with the contained value. An `Err` is yielded
+to `runGenerator`, which returns that error and does not resume.
 
 :::note
-
-- Yields exactly one item for `Ok`, or zero items for `Err`.
-- Compatible with `for...of` loops and spread operators.
-- Ignores the error value in `Err` cases, focusing only on the success case.
-
+This is not a value iterator. `for...of` and spread do not yield `T`.
 :::
 
 ```ts
-const x = ok<number, string>(42);
-const y = err<number, string>("failure");
+const result = runGenerator(function* () {
+  const n = yield* ok<number, string>(1);
+  return ok(n + 1);
+});
 
-const iterX = x.iter();
-expect(iterX.next()).toEqual({ value: 42, done: false });
-expect(iterX.next()).toEqual({ done: true });
-
-const iterY = y.iter();
-expect(iterY.next()).toEqual({ done: true });
-
-expect([...x.iter()]).toEqual([42]);
-expect([...y.iter()]).toEqual([]);
+expect(result).toStrictEqual(ok(2));
 ```
 
 ### map

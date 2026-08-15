@@ -26,6 +26,9 @@ export type {
   SettledResult,
   Ok,
   Err,
+  InferOk,
+  InferErr,
+  MergeErr,
 } from "./result";
 
 export { AnyError } from "./error";
@@ -54,6 +57,7 @@ export {
   ok,
   err,
   run,
+  runGenerator,
   runAsync,
   fromPromise,
   runResult,

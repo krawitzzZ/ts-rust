@@ -373,34 +373,6 @@ expect(x.isSomeAnd((n) => n < 0)).toBe(false);
 expect(y.isSomeAnd((n) => n > 0)).toBe(false);
 ```
 
-### iter
-
-[`iter(): IterableIterator<T, T, void>`](../api/Option/interfaces/Optional.mdx#iter)
-
-Returns an iterator over this option’s value, yielding it if `Some` or nothing if `None`.
-
-:::note
-
-- Yields exactly one item for `Some`, or zero items for `None`.
-- Compatible with `for...of` loops and spread operators.
-
-:::
-
-```ts
-const x = some(42);
-const y = none<number>();
-
-const iterX = x.iter();
-expect(iterX.next()).toEqual({ value: 42, done: false });
-expect(iterX.next()).toEqual({ done: true });
-
-const iterY = y.iter();
-expect(iterY.next()).toEqual({ done: true });
-
-expect([...x.iter()]).toEqual([42]);
-expect([...y.iter()]).toEqual([]);
-```
-
 ### map
 
 [`map<U>(f: (x: T) => Awaited<U>): Option<U>`](../api/Option/interfaces/Optional.mdx#map)
