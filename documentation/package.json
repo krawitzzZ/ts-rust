@@ -1,6 +1,6 @@
 {
   "name": "documentation",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "start": "NODE_ENV=development docusaurus start --no-open --no-minify --host 0.0.0.0",
