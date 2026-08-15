@@ -13,6 +13,7 @@ import {
   run,
   runGenerator,
   runAsync,
+  runAsyncGenerator,
   fromPromise,
   runPendingResult,
   runResult,
@@ -402,6 +403,228 @@ describe("Result utils", () => {
 
       expect(res.isErr()).toBe(true);
       expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+    });
+
+    it("returns unexpected `Err` if called with an async generator", async () => {
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => {
+        unhandled.push(reason);
+      };
+      process.on("unhandledRejection", onUnhandled);
+
+      try {
+        const res = runGenerator(
+          // eslint-disable-next-line require-yield
+          async function* () {
+            return ok(1);
+          } as unknown as () => Generator<never, Result<number, string>>,
+        );
+
+        expect(res.isErr()).toBe(true);
+        expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+        expect(res.unwrapErr().unexpected?.message).toContain(
+          "runAsyncGenerator",
+        );
+
+        await new Promise<void>((resolve) => {
+          setImmediate(resolve);
+        });
+        expect(unhandled).toEqual([]);
+      } finally {
+        process.off("unhandledRejection", onUnhandled);
+      }
+    });
+  });
+
+  describe("runAsyncGenerator", () => {
+    it("runs an async generator and returns the returned `Ok`", async () => {
+      const res = await runAsyncGenerator(async function* () {
+        const a = yield* pendingOk<number, string>(1);
+        const b = yield* ok<number, string>(2);
+        return ok(a + b);
+      });
+
+      expect(res).toStrictEqual(ok(3));
+    });
+
+    it("returns the first yielded `Err` and does not resume", async () => {
+      const failure = pendingErr<number, string>("nope");
+      let reached = false;
+      const res = await runAsyncGenerator(async function* () {
+        yield* failure;
+        reached = true;
+        return ok(1);
+      });
+
+      expect(reached).toBe(false);
+      expect(res).toStrictEqual(await failure);
+    });
+
+    it("runs `finally` when short-circuiting on `Err`", async () => {
+      const failure = err<number, string>("nope");
+      let cleaned = false;
+      const res = await runAsyncGenerator(async function* () {
+        try {
+          yield* failure;
+          return ok(1);
+        } finally {
+          cleaned = true;
+        }
+      });
+
+      expect(cleaned).toBe(true);
+      expect(res).toBe(failure);
+    });
+
+    it("returns `return err(...)` without yields", async () => {
+      const failure = err<number, string>("nope");
+      // eslint-disable-next-line require-yield
+      const res = await runAsyncGenerator(async function* () {
+        return failure;
+      });
+
+      expect(res).toBe(failure);
+    });
+
+    it("returns unexpected `Err` if the generator throws", async () => {
+      const boom = new Error("boom");
+      // eslint-disable-next-line require-yield
+      const res = await runAsyncGenerator(async function* (): AsyncGenerator<
+        never,
+        Result<number, string>
+      > {
+        throw boom;
+      });
+
+      expect(res.isErr()).toBe(true);
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+      expect(res.unwrapErr().unexpected?.kind).toBe(ResultErrorKind.Unexpected);
+      expect(res.unwrapErr().unexpected?.reason).toBe(boom);
+    });
+
+    it("maps a thrown exception through `mkErr`", async () => {
+      const boom = new Error("boom");
+      const mapped = new Error("mapped");
+      const onError = jest.fn(() => mapped);
+      // eslint-disable-next-line require-yield
+      const res = await runAsyncGenerator(async function* (): AsyncGenerator<
+        never,
+        Result<number, string>
+      > {
+        throw boom;
+      }, onError);
+
+      expect(res.unwrapErr().expected).toBe(mapped);
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledWith(boom);
+    });
+
+    it("returns unexpected `Err` if `mkErr` throws", async () => {
+      const onError = jest.fn(() => {
+        throw new Error("oops");
+      });
+      // eslint-disable-next-line require-yield
+      const res = await runAsyncGenerator(async function* (): AsyncGenerator<
+        never,
+        Result<number, string>
+      > {
+        throw new Error("boom");
+      }, onError);
+
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+      expect(res.unwrapErr().unexpected?.kind).toBe(
+        ResultErrorKind.PredicateException,
+      );
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not call `mkErr` when the generator returns `Ok`", async () => {
+      const onError = jest.fn(() => new Error("unused"));
+      const res = await runAsyncGenerator(async function* () {
+        const n = yield* pendingOk<number, string>(1);
+        return ok(n + 1);
+      }, onError);
+
+      expect(res).toStrictEqual(ok(2));
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("returns unexpected `Err` if the generator yields an `Ok`", async () => {
+      const res = await runAsyncGenerator(async function* () {
+        yield ok(1) as never;
+        return ok(2);
+      });
+
+      expect(res.isErr()).toBe(true);
+      expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+    });
+
+    it("does not emit unhandledRejection if the pending result is not awaited", async () => {
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => {
+        unhandled.push(reason);
+      };
+      process.on("unhandledRejection", onUnhandled);
+
+      try {
+        const pending = runAsyncGenerator(async function* () {
+          yield* pendingResult(
+            Promise.reject(new Error("boom")) as Promise<
+              Result<number, string>
+            >,
+          );
+          return ok(1);
+        });
+
+        expect(isPendingResult(pending)).toBe(true);
+
+        await new Promise<void>((resolve) => {
+          setImmediate(resolve);
+        });
+        await new Promise<void>((resolve) => {
+          setImmediate(resolve);
+        });
+
+        expect(unhandled).toEqual([]);
+
+        const res = await pending;
+        expect(res.isErr()).toBe(true);
+        expect(res.unwrapErr().unexpected).toBeInstanceOf(ResultError);
+      } finally {
+        process.off("unhandledRejection", onUnhandled);
+      }
+    });
+
+    it("does not emit unhandledRejection if the generator throws and the result is not awaited", async () => {
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => {
+        unhandled.push(reason);
+      };
+      process.on("unhandledRejection", onUnhandled);
+
+      try {
+        const boom = new Error("boom");
+        const pending = runAsyncGenerator(
+          // eslint-disable-next-line require-yield
+          async function* (): AsyncGenerator<never, Result<number, string>> {
+            throw boom;
+          },
+        );
+
+        await new Promise<void>((resolve) => {
+          setImmediate(resolve);
+        });
+        await new Promise<void>((resolve) => {
+          setImmediate(resolve);
+        });
+
+        expect(unhandled).toEqual([]);
+
+        const res = await pending;
+        expect(res.unwrapErr().unexpected?.reason).toBe(boom);
+      } finally {
+        process.off("unhandledRejection", onUnhandled);
+      }
     });
   });
 

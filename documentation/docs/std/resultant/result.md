@@ -436,10 +436,12 @@ expect(y.isOkAnd((_) => true)).toBe(false);
 [`[Symbol.iterator](): Generator<Err<never, E>, T>`](../api/Result/interfaces/Resultant.mdx#symboliterator)
 
 Makes this result usable with `yield*` inside a generator passed to
-[`runGenerator`](./functions.md#rungenerator), emulating Rust's `?` operator.
+[`runGenerator`](./functions.md#rungenerator) or
+[`runAsyncGenerator`](./functions.md#runasyncgenerator), emulating Rust's
+`?` operator.
 
 An `Ok` resumes the generator with the contained value. An `Err` is yielded
-to `runGenerator`, which returns that error and does not resume.
+to the runner, which returns that error and does not resume.
 
 :::note
 This is not a value iterator. `for...of` and spread do not yield `T`.

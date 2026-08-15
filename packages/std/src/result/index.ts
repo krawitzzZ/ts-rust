@@ -35,6 +35,7 @@ export {
   run,
   runGenerator,
   runAsync,
+  runAsyncGenerator,
   fromPromise,
   runResult,
   runPendingResult,

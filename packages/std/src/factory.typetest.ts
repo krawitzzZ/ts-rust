@@ -39,6 +39,7 @@ import {
   run,
   runGenerator,
   runAsync,
+  runAsyncGenerator,
   runPendingResult,
   runResult,
   some,
@@ -706,6 +707,28 @@ const _runGenMkErrExact: Eq<
   Result<number, string | Error>
 > = true;
 
+const _runAsyncGen = runAsyncGenerator(async function* () {
+  const a = yield* pendingOk<number, "e1">(1);
+  const b = yield* ok<number, "e2">(2);
+  return ok(a + b);
+});
+const _runAsyncGenExact: Eq<
+  typeof _runAsyncGen,
+  PendingResult<number, "e1" | "e2">
+> = true;
+
+const _runAsyncGenMkErr = runAsyncGenerator(
+  async function* () {
+    const n = yield* pendingOk<number, string>(1);
+    return ok(n);
+  },
+  () => new Error("x"),
+);
+const _runAsyncGenMkErrExact: Eq<
+  typeof _runAsyncGenMkErr,
+  PendingResult<number, string | Error>
+> = true;
+
 const _runAsync: PendingResult<number, Error> = runAsync(
   () => Promise.resolve(1),
   () => new Error("x"),
@@ -823,6 +846,9 @@ const _getOrInsertWith: number = none<number>().getOrInsertWith(() => 1);
 const _okYield: Generator<Err<never, unknown>, number> = ok(1)[
   Symbol.iterator
 ]();
+const _pendingYield: AsyncGenerator<Err<never, unknown>, number> = pendingOk(1)[
+  Symbol.asyncIterator
+]();
 
 // ---------------------------------------------------------------------------
 // Settled vs PromiseLike payloads
@@ -900,5 +926,17 @@ const _rejectPendingToSync = (): void => {
 const _rejectUnwrapPromise = (): void => {
   // @ts-expect-error unwrap is only on SettledResult
   const _fail: number = ok(Promise.resolve(1)).unwrap();
+  void _fail;
+};
+
+const _rejectAsyncGenInRunGenerator = (): void => {
+  /* eslint-disable require-yield, @typescript-eslint/require-await -- type reject */
+  const _fail = runGenerator(
+    // @ts-expect-error runGenerator does not accept async generators
+    async function* () {
+      return ok(1);
+    },
+  );
+  /* eslint-enable require-yield, @typescript-eslint/require-await */
   void _fail;
 };

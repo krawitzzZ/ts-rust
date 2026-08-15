@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Option, Some, None, PendingOption } from "../option";
-import type { runGenerator } from "../result";
+import type { runAsyncGenerator, runGenerator } from "../result";
 import type { Cloneable, InferType, Recoverable } from "../types";
 import type { ResultError } from "./error";
 import type { OkAwaitedValues, OkValues } from "./types";
@@ -445,11 +445,12 @@ export interface Resultant<T, E> {
 
   /**
    * Makes this result usable with `yield*` inside a generator passed to
-   * {@link runGenerator}, emulating Rust's `?` operator.
+   * {@link runGenerator} or {@link runAsyncGenerator}, emulating Rust's `?`
+   * operator.
    *
    * An {@link Ok} resumes the generator with the contained value. An
-   * {@link Err} is yielded to {@link runGenerator}, which returns that error
-   * and does not resume.
+   * {@link Err} is yielded to the runner, which returns that error and does
+   * not resume.
    *
    * This is not a value iterator: `for...of` / spread do not yield `T`.
    *
@@ -1121,6 +1122,28 @@ export interface PendingResult<T, E>
    * ```
    */
   inspectErr(f: (x: CheckedError<E>) => unknown): PendingResult<T, E>;
+
+  /**
+   * Makes this pending result usable with `yield*` inside an async generator
+   * passed to {@link runAsyncGenerator}, emulating Rust's `?` operator.
+   *
+   * A resolved {@link Ok} resumes the generator with the contained value. A
+   * resolved {@link Err} is yielded to {@link runAsyncGenerator}, which
+   * returns that error and does not resume.
+   *
+   * This is not a value iterator: `for await...of` does not yield `T`.
+   *
+   * @example
+   * ```ts
+   * const result = await runAsyncGenerator(async function* () {
+   *   const n = yield* pendingOk<number, string>(1);
+   *   return ok(n + 1);
+   * });
+   *
+   * expect(result).toStrictEqual(ok(2));
+   * ```
+   */
+  [Symbol.asyncIterator](): AsyncGenerator<Err<never, E>, T>;
 
   /**
    * Maps the resolved value with `f`, returning a {@link PendingResult} with

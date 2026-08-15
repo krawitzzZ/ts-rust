@@ -196,6 +196,8 @@ export function run<T, E>(
  * Thrown exceptions become {@link UnexpectedError}, unless `mkErr` is provided
  * to map them into an expected error (same role as {@link run}'s `mkErr`).
  *
+ * Async generators are not accepted; use {@link runAsyncGenerator} instead.
+ *
  * @example
  * ```ts
  * const result = runGenerator(function* () {
@@ -257,6 +259,16 @@ export function runGenerator<Y, R extends Result<unknown, unknown>, E>(
     iterator = action();
     const step = iterator.next();
 
+    if (isPromise(step)) {
+      void step.then(undefined, () => {
+        // do not leak an unhandled rejection from an async generator
+      });
+      closeGenerator(iterator);
+      return unexpected(
+        "`runGenerator`: async generators are not supported; use `runAsyncGenerator`",
+      );
+    }
+
     if (isResult(step.value)) {
       if (!step.done && step.value.isOk()) {
         closeGenerator(iterator);
@@ -288,10 +300,140 @@ export function runGenerator<Y, R extends Result<unknown, unknown>, E>(
 
 function closeGenerator(iterator: Generator<unknown, unknown>): void {
   try {
-    iterator.return(undefined);
+    const closed = iterator.return(undefined);
+    if (isPromise(closed)) {
+      void closed.then(undefined, () => {
+        // async `return()` must not leak an unhandled rejection
+      });
+    }
   } catch {
     // cleanup must not hide the original Ok / Err / throw
   }
+}
+
+async function closeAsyncGenerator(
+  iterator: AsyncGenerator<unknown, unknown>,
+): Promise<void> {
+  try {
+    await iterator.return(undefined);
+  } catch {
+    // cleanup must not hide the original Ok / Err / throw
+  }
+}
+
+/**
+ * Evaluates an async generator that `yield*`s {@link Result} or
+ * {@link PendingResult} values, returning a {@link PendingResult} for the
+ * first yielded {@link Err} or the {@link Result} the generator returns.
+ *
+ * This is the asynchronous counterpart of {@link runGenerator}. `yield*`
+ * unwraps {@link Ok} into the contained value, or aborts with {@link Err}.
+ *
+ * The function itself is synchronous and returns a {@link PendingResult}
+ * immediately. The async generator is driven internally; await the returned
+ * pending result (or use {@link PendingResult.then}) to get the {@link Result}.
+ * The pending result's promise is always handled, so not awaiting it does not
+ * produce an unhandled rejection.
+ *
+ * Thrown exceptions and rejected `yield*`s become {@link UnexpectedError},
+ * unless `mkErr` is provided to map them into an expected error (same role
+ * as {@link runAsync}'s `mkErr`).
+ *
+ * @example
+ * ```ts
+ * const result = await runAsyncGenerator(async function* () {
+ *   const a = yield* pendingOk<number, string>(1);
+ *   const b = yield* ok<number, string>(2);
+ *   return ok(a + b);
+ * });
+ *
+ * expect(result).toStrictEqual(ok(3));
+ * ```
+ */
+export function runAsyncGenerator<Y, R extends Result<unknown, unknown>>(
+  action: () => AsyncGenerator<Y, R>,
+): PendingResult<InferOk<R>, MergeErr<InferErr<Y>, InferErr<R>>>;
+/**
+ * Evaluates an async generator that `yield*`s {@link Result} or
+ * {@link PendingResult} values, mapping thrown exceptions through `mkErr`.
+ *
+ * @param action - An async generator function that `yield*`s {@link Result}
+ *   or {@link PendingResult} values and returns a {@link Result}.
+ * @param mkErr - Converts a thrown value into an expected error of type `E`.
+ */
+export function runAsyncGenerator<Y, R extends Result<unknown, unknown>, E>(
+  action: () => AsyncGenerator<Y, R>,
+  mkErr: (error: unknown) => Awaited<E>,
+): PendingResult<InferOk<R>, MergeErr<MergeErr<InferErr<Y>, InferErr<R>>, E>>;
+export function runAsyncGenerator<Y, R extends Result<unknown, unknown>, E>(
+  action: () => AsyncGenerator<Y, R>,
+  mkErr?: (error: unknown) => Awaited<E>,
+): PendingResult<InferOk<R>, MergeErr<MergeErr<InferErr<Y>, InferErr<R>>, E>> {
+  type OutE = MergeErr<MergeErr<InferErr<Y>, InferErr<R>>, E>;
+  type Out = Result<InferOk<R>, OutE>;
+
+  const unexpected = (message: string, reason?: unknown): Out =>
+    err(unexpectedError<OutE>(message, ResultErrorKind.Unexpected, reason));
+
+  const thrown = (error: unknown): Out => {
+    if (!mkErr) {
+      return unexpected(
+        "`runAsyncGenerator`: generator threw an exception",
+        error,
+      );
+    }
+
+    try {
+      const handledError: OutE = mkErr(error) as OutE;
+      return err(handledError);
+    } catch (e) {
+      return err(
+        unexpectedError<OutE>(
+          "`runAsyncGenerator`: callback `mkErr` threw an exception",
+          ResultErrorKind.PredicateException,
+          e,
+        ),
+      );
+    }
+  };
+
+  return pendingResult(
+    (async (): Promise<Out> => {
+      let iterator: AsyncGenerator<Y, R> | undefined;
+
+      try {
+        iterator = action();
+        const step = await iterator.next();
+
+        if (isResult(step.value)) {
+          if (!step.done && step.value.isOk()) {
+            await closeAsyncGenerator(iterator);
+            return unexpected(
+              "`runAsyncGenerator`: generator yielded an `Ok`; use `yield*` on the `Result` or `PendingResult`",
+            );
+          }
+
+          if (!step.done) {
+            await closeAsyncGenerator(iterator);
+          }
+
+          return step.value as Out;
+        }
+
+        await closeAsyncGenerator(iterator);
+        return unexpected(
+          "`runAsyncGenerator`: generator did not return or yield a `Result`",
+          step.value,
+        );
+      } catch (error) {
+        if (iterator) {
+          await closeAsyncGenerator(iterator);
+        }
+
+        return thrown(error);
+      }
+    })(),
+  );
 }
 
 /**
@@ -1058,10 +1200,10 @@ class _Result<T, E> implements Resultant<T, E> {
 
   /**
    * Makes this result usable with `yield*` inside a generator passed to
-   * {@link runGenerator}.
+   * {@link runGenerator} or {@link runAsyncGenerator}.
    *
    * An {@link Ok} resumes the generator with the contained value. An {@link Err}
-   * is yielded so {@link runGenerator} can return it without resuming.
+   * is yielded so the runner can return it without resuming.
    */
   *[Symbol.iterator](): Generator<Err<never, E>, T> {
     if (isOk(this.#state)) {
@@ -1625,6 +1767,25 @@ class _PendingResult<T, E> implements PendingResult<T, E> {
 
   inspectErr(f: (x: CheckedError<E>) => unknown): PendingResult<T, E> {
     return pendingResult(this.#promise.then((self) => self.inspectErr(f)));
+  }
+
+  /**
+   * Makes this pending result usable with `yield*` inside an async generator
+   * passed to {@link runAsyncGenerator}.
+   *
+   * A resolved {@link Ok} resumes the generator with the contained value. A
+   * resolved {@link Err} is yielded so {@link runAsyncGenerator} can return
+   * it without resuming.
+   */
+  async *[Symbol.asyncIterator](): AsyncGenerator<Err<never, E>, T> {
+    const settled = await this.#promise;
+
+    if (settled.isOk()) {
+      return settled.value;
+    }
+
+    yield settled as unknown as Err<never, E>;
+    return undefined as never;
   }
 
   map<U>(f: (x: T) => U): PendingResult<Awaited<U>, Awaited<E>> {

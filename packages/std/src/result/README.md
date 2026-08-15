@@ -103,7 +103,7 @@ const pending = result.toPending(); // PendingResult<number, string>
 console.log(await pending); // Ok(42)
 ```
 
-### run, runGenerator, and runAsync
+### run, runGenerator, runAsync, and runAsyncGenerator
 
 - `run(action, mkErr)`: Executes a synchronous `action` and wraps the outcome
   in a `Result`. If the action throws, the error is passed to `mkErr` to create
@@ -114,6 +114,9 @@ console.log(await pending); // Ok(42)
 - `runAsync(action, mkErr)`: Executes an asynchronous `action` returning a
   `Promise` and wraps the outcome in a `PendingResult`. If the action throws
   or the promise rejects, the error is passed to `mkErr` to create an `Err`.
+- `runAsyncGenerator(action, mkErr?)`: Evaluates an `async function*` that
+  `yield*`s a `Result` or `PendingResult`. Returns a `PendingResult`. Throws
+  become an `UnexpectedError` unless `mkErr` maps them.
 - `fromPromise(promise, mkErr)`: Same as `runAsync`, but takes an already
   created promise instead of a factory.
 
@@ -121,7 +124,14 @@ console.log(await pending); // Ok(42)
 > `UnexpectedError`.
 
 ```typescript
-import { run, runAsync, runGenerator, ok } from "@ts-rust/std";
+import {
+  ok,
+  pendingOk,
+  run,
+  runAsync,
+  runAsyncGenerator,
+  runGenerator,
+} from "@ts-rust/std";
 
 const summed = runGenerator(function* () {
   const a = yield* ok<number, string>(1);
@@ -129,6 +139,13 @@ const summed = runGenerator(function* () {
   return ok(a + b);
 });
 console.log(summed.unwrap()); // 3
+
+const asyncSummed = await runAsyncGenerator(async function* () {
+  const a = yield* pendingOk<number, string>(1);
+  const b = yield* ok<number, string>(2);
+  return ok(a + b);
+});
+console.log(asyncSummed.unwrap()); // 3
 
 // Synchronous run
 const parsed = run(
@@ -410,6 +427,25 @@ asynchronously, returning promises or new `PendingResult` instances.
 > resolves to an `Err` with an `UnexpectedError` by default. This ensures that errors
 > in asynchronous resolution are handled gracefully without requiring explicit
 > error handling for the promise itself. Below are examples of key methods.
+
+### [Symbol.asyncIterator]
+
+Makes this pending result usable with `yield*` inside an async generator
+passed to `runAsyncGenerator`. A resolved `Ok` resumes with the contained
+value; a resolved `Err` is returned by `runAsyncGenerator` and the generator
+is not resumed.
+
+This is not a value iterator: `for await...of` does not yield `T`.
+
+```typescript
+import { ok, pendingOk, runAsyncGenerator } from "@ts-rust/std";
+
+const result = await runAsyncGenerator(async function* () {
+  const n = yield* pendingOk<number, string>(1);
+  return ok(n + 1);
+});
+console.log(result.unwrap()); // 2
+```
 
 ### async map, mapErr, and mapAll
 

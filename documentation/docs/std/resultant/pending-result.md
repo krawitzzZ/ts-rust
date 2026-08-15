@@ -211,6 +211,33 @@ expect(await y.inspectErr(_ => { throw new Error() })).toStrictEqual(err("failur
 expect(isCheckedError(sideEffect)).toBe(true);
 ```
 
+### [Symbol.asyncIterator]
+
+[`[Symbol.asyncIterator](): AsyncGenerator<Err<never, E>, T>`](../api/Result/interfaces/PendingResult.mdx#symbolasynciterator)
+
+Makes this pending result usable with `yield*` inside an async generator
+passed to [`runAsyncGenerator`](./functions.md#runasyncgenerator), emulating
+Rust's `?` operator.
+
+A resolved `Ok` resumes the generator with the contained value. A resolved
+`Err` is yielded to `runAsyncGenerator`, which returns that error and does
+not resume.
+
+This is the asynchronous version of [`[Symbol.iterator]`](./result.md#symboliterator).
+
+:::note
+This is not a value iterator. `for await...of` does not yield `T`.
+:::
+
+```ts
+const result = await runAsyncGenerator(async function* () {
+  const n = yield* pendingOk<number, string>(1);
+  return ok(n + 1);
+});
+
+expect(result).toStrictEqual(ok(2));
+```
+
 ### map
 
 [`map<U>(f: (x: T) => U): PendingResult<Awaited<U>, Awaited<E>>`](../api/Result/interfaces/PendingResult.mdx#map)

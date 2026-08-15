@@ -149,10 +149,40 @@ generator.
 
 Thrown exceptions become an `UnexpectedError`, unless `mkErr` is provided
 to map them into an expected error (same role as [`run`](#run)'s `mkErr`).
+Async generators are not accepted; use [`runAsyncGenerator`](#runasyncgenerator)
+instead.
 
 ```ts
 const summed = runGenerator(function* () {
   const a = yield* ok<number, string>(1);
+  const b = yield* ok<number, string>(2);
+  return ok(a + b);
+});
+expect(summed).toStrictEqual(ok(3));
+```
+
+### runAsyncGenerator
+
+- [`runAsyncGenerator<Y, R>(action: () => AsyncGenerator<Y, R>): PendingResult<...>`](../api/Result/functions/runAsyncGenerator.mdx)
+- [`runAsyncGenerator<Y, R, E>(action: () => AsyncGenerator<Y, R>, mkErr: (error: unknown) => E): PendingResult<...>`](../api/Result/functions/runAsyncGenerator.mdx)
+
+The asynchronous counterpart of [`runGenerator`](#rungenerator). `yield*` a
+`Result` or [`PendingResult`](./pending-result.md) to unwrap `Ok` or abort on
+`Err`. Return a `Result` from the generator.
+
+`runAsyncGenerator` itself is synchronous: it starts the async generator and
+returns a [`PendingResult`](./pending-result.md) immediately. Await that
+pending result (or call `.then`) to get the `Result`. The pending result is
+always handled internally, so skipping the await does not cause an unhandled
+rejection.
+
+Thrown exceptions become an `UnexpectedError`, unless `mkErr` is provided
+to map them into an expected error (same role as [`runAsync`](#runasync)'s
+`mkErr`).
+
+```ts
+const summed = await runAsyncGenerator(async function* () {
+  const a = yield* pendingOk<number, string>(1);
   const b = yield* ok<number, string>(2);
   return ok(a + b);
 });

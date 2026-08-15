@@ -10,6 +10,7 @@ import {
   pendingOk,
   pendingErr,
   PendingResult,
+  runAsyncGenerator,
 } from "./index";
 
 describe("PendingResult", () => {
@@ -543,6 +544,42 @@ describe("PendingResult", () => {
           asyncError,
         ),
       );
+    });
+  });
+
+  describe("[Symbol.asyncIterator]", () => {
+    it("returns a completed async generator with the inner value if self resolves to `Ok`", async () => {
+      const self = pendingOk(one);
+      const iter = self[Symbol.asyncIterator]();
+      const step = await iter.next();
+
+      expect(step.done).toBe(true);
+      expect(step.value).toBe(one);
+      expect((await iter.next()).done).toBe(true);
+    });
+
+    it("yields the resolved `Err` if self resolves to `Err`", async () => {
+      const self = pendingErr<number, string>(expectedErr);
+      const iter = self[Symbol.asyncIterator]();
+      const step = await iter.next();
+
+      expect(step.done).toBe(false);
+      expect(step.value).toStrictEqual(await self);
+      expect((await iter.next()).done).toBe(true);
+    });
+
+    it("unwraps `Ok` through `yield*` and aborts on `Err`", async () => {
+      const failure = pendingErr<number, string>(expectedErrMsg);
+      let reached = false;
+      const result = await runAsyncGenerator(async function* () {
+        const n = yield* pendingOk<number, string>(one);
+        yield* failure;
+        reached = true;
+        return ok(n);
+      });
+
+      expect(reached).toBe(false);
+      expect(result).toStrictEqual(await failure);
     });
   });
 
